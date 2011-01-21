@@ -26,7 +26,7 @@ from math import *
 from random import *
 
 # Load an existing neuroConstruct project
-projFile = File("TestPython/TestPython.neuro.xml")
+projFile = File("/home/eugenio/phd/nC_projects/if_network/if_network.ncx")
 print "Loading project from file: " + projFile.getAbsolutePath()+", exists: "+ str(projFile.exists())
 
 pm = ProjectManager()
@@ -41,9 +41,11 @@ stim = myProject.elecInputInfo.getStim(0)
 
 print "First stimulation setting: "+ str(stim)
 
-newAmp = random()*0.2
+#newAmp = random()*0.2
+#stim.setAmp(NumberGenerator(newAmp))
 
-stim.setAmp(NumberGenerator(newAmp))
+new_rate = random()*0.5
+stim.setRate(new_rate)
 
 myProject.elecInputInfo.updateStim(stim)
 

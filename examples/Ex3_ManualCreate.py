@@ -27,7 +27,7 @@ from math import *
 
 # Load an existing neuroConstruct project
 
-projFile = File("TestPython/TestPython.neuro.xml")
+projFile = File("/home/eugenio/phd/nC_projects/if_network/if_network.ncx")
 print "Loading project from file: " + projFile.getAbsolutePath()+", exists: "+ str(projFile.exists())
 
 pm = ProjectManager()
@@ -72,7 +72,7 @@ print "-----------------------------------"
 print
 
 
-System.exit(0)
+#System.exit(0)
 
 
 
