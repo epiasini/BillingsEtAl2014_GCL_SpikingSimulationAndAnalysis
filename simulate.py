@@ -141,7 +141,7 @@ if numGenerated > 0:
                 print 'adding MF inputs, MF n.' + str(cell_str[k])
                 myProject.generatedElecInputs.addSingleInput(inmod,'RandomSpikeTrain','MFs',cell_str[k],0,0,None)  
             print "Total inputs "+str(myProject.generatedElecInputs.getNumberSingleInputs(inmod))
-            simRef = tstr
+            simRef = tstr + "_" + str(i)
             myProject.simulationParameters.setReference(simRef)
             myProject.neuronFileManager.generateTheNeuronFiles(simConfig, None, NeuronFileManager.RUN_HOC,simulatorSeed)
             compileProcess = ProcessManager(myProject.neuronFileManager.getMainHocFile())
