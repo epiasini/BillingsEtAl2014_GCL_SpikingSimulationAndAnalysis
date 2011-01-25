@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+To be used with something like this:
+./nC.sh -python ~/phd/code/network/trunk/simulate.py
+"""
 import random
 import time
 import os.path
@@ -74,8 +78,7 @@ if n_generated_cells > 0:
                 # innermost loop: determine the simulation reference name
                 sim_ref = tstr + "_cp" + str(cpn) + "_sp" + str(spn) + "_b" + str(bias)
                 project.simulationParameters.setReference(sim_ref)
-                pattern_file=open(sim_path+"simulations/"+sim_ref+'_patterns.txt',"w")
-                
+                                
                 #Set the thresholding current
                 bias_input = project.elecInputInfo.getStim("bias")
                 bias_input.setAmp(NumberGenerator(bias))
@@ -86,17 +89,22 @@ if n_generated_cells > 0:
                 while pm.isGenerating():
                     print 'Waiting for the project to be regenerated...'
                     time.sleep(1)
-                
-                pattern_file.write(str(cp) + "\n")
+
+                conn_pattern_file=open(sim_path+"simulations/"+sim_ref+'_conn.txt',"w")
                 for gr in range(n_gr):
                     for mf in cp[gr]:
                         # create connections, following the current connection pattern
                         project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
+                        conn_pattern_file.write(str(mf) + " ")
+                    conn_pattern_file.write("\n")
+                conn_pattern_file.close()
 
-                pattern_file.write(str(sp))
+                stim_pattern_file=open(sim_path+"simulations/"+sim_ref+'_stim.txt',"w")
                 for mf in sp:
                     # create random spiking stimuli on active MFs, following the current stimulus pattern
                     project.generatedElecInputs.addSingleInput(existing_stim,'RandomSpikeTrain','MFs',mf,0,0,None)
+                    stim_pattern_file.write(str(mf) + " ")
+                stim_pattern_file.close()
 
                 # generate and compile neuron files
                 print "Generating NEURON scripts..."
@@ -112,7 +120,6 @@ if n_generated_cells > 0:
                     while os.path.exists(propsfile_path)==0:
                         time.sleep(2)
                     print("")
-                pattern_file.close()
 else:
     print "No cells generated."
 
