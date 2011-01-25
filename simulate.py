@@ -1,170 +1,119 @@
-# Script to asses how well random patterns spatial patterns are transmitted by the
-# network (data is analysed in matlab using hierarchical clustering)
-# Guy Billings, UCL 2010.
-# -----
-#
-# Generate a network
-# Loop over sparsity
-#   Choose random binary dictionary
-#   Loop over threshold
-#     Loop over pattern repetitions
-#       Compile spikes
-#       Save spike files, patterns and network in separate dir
-#       Clean up
-#  
-##########################
-# Load libraries
-
-from java.io import *
-from java.lang import Runtime
-from java.lang import System
-#from math import *
-from java.util import Random
-
-import time
-import os
-#import run_support # Companion library to this script
+# -*- coding: utf-8 -*-
 import random
-import subprocess
+import time
+import os.path
 
-from ucl.physiol.neuroconstruct.cell.examples import *
-from ucl.physiol.neuroconstruct.cell.utils import *
-from ucl.physiol.neuroconstruct.project import *
-from ucl.physiol.neuroconstruct.cell.compartmentalisation import *
-from ucl.physiol.neuroconstruct.project.cellchoice import *
-from ucl.physiol.neuroconstruct.neuron import *
-from ucl.physiol.neuroconstruct.nmodleditor.processes import *
-from ucl.physiol.neuroconstruct.neuroml import *
-from ucl.physiol.neuroconstruct.neuroml.hdf5 import *
-from ucl.physiol.neuroconstruct.hpc.mpi import *
+from java.lang import System
+from java.io import File
+
+from ucl.physiol.neuroconstruct.project import ProjectManager
 from ucl.physiol.neuroconstruct.utils import NumberGenerator
+from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
+from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-##########################
-# User defined data
+# simulation control parameters
+sim_path = '/home/eugenio/phd/nC_projects/if_network/'
+project_filename = 'if_network.ncx'
+sim_config_name = 'Default Simulation Configuration'
+existing_stim = 'MF_stim'
+nC_seed = 1234
+simulator_seed = random.getrandbits(32)
+active_mf_fraction = 0.3
+sim_duration = 100.0
+n_stim_patterns = 1
+n_conn_patterns = 1
+bias_values = [-0.005]
+# timestamp
+now = time.localtime(time.time())
+tstr = time.strftime("%Y-%m-%d.%H-%M-%S", now)
 
-neuroConstructSeed = 1234
-simulatorSeed = random.randint(1, 9999)
-cores=2
-
-sim_path="/home/eugenio/phd/nC_projects/if_network/"
-nCprojectfile="if_network.ncx"
-inmod='MF_stim' # Name of input to be modified (must be pre-existing in project)
-networkMLfilebase = "NML_"
-
-mbasen='MFs_'
-msaven='m_spikes_'
-gbasen='GrCs_'
-gsaven='g_spikes_'
-psaven='input_patterns_'
-spikes_out="/home/eugenio/phd/code/network/data/" # Output path for spike files and networkML file
-sref='hierarchy_test_' # Reference string for the simulations
-
-pattern_duration=50.0
-toplim=2 # Number of patterns
-repeats=1  # Number of repeat repetitions
-
-startpdex=1
-endpdex=1
-pinc=0.1
-
-# Set node number
-#node_num=0 # Number from 0
-
-##########################
-# Initialise from files
-
-projFile = File(sim_path+nCprojectfile)
-
-print "Loading project from file: " + projFile.getAbsolutePath()+", exists: "+ str(projFile.exists())
-
+# load project and initialise
+project_file = File(sim_path + project_filename)
+print ('Loading project from file: ' + project_file.getAbsolutePath() + ", exists: " + str(project_file.exists()))
 pm = ProjectManager(None, None)
-myProject = pm.loadProject(projFile)
+project = pm.loadProject(project_file)
+print 'Loaded project: ' + project.getProjectName()
 
-print "Loaded project: " + myProject.getProjectName() 
-
-simConfig = myProject.simConfigInfo.getSimConfig('Default Simulation Configuration')  
-simConfig.setSimDuration(pattern_duration)
-
-#pm.doLoadNetworkMLAndGenerate(nmlFile,0)
-pm.doGenerate("Default Simulation Configuration", neuroConstructSeed)
-simConfig = myProject.simConfigInfo.getSimConfig('Default Simulation Configuration')
-
-rng=Random()
-
-##########################
-# Generate network
-  
+# generate network
+pm.doGenerate(sim_config_name, nC_seed)
 while pm.isGenerating():
-    print "Waiting for the project to be generated..."
+    print 'Waiting for the project to be generated...'
     time.sleep(2)
 
-now = time.localtime(time.time())
-tstr= time.strftime("%Y-%m-%d.%H-%M-%S", now)  
-  
-# Save to a NetworkML file
-#nmlFile=File(spikes_out+networkMLfilebase+tstr+".nml")
-#pm.saveNetworkStructureXML(myProject, File(spikes_out+networkMLfilebase+tstr+".nml"), 0, 0, simConfig.getName(), "Physiological Units")
-#print "Network structure saved to file: "+spikes_out+networkMLfilebase+tstr+".nml"
+# load existing simulation configurations and set sim duration and a couple of neuron options
+sim_config = project.simConfigInfo.getSimConfig(sim_config_name)
+sim_config.setSimDuration(sim_duration)
+project.neuronSettings.setNoConsole()
+project.neuronSettings.setCopySimFiles(1)
 
-n_mf=myProject.generatedCellPositions.getNumberInCellGroup('MFs')
-n_gr=myProject.generatedCellPositions.getNumberInCellGroup('GrCs')
-numGenerated = myProject.generatedCellPositions.getNumberInAllCellGroups()
-print "Number of cells generated: " + str(numGenerated)
-myProject.neuronSettings.setNoConsole()
+# count generated cells
+n_mf=project.generatedCellPositions.getNumberInCellGroup('MFs')
+n_gr=project.generatedCellPositions.getNumberInCellGroup('GrCs')
+n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
+print "Number of cells generated: " + str(n_generated_cells)
 
-if numGenerated > 0:
-    print "Generating NEURON scripts..."
-    myProject.neuronSettings.setCopySimFiles(1)
+# load connection patterns
+conn_patterns = [[random.sample(range(n_mf),4) for each in range(n_gr)] for each in range(n_conn_patterns)]
+#inv_connection_patterns = [[gr for gr in range(n_gr) if mf in connection_patterns[gr]] for mf in range(n_mf)]
 
-    ##########################  
-    # Set up and run individual simulations with input generated patterns
-  
-    for pdex in range(startpdex,endpdex+1):  
-        pin=pinc*pdex
-        
-        now = time.localtime(time.time())
-        tstr= time.strftime("%Y-%m-%d.%H-%M-%S", now)
-        pattern_file=open(spikes_out+psaven+"_pin"+str(pin)+"_"+tstr+'.txt',"a+")
-        
-        for i in range(0, toplim):
-            myProject.generatedElecInputs.reset()
-            cell_str=[]
-            
-            while len(cell_str)==0:
-                for j in range(1,n_mf):
-                    if rng.nextFloat()<=pin:
-                        cell_str.append(j)
-          
-            pattern_file.write(str(cell_str)+'\n')
-            print "Total inputs "+str(myProject.generatedElecInputs.getNumberSingleInputs(inmod))
-            for k in range(0,len(cell_str)):
-                print 'adding MF inputs, MF n.' + str(cell_str[k])
-                myProject.generatedElecInputs.addSingleInput(inmod,'RandomSpikeTrain','MFs',cell_str[k],0,0,None)  
-            print "Total inputs "+str(myProject.generatedElecInputs.getNumberSingleInputs(inmod))
-            simRef = tstr + "_" + str(i)
-            myProject.simulationParameters.setReference(simRef)
-            myProject.neuronFileManager.generateTheNeuronFiles(simConfig, None, NeuronFileManager.RUN_HOC,simulatorSeed)
-            compileProcess = ProcessManager(myProject.neuronFileManager.getMainHocFile())
-            compileSuccess = compileProcess.compileFileWithNeuron(0,0)
-        
-            if compileSuccess:
-                pm.doRunNeuron(simConfig)
-                propsfile_path=sim_path+"simulations/"+simRef+"/simulation.props"
-                tfile = File(propsfile_path)
-                cnt=1
-                print "simref " + str(simRef)
-                print propsfile_path
-                print "Simulation running..."
-                while tfile.exists() == 0:
-                    time.sleep(2)
-    pattern_file.close()
+# generate random stimulation pattern (at fixed sparsity)
+active_mf_number = int(round(n_mf*active_mf_fraction))
+stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)]
+
+# simulate and record spiketimes
+if n_generated_cells > 0:
+    for cpn, cp in enumerate(conn_patterns):
+        # delete all existing connections
+        project.generatedNetworkConnections.reset()
+
+        for spn, sp in enumerate(stim_patterns):
+            # delete all existing stimuli
+            project.generatedElecInputs.reset()
+
+            for bias in bias_values:
+                # innermost loop: determine the simulation reference name
+                sim_ref = tstr + "_cp" + str(cpn) + "_sp" + str(spn) + "_b" + str(bias)
+                project.simulationParameters.setReference(sim_ref)
+                pattern_file=open(sim_path+"simulations/"+sim_ref+'_patterns.txt',"w")
+                
+                #Set the thresholding current
+                bias_input = project.elecInputInfo.getStim("bias")
+                bias_input.setAmp(NumberGenerator(bias))
+                bias_input.setDur(NumberGenerator(sim_duration))
+                #project.elecInputInfo.updateStim(bias_input)
+
+                pm.doGenerate(sim_config_name, nC_seed)
+                while pm.isGenerating():
+                    print 'Waiting for the project to be regenerated...'
+                    time.sleep(1)
+                
+                pattern_file.write(str(cp) + "\n")
+                for gr in range(n_gr):
+                    for mf in cp[gr]:
+                        # create connections, following the current connection pattern
+                        project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
+
+                pattern_file.write(str(sp))
+                for mf in sp:
+                    # create random spiking stimuli on active MFs, following the current stimulus pattern
+                    project.generatedElecInputs.addSingleInput(existing_stim,'RandomSpikeTrain','MFs',mf,0,0,None)
+
+                # generate and compile neuron files
+                print "Generating NEURON scripts..."
+                project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
+                compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
+                compile_success = compile_process.compileFileWithNeuron(0,0)
+                # simulate
+                if compile_success:
+                    print "...success."
+                    print "Simulating: simulation reference %s" % str(sim_ref)
+                    pm.doRunNeuron(sim_config)
+                    propsfile_path=sim_path+"simulations/"+sim_ref+"/simulation.props"
+                    while os.path.exists(propsfile_path)==0:
+                        time.sleep(2)
+                    print("")
+                pattern_file.close()
+else:
+    print "No cells generated."
+
 System.exit(0)
-	  
-
-  
-
-
-                                                 
-
-
-
