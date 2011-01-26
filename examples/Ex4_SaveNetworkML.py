@@ -68,7 +68,7 @@ pm.saveNetworkStructureXML(myProject, myNetworkMLFile, 0, 0, simConfig.getName()
 print "Network structure saved to file: "+ myNetworkMLFile.getAbsolutePath()
 
 # Load the saved file
-pm.doLoadNetworkMLAndGenerate(myNetworkMLFile,0)
+pm.doLoadNetworkMLAndGeneratePlots(myNetworkMLFile,0)
 
 
 System.exit(0)

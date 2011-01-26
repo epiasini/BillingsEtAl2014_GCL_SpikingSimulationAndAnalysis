@@ -16,23 +16,32 @@ from ucl.physiol.neuroconstruct.utils import NumberGenerator
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-# simulation control parameters
-base_name = sys.argv[1]
-ntrials = 5
-sim_path = '/home/ucgbgbi/data/eugenio/nC_projects/if_gl/'
-project_filename = 'if_gl.ncx'
-sim_config_name = 'Default Simulation Configuration'
-existing_stim = 'MF_stim'
-nC_seed = 1234
-active_mf_fraction = 0.3
-sim_duration = 1000.0
-n_stim_patterns = 1
-n_conn_patterns = 1
-bias_values = [-0.005]
+from utils import ref_constructor
+
+conf_path = '/home/eugenio/phd/code/network/trunk/' # path containing the <base_name>.conf.txt configuration file
+base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
+
+# read the configuration file and extract the variables that will be used
+conf_file = open(conf_path+base_name+'.conf.txt')
+conf = eval(conf_file.read())
+conf_file.close()
+
+proj_path = conf['proj_path']
+sim_path = conf['sim_path']
+project_filename = conf['project_filename']
+sim_config_name = conf['sim_config_name']
+existing_stim = conf['existing_stim']
+nC_seed = conf['nC_seed']
+active_mf_fraction = conf['active_mf_fraction']
+sim_duration = conf['sim_duration']
+n_stim_patterns = conf['n_stim_patterns']
+n_conn_patterns = conf['n_conn_patterns']
+bias_values = conf['bias_values']
+ntrials = conf['ntrials']
 
 def simulate(base_name):
     # load project and initialise
-    project_file = File(sim_path + project_filename)
+    project_file = File(proj_path + project_filename)
     print ('Loading project from file: ' + project_file.getAbsolutePath() + ", exists: " + str(project_file.exists()))
     pm = ProjectManager(None, None)
     project = pm.loadProject(project_file)
@@ -78,7 +87,7 @@ def simulate(base_name):
                     for trial in range(ntrials):
                         simulator_seed = random.getrandbits(32)
                         # innermost loop: determine the simulation reference name
-                        sim_ref = base_name + "_cp" + str(cpn) + "_sp" + str(spn) + "_b" + str(bias) + "_t" + str(trials)
+                        sim_ref = ref_constructor(base_name=base_name, connection_pattern_index=cpn, stimulus_pattern_index=spn, bias=bias, trial=trial)
                         project.simulationParameters.setReference(sim_ref)
 
                         #Set the thresholding current
@@ -93,7 +102,7 @@ def simulate(base_name):
                             print 'Waiting for the project to be regenerated...'
                             time.sleep(1)
 
-                        conn_pattern_file=open(sim_path+"simulations/"+sim_ref+'_conn.txt',"w")
+                        conn_pattern_file=open(sim_path+sim_ref+'_conn.txt',"w")
                         for gr in range(n_gr):
                             for mf in cp[gr]:
                                 # create connections, following the current connection pattern
@@ -102,7 +111,7 @@ def simulate(base_name):
                             conn_pattern_file.write("\n")
                         conn_pattern_file.close()
 
-                        stim_pattern_file=open(sim_path+"simulations/"+sim_ref+'_stim.txt',"w")
+                        stim_pattern_file=open(sim_path+sim_ref+'_stim.txt',"w")
                         for mf in sp:
                             # create random spiking stimuli on active MFs, following the current stimulus pattern
                             project.generatedElecInputs.addSingleInput(existing_stim,'RandomSpikeTrain','MFs',mf,0,0,None)
@@ -119,7 +128,7 @@ def simulate(base_name):
                             print "...success."
                             print "Simulating: simulation reference %s" % str(sim_ref)
                             pm.doRunNeuron(sim_config)
-                            propsfile_path=sim_path+"simulations/"+sim_ref+"/simulation.props"
+                            propsfile_path=sim_path+sim_ref+"/simulation.props"
                             while os.path.exists(propsfile_path)==0:
                                 time.sleep(2)
                             print("")
