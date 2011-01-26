@@ -1,17 +1,23 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage: compress_data.py base_name"""
+"""Usage: compress_data.py base_name [clean_up]"""
 import itertools
 import sys
+import os
 import glob
 import h5py
 import re
+import shutil
 import numpy as np
 
 from utils import ref_constructor
 
 conf_path = '/home/eugenio/phd/code/network/trunk/' # path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Does not permit overwriting an existing hdf5 file (that is, it's not allowed to call this script more than one time with any given base_name, unless the existing hdf5 files are manually renamed or deleted.) (this behaviour could be easily changed).
+if len(sys.argv) < 3:
+    clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
+else:
+    clean_up = sys.argv[2]
 
 # read the configuration file and extract the variables that will be used
 conf_file = open(conf_path+base_name+'.conf.txt')
@@ -93,3 +99,9 @@ for cpn, spn, bias, trial in itertools.product(range(n_conn_patterns), range(n_s
     f.create_dataset("input", data=gr_spiketimes_in)
 
     f.close()
+
+    # delete NEURON and neuroConstruct simulation files
+    if clean_up:
+        shutil.rmtree(sim_path+sim_ref)
+        os.remove(sim_path+sim_ref+"_conn.txt")
+        os.remove(sim_path+sim_ref+"_stim.txt")
