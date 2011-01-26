@@ -11,7 +11,7 @@ import numpy as np
 
 sim_ref = sys.argv[1]
 if len(sys.argv) < 3:
-    sim_dir = "/home/eugenio/phd/nC_projects/if_network/simulations/"
+    sim_dir = "/home/ucgbgbi/data/eugenio/nC_projects/if_gl/simulations/"
 else:
     sim_dir = sys.argv[2]
 

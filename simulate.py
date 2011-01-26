@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/phd/code/network/trunk/simulate.py
+./nC.sh -python ~/data/eugenio/network/trunk/simulate.py
 """
 import random
 import time
@@ -16,14 +16,14 @@ from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 # simulation control parameters
-sim_path = '/home/eugenio/phd/nC_projects/if_network/'
-project_filename = 'if_network.ncx'
+sim_path = '/home/ucgbgbi/data/eugenio/nC_projects/if_gl/'
+project_filename = 'if_gl.ncx'
 sim_config_name = 'Default Simulation Configuration'
 existing_stim = 'MF_stim'
 nC_seed = 1234
 simulator_seed = random.getrandbits(32)
 active_mf_fraction = 0.3
-sim_duration = 100.0
+sim_duration = 1000.0
 n_stim_patterns = 1
 n_conn_patterns = 1
 bias_values = [-0.005]
@@ -85,6 +85,7 @@ if n_generated_cells > 0:
                 bias_input.setDur(NumberGenerator(sim_duration))
                 #project.elecInputInfo.updateStim(bias_input)
 
+                # regenerate network
                 pm.doGenerate(sim_config_name, nC_seed)
                 while pm.isGenerating():
                     print 'Waiting for the project to be regenerated...'
