@@ -18,7 +18,7 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils import ref_constructor
 
-conf_path = '/home/eugenio/phd/code/network/trunk/' # path containing the <base_name>.conf.txt configuration file
+conf_path = '/home/ucgbgbi/data/eugenio/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
 
 # read the configuration file and extract the variables that will be used
