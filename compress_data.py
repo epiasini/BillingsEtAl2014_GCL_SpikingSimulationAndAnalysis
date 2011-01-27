@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage: compress_data.py base_name [clean_up]"""
+"""Usage: compress_data.py base_name [clean_up={True|False}]"""
 import itertools
 import sys
 import os
