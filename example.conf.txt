@@ -1,0 +1,13 @@
+{
+"project_path" : "/home/eugenio/phd/nC_projects/if_gl/",
+"sim_path" : "/home/eugenio/phd/nC_projects/if_gl/simulations/",
+"project_filename" : "if_gl.ncx",
+"sim_config_name" : "Default Simulation Configuration",
+"nC_seed":1234,
+"active_mf_fraction" : 0.3,
+"sim_duration" : 1000.0,
+"n_stim_patterns" : 1,
+"n_conn_patterns" : 1,
+"bias_values" : [-0.005],
+"ntrials" : 2
+}
