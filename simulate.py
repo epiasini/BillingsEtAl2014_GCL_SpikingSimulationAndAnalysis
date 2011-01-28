@@ -36,7 +36,7 @@ active_mf_fraction = conf['active_mf_fraction'] # fraction of mfs being stimulat
 n_grc_dend = conf['n_grc_dend'] # number of mfs contacted by each grc
 sim_duration = conf['sim_duration'] # simulation duration (in ms)
 n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimulation patterns to try, at fixed mf input sparsity
-bias_values = conf['bias_values'] # list of bias current values (in nA), to be looped over
+bias = -5.e-3 # bias value
 ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
 
 # load project and initialise
@@ -95,48 +95,47 @@ if n_generated_cells > 0:
             stim_pattern_file.write(str(mf) + " ")
         stim_pattern_file.close()                    
 
-        for bias in bias_values:
-            for trial in range(ntrials):
-                simulator_seed = random.getrandbits(32)
-                # innermost loop: determine the simulation reference name
-                sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, bias=bias, trial=trial)
-                last_ref[0] = sim_ref
-                project.simulationParameters.setReference(sim_ref)
+        for trial in range(ntrials):
+            simulator_seed = random.getrandbits(32)
+            # innermost loop: determine the simulation reference name
+            sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, trial=trial)
+            last_ref[0] = sim_ref
+            project.simulationParameters.setReference(sim_ref)
 
-                #Set the thresholding current
-                bias_input = project.elecInputInfo.getStim("bias")
-                bias_input.setAmp(NumberGenerator(bias))
-                bias_input.setDur(NumberGenerator(sim_duration))
-                #project.elecInputInfo.updateStim(bias_input)
+            #Set the thresholding current
+            bias_input = project.elecInputInfo.getStim("bias")
+            bias_input.setAmp(NumberGenerator(bias))
+            bias_input.setDur(NumberGenerator(sim_duration))
+            #project.elecInputInfo.updateStim(bias_input)
 
-                # regenerate network
-                pm.doGenerate(sim_config_name, nC_seed)
-                while pm.isGenerating():
-                    print 'Waiting for the project to be regenerated...'
-                    time.sleep(1)
+            # regenerate network
+            pm.doGenerate(sim_config_name, nC_seed)
+            while pm.isGenerating():
+                print 'Waiting for the project to be regenerated...'
+                time.sleep(1)
 
-                for gr in range(n_gr):
-                    for mf in conn_pattern[gr]:
-                        # create connections, following the current connection pattern
-                        project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
+            for gr in range(n_gr):
+                for mf in conn_pattern[gr]:
+                    # create connections, following the current connection pattern
+                    project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
 
-                for mf in sp:
-                    # create random spiking stimuli on active MFs, following the current stimulus pattern
-                    project.generatedElecInputs.addSingleInput("MF_stim",'RandomSpikeTrain','MFs',mf,0,0,None)
+            for mf in sp:
+                # create random spiking stimuli on active MFs, following the current stimulus pattern
+                project.generatedElecInputs.addSingleInput("MF_stim",'RandomSpikeTrain','MFs',mf,0,0,None)
 
-                # generate and compile neuron files
-                print "Generating NEURON scripts..."
-                project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
-                compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
-                compile_success = compile_process.compileFileWithNeuron(0,0)
-                # simulate
-                if compile_success:
-                    print "...success."
-                    print "Simulating: simulation reference %s" % str(sim_ref)
-                    pm.doRunNeuron(sim_config)
-                    propsfile_path=sim_path+sim_ref+"/simulation.props"
-                    while os.path.exists(propsfile_path)==0:
-                        time.sleep(2)
+            # generate and compile neuron files
+            print "Generating NEURON scripts..."
+            project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
+            compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
+            compile_success = compile_process.compileFileWithNeuron(0,0)
+            # simulate
+            if compile_success:
+                print "...success."
+                print "Simulating: simulation reference %s" % str(sim_ref)
+                pm.doRunNeuron(sim_config)
+                propsfile_path=sim_path+sim_ref+"/simulation.props"
+                while os.path.exists(propsfile_path)==0:
+                    time.sleep(2)
     # the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
     while len(glob.glob(sim_path+last_ref[0]+"/*")) <= 19:
         print ("Waiting for NEURON to finish writing to disk...")
