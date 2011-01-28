@@ -6,7 +6,7 @@
 "nC_seed":1234,
 "active_mf_fraction" : 0.3,
 "sim_duration" : 300.0,
-"n_stim_patterns" : 10,
+"n_stim_patterns" : 100,
 "ntrials" : 10,
 "n_grc_dend" : 4
 }

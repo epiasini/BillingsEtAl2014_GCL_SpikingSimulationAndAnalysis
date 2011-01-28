@@ -7,6 +7,8 @@ import random
 import time
 import sys
 import glob
+import tempfile
+import shutil
 import os.path
 
 from java.lang import System
@@ -21,6 +23,9 @@ from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
 
 conf_path = '/home/ucgbgbi/data/eugenio/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
+
+size = int(sys.argv[2])
+rank = int(sys.argv[3])
 
 # read the configuration file and extract the variables that will be used
 conf_file = open(conf_path+base_name+'.conf.txt')
@@ -39,8 +44,13 @@ n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimula
 bias = -5.e-3 # bias value
 ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
 
+temp_dir = tempfile.mkdtemp(dir=project_path)
+shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
+shutil.copytree(project_path+"morphologies", temp_dir+"/morphologies")
+shutil.copytree(project_path+"cellMechanisms", temp_dir+"/cellMechanisms")
+
 # load project and initialise
-project_file = File(project_path + project_filename)
+project_file = File(temp_dir + "/" + project_filename)
 print ('Loading project from file: ' + project_file.getAbsolutePath() + ", exists: " + str(project_file.exists()))
 pm = ProjectManager(None, None)
 project = pm.loadProject(project_file)
@@ -69,11 +79,21 @@ random.seed(nC_seed)
 conn_pattern = [random.sample(range(n_mf), n_grc_dend) for each in range(n_gr)]
 random.seed()
 
-# generate random stimulation pattern (at fixed sparsity)
+# generate random stimulation patterns (at fixed sparsity)
 active_mf_number = int(round(n_mf*active_mf_fraction))
-stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)]
+stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)] # for convenience, in every process a complete (different!) list of n_stim_patterns patterns is generated. Anyway, different processes make use of disjoint subsets of this list, so this is not a problem.
 
-last_ref = [None] # used to keep track of the last simulation that is run
+patterns_per_chunk = n_stim_patterns/size
+my_stim_lower_bound = rank*patterns_per_chunk
+if rank != size-1:
+    my_stim_upper_bound = (rank + 1) * patterns_per_chunk
+else:
+    my_stim_upper_bound = n_stim_patterns
+
+print (n_stim_patterns, patterns_per_chunk)
+print (rank, my_stim_lower_bound, my_stim_upper_bound)
+
+refs_list = [] # used to keep track of the last simulation that is run
 # delete all existing connections
 project.generatedNetworkConnections.reset()
 # record the connection pattern in a text file
@@ -84,8 +104,10 @@ for gr in range(n_gr):
     conn_pattern_file.write("\n")
 conn_pattern_file.close()
 
+
+
 # main loop
-for spn, sp in enumerate(stim_patterns):
+for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
     # delete all existing stimuli
     project.generatedElecInputs.reset()
     # record the stimulus pattern in a text file
@@ -98,7 +120,7 @@ for spn, sp in enumerate(stim_patterns):
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
         sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, trial=trial)
-        last_ref[0] = sim_ref
+        refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
         #Set the thresholding current
@@ -132,18 +154,26 @@ for spn, sp in enumerate(stim_patterns):
             print "...success."
             print "Simulating: simulation reference %s" % str(sim_ref)
             pm.doRunNeuron(sim_config)
-            propsfile_path=sim_path+sim_ref+"/simulation.props"
+            propsfile_path=temp_dir+"/simulations/"+sim_ref+"/simulation.props"
             while os.path.exists(propsfile_path)==0:
                 time.sleep(2)
 # the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
-while len(glob.glob(sim_path+last_ref[0]+"/*")) <= 19:
+while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*.h5")) < 2:
+    print "checking " + temp_dir+"/simulations/"+refs_list[-1]
     print ("Waiting for NEURON to finish writing to disk...")
     time.sleep(2)
 old_file_number = 0
-while len(glob.glob(sim_path+last_ref[0]+"/*")) > old_file_number:
+while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*")) > old_file_number:
     print ("Waiting for NEURON to finish writing the results of the last simulation...")
     # this is meant to prevent the case in which the script exits while the results in the last folder are being written.
-    old_file_number = len(glob.glob(sim_path+last_ref[0]+"/*"))
+    old_file_number = len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*"))
     time.sleep(1)
 
+for dn in refs_list:
+    if os.path.isdir(sim_path+dn):
+        shutil.rmtree(sim_path+dn)
+    print "Copying "+ temp_dir+"/simulations/"+dn
+    shutil.copytree(temp_dir+"/simulations/"+dn, sim_path+dn)
+
+shutil.rmtree(temp_dir)
 System.exit(0)

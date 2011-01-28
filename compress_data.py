@@ -39,70 +39,24 @@ archive.create_dataset("bias", data=bias)
 
 for spn in range(n_stim_patterns):
     # load stimulus pattern from txt file and save it in the hdf5 file
-    archive.create_group(str(spn))
+    archive.create_group("%03d" % spn)
     stim = np.loadtxt(sim_path+stim_pattern_filename(base_name, spn), dtype=np.int)
-    archive[str(spn)].create_dataset("stim_pattern", data=stim)
+    archive["%03d" % spn].create_dataset("stim_pattern", data=stim)
 
     for trial in range(ntrials):
         print (spn, trial)
-        archive[str(spn)].create_group(str(trial))
+        archive["%03d" % spn].create_group("%02d" % trial)
         sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, trial=trial)
-        target_data_group = archive[str(spn)][str(trial)]
+        target_data_group = archive["%03d" % spn]["%02d" % trial]
 
-        # record mfs spiking output
-        mf_spike_filenames_unsorted = glob.glob(sim_path+sim_ref+"/MFs*")
-        mf_n = len(mf_spike_filenames_unsorted)
+        mf_spike_file = h5py.File(sim_path + sim_ref + "/MFs.SPIKE_min40.h5")
+        target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_min40'])
+        mf_spike_file.close()
 
-        sorting_list = [int(re.findall("[0-9]+", s)[-2]) for s in mf_spike_filenames_unsorted]
-        mf_spike_filenames = [mf_spike_filenames_unsorted[k] for k in [sorting_list.index(x) for x in range(mf_n)]]
-
-        mf_spiketimes_loa = [np.array([-1]) for each in range(mf_n)]
-        # loop over the NEURON output text files
-        for k,fn in [(i,n) for (i,n) in enumerate(mf_spike_filenames) if i in stim]: # there's no use in checkin the output of mfs which weren't connected to any stimulus
-            try:
-                mf_spiketimes_loa[k]= np.loadtxt(fn).flatten()
-            except IOError:
-                pass # in case the selected cell never fires (and the corresponding file is empty)
-        mf_max_spike_n = max([len(x) for x in mf_spiketimes_loa])
-        mf_spiketimes = np.zeros(shape=(mf_n, mf_max_spike_n))
-        mf_spiketimes.fill(-1)
-        for k, st in enumerate(mf_spiketimes_loa):
-            mf_spiketimes[k][:len(st)] = st
-
-        # record grcs spiking output
-        gr_spike_filenames_unsorted = glob.glob(sim_path+sim_ref+"/GrCs*")
-        gr_n = len(gr_spike_filenames_unsorted)
-
-        sorting_list = [int(re.findall("[0-9]+", s)[-2]) for s in gr_spike_filenames_unsorted]
-        gr_spike_filenames = [gr_spike_filenames_unsorted[k] for k in [sorting_list.index(x) for x in range(gr_n)]]
-
-        gr_n = len(gr_spike_filenames)
-        gr_spiketimes_loa = []
-        # loop over the NEURON output text files
-        for fn in gr_spike_filenames:
-            try:
-                gr_spiketimes_loa.append(np.loadtxt(fn).flatten())
-            except IOError:
-                gr_spiketimes_loa.append(np.array([])) # in case the selected cell never fires (and the corresponding file is empty)
-        gr_max_spike_out = max([len(x) for x in gr_spiketimes_loa])
-        gr_spiketimes_out = np.zeros(shape=(gr_n, gr_max_spike_out))
-        gr_spiketimes_out.fill(-1)
-        for k, st in enumerate(gr_spiketimes_loa):
-            gr_spiketimes_out[k][:len(st)] = st
-
-        # find out the input spiketimes for each granule
-        gr_input_loa = [np.sort(np.concatenate([mf_spiketimes[k] for k in conn_pattern[gr]])[np.concatenate([mf_spiketimes[k] for k in conn_pattern[gr]]) != -1]) for gr in range(gr_n)]
-        gr_max_spike_in = max([len(x) for x in gr_input_loa])
-        gr_spiketimes_in = np.zeros(shape=(gr_n, gr_max_spike_in))
-        gr_spiketimes_in.fill(-1)
-        for k, st in enumerate(gr_input_loa):
-            gr_spiketimes_in[k][:len(st)] = st
-
-        # save in the hdf5 file
-        target_data_group.create_dataset("mf_spiketimes", data=mf_spiketimes)
-        target_data_group.create_dataset("gr_spiketimes", data=gr_spiketimes_out)
-        target_data_group.create_dataset("gr_input", data=gr_spiketimes_in)
-
+        grc_spike_file = h5py.File(sim_path + sim_ref + "/GrCs.SPIKE_min40.h5")
+        target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
+        grc_spike_file.close()
+        
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
             shutil.rmtree(sim_path+sim_ref)
