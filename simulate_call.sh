@@ -1,6 +1,6 @@
 #!/bin/bash
 
 cd /home/ucgbgbi/neuroConstruct
-./nC.sh -python /home/ucgbgbi/data/eugenio/network/trunk/simulate.py example
+/usr/bin/time ./nC.sh -python /home/ucgbgbi/data/eugenio/network/trunk/simulate.py example
 
 
