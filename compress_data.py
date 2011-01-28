@@ -32,7 +32,6 @@ ntrials = conf['ntrials']
 # open the hdf5 file 
 archive = h5py.File(sim_path+base_name+'.hdf5')
 
-# main loop over the different trials, bias values, stimulus and connection patterns.
 # load connection pattern from txt file and save it in the hdf5 file
 conn_pattern = np.loadtxt(sim_path+conn_pattern_filename(base_name), dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
@@ -94,7 +93,7 @@ for spn in range(n_stim_patterns):
                 gr_spiketimes_out[k][:len(st)] = st
 
             # find out the input spiketimes for each granule
-            gr_input_loa = [np.sort(np.concatenate([mf_spiketimes[k] for k in conn[gr]])[np.concatenate([mf_spiketimes[k] for k in conn[gr]]) != -1]) for gr in range(gr_n)]
+            gr_input_loa = [np.sort(np.concatenate([mf_spiketimes[k] for k in conn_pattern[gr]])[np.concatenate([mf_spiketimes[k] for k in conn_pattern[gr]]) != -1]) for gr in range(gr_n)]
             gr_max_spike_in = max([len(x) for x in gr_input_loa])
             gr_spiketimes_in = np.zeros(shape=(gr_n, gr_max_spike_in))
             gr_spiketimes_in.fill(-1)
@@ -105,8 +104,6 @@ for spn in range(n_stim_patterns):
             target_data_group.create_dataset("mf_spiketimes", data=mf_spiketimes)
             target_data_group.create_dataset("output", data=gr_spiketimes_out)
             target_data_group.create_dataset("input", data=gr_spiketimes_in)
-
-            #f.close()
 
             # delete NEURON and neuroConstruct simulation files
             if clean_up:

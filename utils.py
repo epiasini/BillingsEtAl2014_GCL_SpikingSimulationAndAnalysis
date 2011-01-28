@@ -3,7 +3,7 @@ def ref_constructor(base_name, stimulus_pattern_index, bias, trial):
     sim_ref = base_name + "_sp" + str(stimulus_pattern_index) + "_b" + str(bias) + "_t" + str(trial)
     return sim_ref
 
-def conn_pattern_filename(base_name, connection_pattern_index):
+def conn_pattern_filename(base_name):
     return base_name+'_conn.txt'
 
 def stim_pattern_filename(base_name, stimulus_pattern_index):
