@@ -5,10 +5,10 @@
 "sim_config_name" : "Default Simulation Configuration",
 "nC_seed":1234,
 "active_mf_fraction" : 0.3,
-"sim_duration" : 100.0,
+"sim_duration" : 300.0,
 "n_stim_patterns" : 2,
-"n_conn_patterns" : 2,
-"bias_values" : [-0.005,-0.01],
+"n_conn_patterns" : 1,
+"bias_values" : [-5.e-3,-1.e-2],
 "ntrials" : 2,
 "n_grc_dend" : 4
 }

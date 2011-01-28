@@ -6,6 +6,7 @@ To be used with something like this:
 import random
 import time
 import sys
+import glob
 import os.path
 
 from java.lang import System
@@ -16,7 +17,7 @@ from ucl.physiol.neuroconstruct.utils import NumberGenerator
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils import ref_constructor
+from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
 
 conf_path = '/home/ucgbgbi/data/eugenio/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
@@ -73,20 +74,34 @@ active_mf_number = int(round(n_mf*active_mf_fraction))
 stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)]
 
 # simulate and record spiketimes
-if n_generated_cells > 0:    
+if n_generated_cells > 0:
+    last_ref = [None] # used to keep track of the last simulation that is run
     for cpn, cp in enumerate(conn_patterns):
         # delete all existing connections
         project.generatedNetworkConnections.reset()
-
+        # record the connection pattern in a text file
+        conn_pattern_file=open(sim_path+conn_pattern_filename(base_name, cpn),"w")
+        for gr in range(n_gr):
+            for mf in cp[gr]:
+                conn_pattern_file.write(str(mf) + " ")
+            conn_pattern_file.write("\n")
+        conn_pattern_file.close()
+                
         for spn, sp in enumerate(stim_patterns):
             # delete all existing stimuli
             project.generatedElecInputs.reset()
+            # record the stimulus pattern in a text file
+            stim_pattern_file=open(sim_path+stim_pattern_filename(base_name, cpn, spn),"w")
+            for mf in sp:
+                stim_pattern_file.write(str(mf) + " ")
+            stim_pattern_file.close()                    
 
             for bias in bias_values:
                 for trial in range(ntrials):
                     simulator_seed = random.getrandbits(32)
                     # innermost loop: determine the simulation reference name
                     sim_ref = ref_constructor(base_name=base_name, connection_pattern_index=cpn, stimulus_pattern_index=spn, bias=bias, trial=trial)
+                    last_ref[0] = sim_ref
                     project.simulationParameters.setReference(sim_ref)
 
                     #Set the thresholding current
@@ -101,21 +116,14 @@ if n_generated_cells > 0:
                         print 'Waiting for the project to be regenerated...'
                         time.sleep(1)
 
-                    conn_pattern_file=open(sim_path+sim_ref+'_conn.txt',"w")
                     for gr in range(n_gr):
                         for mf in cp[gr]:
                             # create connections, following the current connection pattern
                             project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
-                            conn_pattern_file.write(str(mf) + " ")
-                        conn_pattern_file.write("\n")
-                    conn_pattern_file.close()
 
-                    stim_pattern_file=open(sim_path+sim_ref+'_stim.txt',"w")
                     for mf in sp:
                         # create random spiking stimuli on active MFs, following the current stimulus pattern
                         project.generatedElecInputs.addSingleInput("MF_stim",'RandomSpikeTrain','MFs',mf,0,0,None)
-                        stim_pattern_file.write(str(mf) + " ")
-                    stim_pattern_file.close()
 
                     # generate and compile neuron files
                     print "Generating NEURON scripts..."
@@ -130,8 +138,20 @@ if n_generated_cells > 0:
                         propsfile_path=sim_path+sim_ref+"/simulation.props"
                         while os.path.exists(propsfile_path)==0:
                             time.sleep(2)
-                        print("")
+    # the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
+    while len(glob.glob(sim_path+last_ref[0]+"/*")) <= 19:
+        print ("Waiting for NEURON to finish writing to disk...")
+        time.sleep(2)
+    old_file_number = 0
+    while len(glob.glob(sim_path+last_ref[0]+"/*")) > old_file_number:
+        print ("Waiting for NEURON to finish writing the results of the last simulation...")
+        # this is meant to prevent the case in which the script exits while the results in the last folder are being written.
+        old_file_number = len(glob.glob(sim_path+last_ref[0]+"/*"))
+        time.sleep(1)
+    
+
 else:
     print "No cells generated."
+
 
 System.exit(0)
