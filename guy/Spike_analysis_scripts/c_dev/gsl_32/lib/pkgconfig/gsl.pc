@@ -1,0 +1,10 @@
+prefix=/opt/local
+exec_prefix=/opt/local
+libdir=/opt/local/lib
+includedir=/opt/local/include
+
+Name: GSL
+Description: GNU Scientific Library
+Version: 1.13
+Libs: -L/opt/local/lib -lgsl -lgslcblas -lm 
+Cflags: -I/opt/local/include
