@@ -26,7 +26,7 @@ conf_file.close()
 
 sim_path = conf['sim_path']
 n_stim_patterns = conf['n_stim_patterns']
-bias = -5.e-3
+bias = 0.
 ntrials = conf['ntrials']
 
 # open the hdf5 file 
@@ -36,6 +36,10 @@ archive = h5py.File(sim_path+base_name+'.hdf5')
 conn_pattern = np.loadtxt(sim_path+conn_pattern_filename(base_name), dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
 archive.create_dataset("bias", data=bias)
+
+missing_mf_datasets = set()
+missing_gr_datasets = set()
+missing_directories = set()
 
 for spn in range(n_stim_patterns):
     # load stimulus pattern from txt file and save it in the hdf5 file
@@ -49,24 +53,48 @@ for spn in range(n_stim_patterns):
         sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, trial=trial)
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 
-        mf_spike_file = h5py.File(sim_path + sim_ref + "/MFs.SPIKE_min40.h5")
-        target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_min40'])
-        mf_spike_file.close()
-
-        grc_spike_file = h5py.File(sim_path + sim_ref + "/GrCs.SPIKE_min40.h5")
-        target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
-        grc_spike_file.close()
+        try:
+            mf_spike_file = h5py.File(sim_path + sim_ref + "/MFs.SPIKE_min40.h5")
+            try:
+                target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_min40'])
+            except KeyError:
+                print ("MFs: Missing dataset!")
+                missing_mf_datasets.add(spn)
+            mf_spike_file.close()
+        except IOError:
+            print ("Missing directory!")
+            missing_directories.add(spn)
+        
+        try:
+            grc_spike_file = h5py.File(sim_path + sim_ref + "/GrCs.SPIKE_min40.h5")
+            try:
+                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
+            except KeyError:
+                print ("GrCs: Missing dataset!")
+                missing_gr_datasets.add(spn)
+            grc_spike_file.close()
+        except IOError:
+            pass
         
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
-            shutil.rmtree(sim_path+sim_ref)
+            try:
+                shutil.rmtree(sim_path+sim_ref)
+            except OSError:
+                pass
 
     # delete stimulation pattern files
     if clean_up:
         os.remove(sim_path+stim_pattern_filename(base_name, spn))
+
 # delete connection pattern files
 if clean_up:
-    os.remove(sim_path+conn_pattern_filename(base_name))
+        os.remove(sim_path+conn_pattern_filename(base_name))
 
+# remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
+defective_datasets = list(missing_directories.union(missing_mf_datasets, missing_gr_datasets))
+print("Found %d defective datasets, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
+for spn in defective_datasets:
+    del archive['spn']
 
 archive.close()
