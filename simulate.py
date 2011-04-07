@@ -21,7 +21,7 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
 
-conf_path = '/home/ucgbgbi/data/eugenio/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
+conf_path = '/home/ucbtepi/code/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
 
 size = int(sys.argv[2])
@@ -157,6 +157,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             propsfile_path=temp_dir+"/simulations/"+sim_ref+"/simulation.props"
             while os.path.exists(propsfile_path)==0:
                 time.sleep(2)
+
 # the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
 while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*.h5")) < 2:
     print "checking " + temp_dir+"/simulations/"+refs_list[-1]

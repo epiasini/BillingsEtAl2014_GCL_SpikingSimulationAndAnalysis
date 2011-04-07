@@ -1,6 +1,6 @@
 {
-"project_path" : "/home/ucgbgbi/data/eugenio/nC_projects/if_gl/",
-"sim_path" : "/home/ucgbgbi/data/eugenio/nC_projects/if_gl/simulations/",
+"project_path" : "/home/ucbtepi/nC_projects/if_gl/",
+"sim_path" : "/home/ucbtepi/nC_projects/if_gl/simulations/",
 "project_filename" : "if_gl.ncx",
 "sim_config_name" : "Default Simulation Configuration",
 "nC_seed":1234,

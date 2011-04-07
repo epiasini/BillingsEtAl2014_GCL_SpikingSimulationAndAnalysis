@@ -12,7 +12,7 @@ import numpy as np
 
 from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
 
-conf_path = '/home/ucgbgbi/data/eugenio/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
+conf_path = '/home/ucbtepi/code/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Does not permit overwriting an existing hdf5 file (that is, it's not allowed to call this script more than one time with any given base_name, unless the existing hdf5 files are manually renamed or deleted.) (this behaviour could be easily changed).
 if len(sys.argv) < 3:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
@@ -95,6 +95,6 @@ if clean_up:
 defective_datasets = list(missing_directories.union(missing_mf_datasets, missing_gr_datasets))
 print("Found %d defective datasets, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
 for spn in defective_datasets:
-    del archive['spn']
+    del archive["%03d" % spn]
 
 archive.close()
