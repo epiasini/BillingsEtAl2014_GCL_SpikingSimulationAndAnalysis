@@ -5,7 +5,7 @@
 %---------------------------------------------------------
 % User parameters: (NOTE matlab crashes with only 1 chunk for some reason)
 
-time_win=       100;        % Chunk length (ms)
+time_win=       50;        % Chunk length (ms)
 dt=             10;          % Analysis precision (ms) 
 rec_len=        300;       % Observation length (ms)
 tau=            20;         % MvR metric tau (ms)
@@ -19,12 +19,12 @@ path=           '/Users/guybillings/project_net_transforms/data/HClust_test/spar
 basen_inputs=   'm_spikes_hierarchy_test_rep_';
 basen_outputs=  'g_spikes_hierarchy_test_rep_';
 extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
-patts=          50;
-reps=           10;
+%patts=          50;
+%reps=           10;
 
 hdf5_filename = '/home/eugenio/phd/code/network/data/50_b0_f.3.hdf5';
 
-observations=patts*reps;
+%observations=patts*reps;
 
 % %build file table using a cell array
 % ti={};
@@ -43,17 +43,20 @@ observations=patts*reps;
 % end    
 
 fprintf('loading spiketimes\n')
-spikes_in=loadspikes_h5py_compressed(hdf5_filename, 2);
-spikes_ou=loadspikes_h5py_compressed(hdf5_filename, 1);
+[spikes_in, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 2);
+[spikes_ou, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 1);
+
+patts = stim_number;
+reps = trial_number;
+
+observations = patts*reps;
 
 %---------------------------------------------------------
 
-cells_in=size(squeeze(spikes_in(1,:,:)));
-cells_in=cells_in(1);
-cells_ou=size(squeeze(spikes_ou(1,:,:)));
-cells_ou=cells_ou(1);
+cells_in=size(squeeze(spikes_in(1,:,:)), 1);
+cells_ou=size(squeeze(spikes_ou(1,:,:)), 1);
 
-fprintf('allocating memory')
+fprintf('allocating memory\n')
 chunks=floor(rec_len/time_win);
 chunked_data_in=zeros(observations,cells_in,chunks,ceil(time_win/dt));
 chunked_data_ou=zeros(observations,cells_ou,chunks,ceil(time_win/dt));
@@ -64,7 +67,7 @@ conv_data_ou=zeros(observations,cells_ou,chunks,ceil(time_win/dt));
 code_vector_in=zeros(observations,chunks,cells_in*ceil(time_win/dt));
 code_vector_ou=zeros(observations,chunks,cells_ou*ceil(time_win/dt));
 
-fprintf('chunking data')
+fprintf('chunking data\n')
 for o=1:observations
     
     % Chunk the data: Represent spike trains as binary stings
@@ -102,15 +105,11 @@ for chunk=1:chunks
     
     % Evaluate distance between code vectors
     fprintf('calculating distances: ')
-    chunk
-    fprintf('\n')
     in_dist(chunk,:)=pdist(squeeze(code_vector_in(:,chunk,:)));
     ou_dist(chunk,:)=pdist(squeeze(code_vector_ou(:,chunk,:)));
     
     % Generate cluster information
     fprintf('generating clustering information: ')
-    chunk
-    fprintf('\n')
     in_tree(chunk,:,:)=linkage(squeeze(in_dist(chunk,:)),clink);
     ou_tree(chunk,:,:)=linkage(squeeze(ou_dist(chunk,:)),clink);
     
@@ -137,7 +136,7 @@ ps=ones(1,patts)*1/patts;
 % Loop over numbers of clusters and find a decoder in each case using
 % train_s slices of data for training.
 
-test_chunk=4;
+test_chunk=2;
 mi_dec=zeros(1,observations);
 issi_dec=zeros(observations,patts);
 

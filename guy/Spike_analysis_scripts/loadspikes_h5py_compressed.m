@@ -1,9 +1,9 @@
-function [spikes] = loadspikes_h5py_compressed(filename, cell_type_index)
+function [spikes, stim_number, trial_number] = loadspikes_h5py_compressed(filename, cell_type_index)
     
     hinfo = hdf5info(filename);
     
     stim_number = size(hinfo.GroupHierarchy.Groups, 2);
-    trial_number = size(hinfo.GroupHierarchy.Groups(1,1).Groups,2);
+    trial_number = size(hinfo.GroupHierarchy.Groups(1,1).Groups, 2);
     
     
     
@@ -12,9 +12,6 @@ function [spikes] = loadspikes_h5py_compressed(filename, cell_type_index)
     
     for stim=1:stim_number
         for trial=1:trial_number
-            stim
-            trial
-            fprintf('\n');
             grc_spike_number = hinfo.GroupHierarchy.Groups(1,stim).Groups(1,trial).Datasets(1,cell_type_index).Dims(2);
            
             if grc_max_spikes < grc_spike_number;       
