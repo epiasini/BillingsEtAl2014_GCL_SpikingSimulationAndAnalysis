@@ -137,16 +137,16 @@ ps=ones(1,patts)*1/patts;
 % Loop over numbers of clusters and find a decoder in each case using
 % train_s slices of data for training.
 
-test_chunk=4;
+test_chunk=2;
 mi_dec=zeros(1,observations);
 issi_dec=zeros(observations,patts);
 
 fprintf('MI with the decoder')
 for opt_clust=2:observations
 
-    o_clustering=cluster(squeeze(data_tree(test_chunk,:,:)),'maxclust',opt_clust);
+    o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
     [conv_book,spike_book]=symbols(opt_clust,o_clustering,...
-        squeeze(chunked_data(:,:,test_chunk,:)),squeeze(data(:,:,test_chunk,:)));
+        squeeze(chunked_data(:,:,test_chunk,:)),squeeze(data(:,:,train_chunk,:)));
     % slice, treating clusters like chunks
     book_vector=slice(conv_book,smode);
     
