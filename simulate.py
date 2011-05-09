@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/data/eugenio/network/trunk/simulate.py base_name
+./nC.sh -python ~/data/eugenio/network/trunk/simulate.py base_name bias size rank
 """
 import random
 import time
@@ -21,11 +21,15 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
 
+print sys.argv
+
 conf_path = '/home/ucbtepi/code/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
 
-size = int(sys.argv[2])
-rank = int(sys.argv[3])
+bias = float(sys.argv[2]) # bias value (in pA; pay attention, because neuroConstruct wants the value in nA)
+
+size = int(sys.argv[3])
+rank = int(sys.argv[4])
 
 # read the configuration file and extract the variables that will be used
 conf_file = open(conf_path+base_name+'.conf.txt')
@@ -41,7 +45,6 @@ active_mf_fraction = conf['active_mf_fraction'] # fraction of mfs being stimulat
 n_grc_dend = conf['n_grc_dend'] # number of mfs contacted by each grc
 sim_duration = conf['sim_duration'] # simulation duration (in ms)
 n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimulation patterns to try, at fixed mf input sparsity
-bias = 0. # bias value
 ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
 
 temp_dir = tempfile.mkdtemp(dir=project_path)
@@ -97,7 +100,7 @@ refs_list = [] # used to keep track of the last simulation that is run
 # delete all existing connections
 project.generatedNetworkConnections.reset()
 # record the connection pattern in a text file
-conn_pattern_file=open(sim_path+conn_pattern_filename(base_name),"w")
+conn_pattern_file=open(sim_path+conn_pattern_filename(base_name, bias),"w")
 for gr in range(n_gr):
     for mf in conn_pattern[gr]:
         conn_pattern_file.write(str(mf) + " ")
@@ -111,7 +114,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
     # delete all existing stimuli
     project.generatedElecInputs.reset()
     # record the stimulus pattern in a text file
-    stim_pattern_file=open(sim_path+stim_pattern_filename(base_name, spn),"w")
+    stim_pattern_file=open(sim_path+stim_pattern_filename(base_name, spn, bias),"w")
     for mf in sp:
         stim_pattern_file.write(str(mf) + " ")
     stim_pattern_file.close()                    
@@ -119,13 +122,14 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
     for trial in range(ntrials):
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
-        sim_ref = ref_constructor(base_name=base_name, stimulus_pattern_index=spn, trial=trial)
+        sim_ref = ref_constructor(base_name=base_name, bias=bias, stimulus_pattern_index=spn, trial=trial)
         refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
         #Set the thresholding current
+        bias_in_nA = 0.001 * bias
         bias_input = project.elecInputInfo.getStim("bias")
-        bias_input.setAmp(NumberGenerator(bias))
+        bias_input.setAmp(NumberGenerator(bias_in_nA))
         bias_input.setDur(NumberGenerator(sim_duration))
         #project.elecInputInfo.updateStim(bias_input)
 
@@ -173,7 +177,7 @@ while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*")) > old_file_num
 for dn in refs_list:
     if os.path.isdir(sim_path+dn):
         shutil.rmtree(sim_path+dn)
-    print "Copying "+ temp_dir+"/simulations/"+dn
+    print "Copying "+ temp_dir+"/simulations/"+dn + " to " + sim_path+dn
     shutil.copytree(temp_dir+"/simulations/"+dn, sim_path+dn)
 
 shutil.rmtree(temp_dir)
