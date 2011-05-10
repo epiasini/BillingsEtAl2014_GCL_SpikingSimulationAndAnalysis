@@ -22,7 +22,7 @@ extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
 %patts=          50;
 %reps=           10;
 
-hdf5_filename = '/home/eugenio/phd/code/network/data/50_b0_f.3.hdf5';
+hdf5_filename = sprintf('/home/eugenio/phd/code/network/data/50_f.3_b%02d.hdf5',bias);
 
 %observations=patts*reps;
 
@@ -155,7 +155,7 @@ for opt_clust=2:observations
     
 end    
 
- 
+save(sprintf('result_b%02d',bias), 'mi', 'mi_dec') 
 
 
 
