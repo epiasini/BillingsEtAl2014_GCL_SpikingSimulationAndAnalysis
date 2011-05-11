@@ -35,7 +35,7 @@ ntrials = conf['ntrials']
 archive = h5py.File(sim_path+rich_base_name+'.hdf5')
 
 # load connection pattern from txt file and save it in the hdf5 file
-conn_pattern = np.loadtxt(sim_path+conn_pattern_filename(base_name, bias), dtype=np.int)
+conn_pattern = np.loadtxt(sim_path+conn_pattern_filename(base_name), dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
 archive.create_dataset("bias", data=bias)
 
@@ -90,8 +90,8 @@ for spn in range(n_stim_patterns):
         os.remove(sim_path+stim_pattern_filename(base_name, spn, bias))
 
 # delete connection pattern files
-if clean_up:
-        os.remove(sim_path+conn_pattern_filename(base_name, bias))
+#if clean_up:
+#        os.remove(sim_path+conn_pattern_filename(base_name))
 
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
 defective_datasets = list(missing_directories.union(missing_mf_datasets, missing_gr_datasets))

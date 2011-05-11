@@ -77,10 +77,10 @@ n_gr=project.generatedCellPositions.getNumberInCellGroup('GrCs')
 n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
 print "Number of cells generated: " + str(n_generated_cells)
 
-# create connection pattern
-random.seed(nC_seed)
-conn_pattern = [random.sample(range(n_mf), n_grc_dend) for each in range(n_gr)]
-random.seed()
+# load connection pattern
+cpf = open(sim_path+conn_pattern_filename(base_name), "r")
+conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readlines()]
+cpf.close()
 
 # generate random stimulation patterns (at fixed sparsity)
 active_mf_number = int(round(n_mf*active_mf_fraction))
@@ -99,15 +99,6 @@ print (rank, my_stim_lower_bound, my_stim_upper_bound)
 refs_list = [] # used to keep track of the last simulation that is run
 # delete all existing connections
 project.generatedNetworkConnections.reset()
-# record the connection pattern in a text file
-conn_pattern_file=open(sim_path+conn_pattern_filename(base_name, bias),"w")
-for gr in range(n_gr):
-    for mf in conn_pattern[gr]:
-        conn_pattern_file.write(str(mf) + " ")
-    conn_pattern_file.write("\n")
-conn_pattern_file.close()
-
-
 
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:

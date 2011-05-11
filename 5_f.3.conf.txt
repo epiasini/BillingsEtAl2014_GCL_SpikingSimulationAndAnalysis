@@ -1,0 +1,12 @@
+{
+"project_path" : "/home/ucbtepi/nC_projects/if_gl/",
+"sim_path" : "/home/ucbtepi/nC_projects/if_gl/simulations/",
+"project_filename" : "if_gl.ncx",
+"sim_config_name" : "Default Simulation Configuration",
+"nC_seed":1234,
+"active_mf_fraction" : 0.3,
+"sim_duration" : 30.0,
+"n_stim_patterns" : 5,
+"ntrials" : 2,
+"n_grc_dend" : 4,
+}

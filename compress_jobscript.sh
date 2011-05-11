@@ -11,4 +11,4 @@ base_name=$1
 bias=$2
 
 cd /home/ucbtepi/code/network/trunk
-/usr/bin/time /home/ucbtepi/bin/python compress_data.py $base_name $bias
+/usr/bin/time /home/ucbtepi/bin/python compress.py $base_name $bias
