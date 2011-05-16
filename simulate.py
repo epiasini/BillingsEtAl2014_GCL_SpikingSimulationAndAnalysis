@@ -60,10 +60,20 @@ project = pm.loadProject(project_file)
 print 'Loaded project: ' + project.getProjectName()
 
 # generate network
-pm.doGenerate(sim_config_name, nC_seed)
-while pm.isGenerating():
-    print 'Waiting for the project to be generated...'
-    time.sleep(2)
+i = 0
+while True:
+    try:
+        pm.doGenerate(sim_config_name, nC_seed)
+        is_generating = True
+        while pm.isGenerating():        
+            print 'Waiting for the project to be generated...'
+            time.sleep(2)
+        break
+    except java.util.ConcurrentModificationException:
+        i = i + 1
+        print "ConcurrentModificationException raised by nC; retrying network generation."
+        if i>5:
+            raise java.util.ConcurrentModificationException
 
 # load existing simulation configurations and set sim duration and a couple of neuron options
 sim_config = project.simConfigInfo.getSimConfig(sim_config_name)
