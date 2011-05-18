@@ -25,7 +25,7 @@ function [spikes, stim_number, trial_number] = loadspikes_h5py_compressed(filena
     for stim=1:stim_number
         for trial=1:trial_number
             grc_spike_number = hinfo.GroupHierarchy.Groups(1,stim).Groups(1,trial).Datasets(1,cell_type_index).Dims(2);
-            spikes(stim+trial-1, :, 1:grc_spike_number) = hdf5read(hinfo.GroupHierarchy.Groups(1,stim).Groups(1,trial).Datasets(1,cell_type_index));
+            spikes((stim-1)*trial_number+trial, :, 1:grc_spike_number) = hdf5read(hinfo.GroupHierarchy.Groups(1,stim).Groups(1,trial).Datasets(1,cell_type_index));
         end
     end
     
