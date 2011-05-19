@@ -6,10 +6,10 @@ import numpy as np
 
 from utils import conn_pattern_filename
 
-base_name = "50_f.3"
+base_name = "10_f.3"
 size = 10
 
-bias_values = np.unique(np.rint(np.linspace(0,-20,5)).astype(np.int)) #this somewhat complex operation is required to ensure that the bias values are unique integers (usin integers is somewhat of an arbitrary constraint, and the need for a uniqueness check is a consequence of generating the values as floats and then rounding and casting them to integers).
+bias_values = np.unique(np.rint(np.linspace(50,-10,3)).astype(np.int)) #this somewhat complex operation is required to ensure that the bias values are unique integers (using integers is somewhat of an arbitrary constraint, and the need for a uniqueness check is a consequence of generating the values as floats and then rounding and casting them to integers).
 
 # create connection pattern
 n_mf = 230

@@ -132,7 +132,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         bias_input = project.elecInputInfo.getStim("bias")
         bias_input.setAmp(NumberGenerator(bias_in_nA))
         bias_input.setDur(NumberGenerator(sim_duration))
-        #project.elecInputInfo.updateStim(bias_input)
+        project.elecInputInfo.updateStim(bias_input)
 
         # regenerate network
         pm.doGenerate(sim_config_name, nC_seed)
@@ -141,6 +141,8 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             time.sleep(1)
 
         for gr in range(n_gr):
+            # set up thresholding current
+            project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
             for mf in conn_pattern[gr]:
                 # create connections, following the current connection pattern
                 project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
