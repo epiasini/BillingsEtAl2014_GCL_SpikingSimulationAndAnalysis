@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage: compress_data.py base_name bias [clean_up={True|False}]"""
+"""Usage: compress_data.py base_name bias [clean_up={0|1}]"""
 import itertools
 import sys
 import os
@@ -16,10 +16,12 @@ conf_path = '/home/ucbtepi/code/network/trunk/' # (absolute) path containing the
 base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Does not permit overwriting an existing hdf5 file (that is, it's not allowed to call this script more than one time with any given base_name, unless the existing hdf5 files are manually renamed or deleted.) (this behaviour could be easily changed).
 bias = float(sys.argv[2])
 rich_base_name = rich_base_name_constructor(base_name, bias)
+print sys.argv
 if len(sys.argv) < 4:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 else:
-    clean_up = eval(sys.argv[3])
+    print ("Won't clean up useless files at the end.")
+    clean_up = bool(int(sys.argv[3]))
 
 # read the configuration file and extract the variables that will be used
 conf_file = open(conf_path+base_name+'.conf.txt')
@@ -28,7 +30,7 @@ conf_file.close()
 
 sim_path = conf['sim_path']
 n_stim_patterns = conf['n_stim_patterns']
-
+n_gr = conf['gr_number']
 ntrials = conf['ntrials']
 
 # open the hdf5 file 
@@ -69,7 +71,7 @@ for spn, sp in enumerate(stim_patterns):
                 missing_mf_datasets.add(spn)
             mf_spike_file.close()
         except IOError:
-            print ("Missing directory!")
+            print ("Missing directory! (MFs)")
             missing_directories.add(spn)
         
         try:
@@ -77,23 +79,23 @@ for spn, sp in enumerate(stim_patterns):
             try:
                 target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
             except KeyError:
-                print ("GrCs: Missing dataset!")
-                missing_gr_datasets.add(spn)
+                print ("GrCs: Missing/empty dataset!")
+                target_data_group.create_dataset("grc_spiketimes", data=-np.ones(shape=(1,n_gr), dtype=np.float))
             grc_spike_file.close()
         except IOError:
-            pass
+            print ("Missing directory! (GrCs)")
         
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
             try:
                 shutil.rmtree(sim_path+sim_ref)
             except OSError:
-                pass
+                print ("Error while cleaning up NEURON and nC sim files!")
 
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
-defective_datasets = list(missing_directories.union(missing_mf_datasets, missing_gr_datasets))
-if missing_datasets:
-    print("Found %d defective datasets, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
+defective_datasets = list(missing_directories.union(missing_mf_datasets))
+if defective_datasets:
+    print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
     for spn in defective_datasets:
         del archive["%03d" % spn]
 else:
