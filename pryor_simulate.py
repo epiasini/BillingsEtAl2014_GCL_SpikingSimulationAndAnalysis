@@ -4,29 +4,62 @@ import subprocess
 import random
 import numpy as np
 
-from utils import conn_pattern_filename
+from itertools import combinations
 
-base_name = "10_f.3"
+from utils import conn_pattern_filename, stim_pattern_filename
+
+base_name = "10_f.6"
 size = 10
 
-bias_values = np.unique(np.rint(np.linspace(50,-10,3)).astype(np.int)) #this somewhat complex operation is required to ensure that the bias values are unique integers (using integers is somewhat of an arbitrary constraint, and the need for a uniqueness check is a consequence of generating the values as floats and then rounding and casting them to integers).
+conf_path = '/home/ucbtepi/code/network/trunk/'
 
-# create connection pattern
-n_mf = 230
-n_gr = 690
-n_grc_dend = 4
-sim_path = "/home/ucbtepi/nC_projects/if_gl/simulations/"
-random.seed(1234)
+# read the configuration file and extract the variables that will be used
+conf_file = open(conf_path+base_name+'.conf.txt')
+conf = eval(conf_file.read())
+conf_file.close()
+
+n_mf = conf['mf_number']
+n_gr = conf['gr_number']
+n_grc_dend = conf['n_grc_dend']
+active_mf_fraction = conf['active_mf_fraction']
+n_stim_patterns = conf['n_stim_patterns']
+sim_path = conf['sim_path']
+bias_settings = conf['bias_settings']
+
+bias_values = np.unique(np.rint(np.linspace(bias_settings['start'],bias_settings['stop'],bias_settings['num'])).astype(np.int)) #this somewhat complex operation is required to ensure that the bias values are unique integers (using integers is somewhat of an arbitrary constraint, and the need for a uniqueness check is a consequence of generating the values as floats and then rounding and casting them to integers).
+
+# create connection pattern and save it in a text file
 conn_pattern = [random.sample(range(n_mf), n_grc_dend) for each in range(n_gr)]
-random.seed()
-
-# record the connection pattern in a text file
-conn_pattern_file=open(sim_path+conn_pattern_filename(base_name),"w")
+conn_pattern_file = open(sim_path+conn_pattern_filename(base_name),"w")
 for gr in range(n_gr):
     for mf in conn_pattern[gr]:
         conn_pattern_file.write(str(mf) + " ")
     conn_pattern_file.write("\n")
 conn_pattern_file.close()
+
+# generate random stimulation patterns and save them in a text file
+active_mf_number = int(round(n_mf*active_mf_fraction))
+stim_patterns = []
+stim_pattern_file = open(sim_path + stim_pattern_filename(base_name), "w")
+for spn in range(n_stim_patterns):
+    while True:
+        sp = random.sample(range(n_mf), active_mf_number)
+        if sp not in stim_patterns:
+            break
+    stim_patterns.append(sp)
+    for mf in sp:
+        stim_pattern_file.write(str(mf) + " ")
+    stim_pattern_file.write("\n")
+    
+    
+
+stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)]
+
+for sp in stim_patterns:
+    for mf in sp:
+        stim_pattern_file.write(str(mf) + " ")
+    stim_pattern_file.write("\n")
+stim_pattern_file.close()
 
 for bias in bias_values:
     for rank in range(size):

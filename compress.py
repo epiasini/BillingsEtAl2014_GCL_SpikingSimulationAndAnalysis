@@ -39,14 +39,19 @@ conn_pattern = np.loadtxt(sim_path+conn_pattern_filename(base_name), dtype=np.in
 archive.create_dataset("conn_pattern", data=conn_pattern)
 archive.create_dataset("bias", data=bias)
 
+# load the file containing the stimulation patterns
+spf = open(sim_path+stim_pattern_filename(base_name), "r")
+stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
+spf.close()
+
 missing_mf_datasets = set()
 missing_gr_datasets = set()
 missing_directories = set()
 
-for spn in range(n_stim_patterns):
+for spn, sp in enumerate(stim_patterns):
     # load stimulus pattern from txt file and save it in the hdf5 file
     archive.create_group("%03d" % spn)
-    stim = np.loadtxt(sim_path+stim_pattern_filename(base_name, spn, bias), dtype=np.int)
+    stim = np.array(sp, dtype=np.int)
     archive["%03d" % spn].create_dataset("stim_pattern", data=stim)
 
     for trial in range(ntrials):
@@ -85,18 +90,13 @@ for spn in range(n_stim_patterns):
             except OSError:
                 pass
 
-    # delete stimulation pattern files
-    if clean_up:
-        os.remove(sim_path+stim_pattern_filename(base_name, spn, bias))
-
-# delete connection pattern files
-#if clean_up:
-#        os.remove(sim_path+conn_pattern_filename(base_name))
-
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
 defective_datasets = list(missing_directories.union(missing_mf_datasets, missing_gr_datasets))
-print("Found %d defective datasets, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
-for spn in defective_datasets:
-    del archive["%03d" % spn]
-
+if missing_datasets:
+    print("Found %d defective datasets, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
+    for spn in defective_datasets:
+        del archive["%03d" % spn]
+else:
+    print("No missing or corrupted data sets. Everything looks ok.")
+    
 archive.close()

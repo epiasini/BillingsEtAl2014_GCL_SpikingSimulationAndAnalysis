@@ -6,9 +6,9 @@
 % User parameters: (NOTE matlab crashes with only 1 chunk for some reason)
 
 time_win=       50;        % Chunk length (ms)
-dt=             10;          % Analysis precision (ms) 
+dt=             2;          % Analysis precision (ms) 
 rec_len=        300;       % Observation length (ms)
-tau=            20;         % MvR metric tau (ms)
+tau=            5;         % MvR metric tau (ms)
 smode=          't_slice';  % slicing mode, time or space
 clink=          'ward'; % Clustering linkage method
 
@@ -22,7 +22,7 @@ extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
 %patts=          50;
 %reps=           10;
 
-hdf5_filename = sprintf('/home/ucbtepi/code/network/data/50_f.3_b%02d.hdf5',bias)
+hdf5_filename = sprintf('/home/ucbtepi/code/network/data/10_f.6_b%02d.hdf5',bias)
 
 %observations=patts*reps;
 

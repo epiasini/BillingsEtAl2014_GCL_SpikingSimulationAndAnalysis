@@ -8,8 +8,6 @@ def ref_constructor(base_name, bias, stimulus_pattern_index, trial):
 
 def conn_pattern_filename(base_name):
     return "%s_conn.txt" % base_name
-    #return base_name+'_conn.txt'
 
-def stim_pattern_filename(base_name, stimulus_pattern_index, bias):
-    return "%s_stim_%03d.txt" % (rich_base_name_constructor(base_name, bias), stimulus_pattern_index)
-    #return base_name+'_stim_'+str(stimulus_pattern_index)+'.txt'
+def stim_pattern_filename(base_name):
+    return "%s_stim.txt" % base_name

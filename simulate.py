@@ -14,7 +14,7 @@ import os.path
 from java.lang import System
 from java.io import File
 
-from ucl.physiol.neuroconstruct.project import ProjectManager
+from ucl.physiol.neuroconstruct.project import ProjectManager, CellGroupsInfo
 from ucl.physiol.neuroconstruct.utils import NumberGenerator
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
@@ -46,6 +46,8 @@ n_grc_dend = conf['n_grc_dend'] # number of mfs contacted by each grc
 sim_duration = conf['sim_duration'] # simulation duration (in ms)
 n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimulation patterns to try, at fixed mf input sparsity
 ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
+mf_number = conf['mf_number']
+gr_number = conf['gr_number']
 
 temp_dir = tempfile.mkdtemp(dir=project_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
@@ -58,6 +60,13 @@ print ('Loading project from file: ' + project_file.getAbsolutePath() + ", exist
 pm = ProjectManager(None, None)
 project = pm.loadProject(project_file)
 print 'Loaded project: ' + project.getProjectName()
+
+# set network size
+group_info = project.cellGroupsInfo
+mf_pack_adapter = group_info.getCellPackingAdapter('MFs')
+gr_pack_adapter = group_info.getCellPackingAdapter('GrCs')
+mf_pack_adapter.setMaxNumberCells(mf_number)
+gr_pack_adapter.setMaxNumberCells(gr_number)
 
 # generate network
 i = 0
@@ -92,10 +101,12 @@ cpf = open(sim_path+conn_pattern_filename(base_name), "r")
 conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readlines()]
 cpf.close()
 
-# generate random stimulation patterns (at fixed sparsity)
-active_mf_number = int(round(n_mf*active_mf_fraction))
-stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)] # for convenience, in every process a complete (different!) list of n_stim_patterns patterns is generated. Anyway, different processes make use of disjoint subsets of this list, so this is not a problem.
+# load stimulation patterns
+spf = open(sim_path+stim_pattern_filename(base_name), "r")
+stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
+spf.close()
 
+# calculate which patterns are mine to simulate
 patterns_per_chunk = n_stim_patterns/size
 my_stim_lower_bound = rank*patterns_per_chunk
 if rank != size-1:
@@ -107,6 +118,7 @@ print (n_stim_patterns, patterns_per_chunk)
 print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
+
 # delete all existing connections
 project.generatedNetworkConnections.reset()
 
@@ -114,11 +126,6 @@ project.generatedNetworkConnections.reset()
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
     # delete all existing stimuli
     project.generatedElecInputs.reset()
-    # record the stimulus pattern in a text file
-    stim_pattern_file=open(sim_path+stim_pattern_filename(base_name, spn, bias),"w")
-    for mf in sp:
-        stim_pattern_file.write(str(mf) + " ")
-    stim_pattern_file.close()                    
 
     for trial in range(ntrials):
         simulator_seed = random.getrandbits(32)
