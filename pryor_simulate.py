@@ -50,16 +50,6 @@ for spn in range(n_stim_patterns):
     for mf in sp:
         stim_pattern_file.write(str(mf) + " ")
     stim_pattern_file.write("\n")
-    
-    
-
-stim_patterns = [random.sample(range(n_mf), active_mf_number) for each in range (n_stim_patterns)]
-
-for sp in stim_patterns:
-    for mf in sp:
-        stim_pattern_file.write(str(mf) + " ")
-    stim_pattern_file.write("\n")
-stim_pattern_file.close()
 
 for bias in bias_values:
     for rank in range(size):
