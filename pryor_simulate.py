@@ -8,7 +8,7 @@ from itertools import combinations
 
 from utils import conn_pattern_filename, stim_pattern_filename
 
-base_name = "10_f.6"
+base_name = "20_f.5_s1.33"
 size = 10
 
 conf_path = '/home/ucbtepi/code/network/trunk/'
@@ -18,8 +18,9 @@ conf_file = open(conf_path+base_name+'.conf.txt')
 conf = eval(conf_file.read())
 conf_file.close()
 
-n_mf = conf['mf_number']
-n_gr = conf['gr_number']
+network_scale = conf['network_scale']
+grc_mf_ratio = conf['grc_mf_ratio']
+min_mf_number = conf['min_mf_number']
 n_grc_dend = conf['n_grc_dend']
 active_mf_fraction = conf['active_mf_fraction']
 n_stim_patterns = conf['n_stim_patterns']
@@ -27,6 +28,8 @@ sim_path = conf['sim_path']
 bias_settings = conf['bias_settings']
 
 bias_values = np.unique(np.rint(np.linspace(bias_settings['start'],bias_settings['stop'],bias_settings['num'])).astype(np.int)) #this somewhat complex operation is required to ensure that the bias values are unique integers (using integers is somewhat of an arbitrary constraint, and the need for a uniqueness check is a consequence of generating the values as floats and then rounding and casting them to integers).
+n_mf = int(round(min_mf_number * network_scale))
+n_gr = int(round(n_mf * grc_mf_ratio))
 
 # create connection pattern and save it in a text file
 conn_pattern = [random.sample(range(n_mf), n_grc_dend) for each in range(n_gr)]
@@ -43,7 +46,7 @@ stim_patterns = []
 stim_pattern_file = open(sim_path + stim_pattern_filename(base_name), "w")
 for spn in range(n_stim_patterns):
     while True:
-        sp = random.sample(range(n_mf), active_mf_number)
+        sp = sorted(random.sample(range(n_mf), active_mf_number))
         if sp not in stim_patterns:
             break
     stim_patterns.append(sp)

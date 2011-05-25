@@ -22,7 +22,7 @@ extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
 %patts=          50;
 %reps=           10;
 
-hdf5_filename = sprintf('/home/ucbtepi/code/network/data/10_f.6_b%02d.hdf5',bias)
+hdf5_filename = sprintf('/home/ucbtepi/code/network/data/20_f.5_s1.33_b%02d.hdf5',bias)
 
 %observations=patts*reps;
 

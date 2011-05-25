@@ -3,7 +3,7 @@
 import subprocess
 import numpy as np
 
-base_name = "10_f.6"
+base_name = "20_f.5_s1.33"
 
 conf_path = '/home/ucbtepi/code/network/trunk/'
 
@@ -18,4 +18,4 @@ bias_values = np.unique(np.rint(np.linspace(bias_settings['start'],bias_settings
 
 for bias in bias_values:
     print 'pryor_compress.py', base_name, str(bias)
-    subprocess.call(['qsub', '/home/ucbtepi/code/network/trunk/compress_jobscript.sh', base_name, str(bias)])
+    subprocess.call(['qsub', '/home/ucbtepi/code/network/trunk/compress_jobscript.sh', base_name, str(bias), '1'])

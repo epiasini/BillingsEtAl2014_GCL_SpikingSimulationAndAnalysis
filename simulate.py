@@ -46,8 +46,12 @@ n_grc_dend = conf['n_grc_dend'] # number of mfs contacted by each grc
 sim_duration = conf['sim_duration'] # simulation duration (in ms)
 n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimulation patterns to try, at fixed mf input sparsity
 ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
-mf_number = conf['mf_number']
-gr_number = conf['gr_number']
+network_scale = conf['network_scale']
+grc_mf_ratio = conf['grc_mf_ratio']
+min_mf_number = conf['min_mf_number']
+
+mf_number = int(round(min_mf_number * network_scale))
+gr_number = int(round(mf_number * grc_mf_ratio))
 
 temp_dir = tempfile.mkdtemp(dir=project_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)

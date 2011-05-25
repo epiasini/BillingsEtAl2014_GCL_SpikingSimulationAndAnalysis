@@ -20,7 +20,6 @@ print sys.argv
 if len(sys.argv) < 4:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 else:
-    print ("Won't clean up useless files at the end.")
     clean_up = bool(int(sys.argv[3]))
 
 # read the configuration file and extract the variables that will be used
@@ -30,8 +29,13 @@ conf_file.close()
 
 sim_path = conf['sim_path']
 n_stim_patterns = conf['n_stim_patterns']
-n_gr = conf['gr_number']
 ntrials = conf['ntrials']
+network_scale = conf['network_scale']
+grc_mf_ratio = conf['grc_mf_ratio']
+min_mf_number = conf['min_mf_number']
+
+n_mf = int(round(min_mf_number * network_scale))
+n_gr = int(round(n_mf * grc_mf_ratio))
 
 # open the hdf5 file 
 archive = h5py.File(sim_path+rich_base_name+'.hdf5')
@@ -87,6 +91,7 @@ for spn, sp in enumerate(stim_patterns):
         
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
+            print ("Removing everything except the archives.")
             try:
                 shutil.rmtree(sim_path+sim_ref)
             except OSError:
