@@ -7,7 +7,8 @@
 #$ -l s_stack=256M
 #$ -l h_rt=7200
 
-bias=$1
+scale=$1
+bias=$2
 hostname
 cd $HOME/code/network/trunk/guy/Spike_analysis_scripts
-matlab -nojvm -r "bias=$bias;HCluster;exit"
+matlab -nojvm -r "scale=$scale;bias=$bias;HCluster;exit"
