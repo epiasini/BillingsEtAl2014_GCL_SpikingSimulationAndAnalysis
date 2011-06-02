@@ -18,7 +18,6 @@ clink=          'ward'; % Clustering linkage method
 working_dir = sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s%.2f', scale);
 hdf5_filename = sprintf('%s/20_f.5_s%.2f_b%02d.hdf5', working_dir, scale, bias)
 
-
 fprintf('loading spiketimes\n')
 [spikes_in, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 2);
 [spikes_ou, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 1);
@@ -73,8 +72,9 @@ for chunk=1:chunks
     
     % Evaluate distance between code vectors
     fprintf('calculating distances: ')
-    ou_dist(chunk,:)=pdist(squeeze(code_vector_ou(:,chunk,:)));
-    
+    %ou_dist(chunk,:)=pdist(squeeze(code_vector_ou(:,chunk,:)));
+    ou_dist(chunk,:) = multineuron_wrapper(squeeze(conv_data_ou(:,:,chunk,:)));
+
     % Generate cluster information
     fprintf('generating clustering information: ')
     ou_tree(chunk,:,:)=linkage(squeeze(ou_dist(chunk,:)),clink);
