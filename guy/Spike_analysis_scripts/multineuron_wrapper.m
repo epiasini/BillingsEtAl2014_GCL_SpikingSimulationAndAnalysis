@@ -11,13 +11,9 @@ function D = multineuron_wrapper(X)
 
 D = [];
 
-%fprintf(1, '%d/00000', obs*(obs-1)/2);
 for h = 1:obs
     for k = h+1:obs
         fprintf(1, '%d/%d\n', size(D, 2), obs*(obs-1)/2);
         D = [D multineuron_distance(squeeze(X(h,:,:)), squeeze(X(k,:,:)))];
     end
-
-%fprintf(1, '\n');
-    
 end
