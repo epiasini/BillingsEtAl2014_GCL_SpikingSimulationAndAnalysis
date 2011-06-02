@@ -19,6 +19,6 @@ E = delta*delta';
 % angles between vectors in "cell index space"
 weighted_distances = E.*c_matrix;
 
-d = sum(sum(weighted_distances));
+d = sqrt(sum(sum(weighted_distances)));
 
 end

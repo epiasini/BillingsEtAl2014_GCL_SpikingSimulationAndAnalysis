@@ -118,8 +118,14 @@ end
 
 ou_dist_multineuron = multineuron_wrapper(squeeze(conv_data_ou(:,:,2,:)));
 
+figure();
+dist_diff = ou_dist_multineuron/sum(ou_dist_multineuron) - ou_dist(2,:)/sum(ou_dist(2,:));
+plot(dist_diff);
+
 D = squareform(ou_dist(2,:));
+D = D/sum(sum(D));
 Dm = squareform(ou_dist_multineuron);
+Dm = Dm/sum(sum(Dm));
 %F = squareform(in_dist(1,:));
 figure();
 image(D, 'CDataMapping', 'scaled');

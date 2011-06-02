@@ -13,7 +13,7 @@ D = [];
 
 for h = 1:obs
     for k = h+1:obs
-        fprintf(1, '%d/%d\n', size(D, 2), obs*(obs-1)/2);
+        %fprintf(1, '%d/%d\n', size(D, 2), obs*(obs-1)/2);
         D = [D multineuron_distance(squeeze(X(h,:,:)), squeeze(X(k,:,:)))];
     end
 end
