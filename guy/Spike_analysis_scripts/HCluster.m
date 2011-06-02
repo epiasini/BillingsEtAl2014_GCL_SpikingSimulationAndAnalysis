@@ -22,7 +22,7 @@ extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
 %patts=          50;
 %reps=           10;
 
-hdf5_filename = sprintf('/home/ucbtepi/code/network/data/20_f.5_s1.33_b%02d.hdf5',bias)
+hdf5_filename = sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s1.66/20_f.5_s1.66_b%02d.hdf5',bias)
 
 %observations=patts*reps;
 
@@ -124,10 +124,10 @@ stimuli=stim_index(reps,observations);
 % (for a single slice here - could also find average over training slices.
 % This quantifies how well the decoder works on the training data
 fprintf('mutual information with clustering\n')
-data_tree=in_tree;
-chunked_data=chunked_data_in;
-data=conv_data_in;
-vector=code_vector_in;
+data_tree=ou_tree;
+chunked_data=chunked_data_ou;
+data=conv_data_ou;
+vector=code_vector_ou;
 
 train_chunk=3;
 ps=ones(1,patts)*1/patts;
