@@ -37,8 +37,6 @@ chunked_data_ou=zeros(observations,cells_ou,chunks,ceil(time_win/dt));
 
 conv_data_ou=zeros(observations,cells_ou,chunks,ceil(time_win/dt));
 
-code_vector_ou=zeros(observations,chunks,cells_ou*ceil(time_win/dt));
-
 fprintf('chunking data\n')
 for o=1:observations
     
@@ -53,12 +51,6 @@ for o=1:observations
    
     conv_data_ou(o,:,:,:)=exp_conv(squeeze(chunked_data_ou(o,:,:,:)),dt,tau);
     
-    % Slice the data into a single vector for creating of distance matrix
-    % matrix having 'observations' rows and 'sources'*'ceil(time_win/dt)'
-    % columns
-    
-    code_vector_ou(o,:,:)=slice(squeeze(conv_data_ou(o,:,:,:)),smode);
-    
 end
 
 % Perform hierachical clustering on
@@ -70,9 +62,8 @@ ou_tree=zeros(chunks,observations-1,3);
 
 for chunk=1:chunks
     
-    % Evaluate distance between code vectors
+    % Evaluate distance between output signals
     fprintf('calculating distances: ')
-    %ou_dist(chunk,:)=pdist(squeeze(code_vector_ou(:,chunk,:)));
     ou_dist(chunk,:) = multineuron_wrapper(squeeze(conv_data_ou(:,:,chunk,:)));
 
     % Generate cluster information
@@ -93,7 +84,6 @@ fprintf('mutual information with clustering\n')
 data_tree=ou_tree;
 chunked_data=chunked_data_ou;
 data=conv_data_ou;
-vector=code_vector_ou;
 
 train_chunk=3;
 ps=ones(1,patts)*1/patts;
@@ -108,16 +98,14 @@ issi_dec=zeros(observations,patts);
 
 fprintf('MI with the decoder')
 for opt_clust=2:observations
-
+    opt_clust
+    % create codebook by calculating cluster centers
     o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
     [conv_book,spike_book]=symbols(opt_clust,o_clustering,...
         squeeze(chunked_data(:,:,test_chunk,:)),squeeze(data(:,:,train_chunk,:)));
-    % slice, treating clusters like chunks
-    book_vector=slice(conv_book,smode);
     
     % Recalculate mean information retrieval using the unseen data
-
-    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=info_decode(observations,ps,stimuli,book_vector,squeeze(vector(:,test_chunk,:)));
+    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)));
     
 end    
 
