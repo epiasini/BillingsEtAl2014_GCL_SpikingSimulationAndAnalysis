@@ -22,7 +22,8 @@ extn=           '_pin0.1_bias-0.005_2010-04-12.16-49-55.dat';
 %patts=          50;
 %reps=           10;
 
-hdf5_filename = sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s1.00/20_f.5_s1.00_b%02d.hdf5',bias);
+working_dir = sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s%.2f', scale);
+hdf5_filename = sprintf('%s/20_f.5_s%.2f_b%02d.hdf5',working_dir, scale, bias);
 
 %observations=patts*reps;
 
@@ -109,29 +110,45 @@ for chunk=1:chunks
      in_dist(chunk,:)=pdist(squeeze(code_vector_in(:,chunk,:)));
      ou_dist(chunk,:)=pdist(squeeze(code_vector_ou(:,chunk,:)));
 %     
-%     % Generate cluster information
+     % Generate cluster information
 %     fprintf('generating clustering information: \n')
 %     in_tree(chunk,:,:)=linkage(squeeze(in_dist(chunk,:)),clink);
 %     ou_tree(chunk,:,:)=linkage(squeeze(ou_dist(chunk,:)),clink);
-%     
+     
 end
 
 ou_dist_multineuron = multineuron_wrapper(squeeze(conv_data_ou(:,:,2,:)));
 
-figure();
-dist_diff = ou_dist_multineuron/sum(ou_dist_multineuron) - ou_dist(2,:)/sum(ou_dist(2,:));
-plot(dist_diff);
+% cluster
+ou_tree = linkage(squeeze(ou_dist(2,:)),clink);
+%in_tree = linkage(squeeze(in_dist(2,:)));
+ou_tree_multineuron = linkage(ou_dist_multineuron,clink);
+figure()
+dendrogram(ou_tree, 0)
+figname = sprintf('%s/dendrogram_s%.2f_b%.2f_concat.png', working_dir, scale, bias)
+saveas(gcf, figname)
+close(gcf)
 
-D = squareform(ou_dist(2,:));
-D = D/sum(sum(D));
-Dm = squareform(ou_dist_multineuron);
-Dm = Dm/sum(sum(Dm));
-%F = squareform(in_dist(1,:));
-figure();
-image(D, 'CDataMapping', 'scaled');
-colormap('gray')
-colorbar
-figure();
-image(Dm, 'CDataMapping', 'scaled');
-colormap('gray')
-colorbar
+figure()
+dendrogram(ou_tree_multineuron, 0)
+figname = sprintf('%s/dendrogram_s%.2f_b%.2f_c%.2f.png', working_dir, scale, bias, mixing)
+saveas(gcf, figname)
+close(gcf)
+
+% figure();
+% dist_diff = ou_dist_multineuron/sum(ou_dist_multineuron) - ou_dist(2,:)/sum(ou_dist(2,:));
+% plot(dist_diff);
+% 
+% D = squareform(ou_dist(2,:));
+% D = D/sum(sum(D));
+% Dm = squareform(ou_dist_multineuron);
+% Dm = Dm/sum(sum(Dm));
+% %F = squareform(in_dist(1,:));
+% figure();
+% image(D, 'CDataMapping', 'scaled');
+% colormap('gray')
+% colorbar
+% figure();
+% image(Dm, 'CDataMapping', 'scaled');
+% colormap('gray')
+% colorbar
