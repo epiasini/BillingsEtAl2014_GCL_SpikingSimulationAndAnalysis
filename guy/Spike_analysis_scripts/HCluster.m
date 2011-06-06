@@ -97,17 +97,39 @@ mi_dec=zeros(1,observations);
 issi_dec=zeros(observations,patts);
 
 fprintf('MI with the decoder')
-for opt_clust=2:observations
+% prellocate space for distance matrix and its mask. Initialise mask
+distance_matrix = zeros(observations, observations+observations-1);
+relevant_columns = zeros(1, observations+observations-1);
+
+for opt_clust=observations:-1:1
     opt_clust
     % create codebook by calculating cluster centers
     o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
     [conv_book,spike_book]=symbols(opt_clust,o_clustering,...
         squeeze(chunked_data(:,:,test_chunk,:)),squeeze(data(:,:,train_chunk,:)));
     
-    % Recalculate mean information retrieval using the unseen data
-    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)));
+    % prepare matrix of distances between observations and codewords
+    clust_index = observations+(observations - opt_clust);
+    if opt_clust==observations
+        for observation=1:observations
+            for clust=1:opt_clust
+                distance_matrix(observation,clust) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,clust,:)));
+            end
+        end
+        relevant_columns(1:observations) = 1;
+    else
+        for observation=1:observations
+            distance_matrix(observation,clust_index) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,opt_clust,:)));
+        end
+        joined = squeeze(data_tree(train_chunk,opt_clust,1:2));
+        relevant_columns(joined) = 0; % ignore clusters that don't exist anymore
+        relevant_columns(clust_index) = 1; % take into account the new cluster
+    end
     
-end    
+    % Recalculate mean information retrieval using the unseen data
+    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_columns)));
+    
+end
 
 out_filename = sprintf('%s/result_b%02d', working_dir, bias)
 save(out_filename, 'mi', 'mi_dec') 
