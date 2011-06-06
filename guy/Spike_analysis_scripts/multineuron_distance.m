@@ -21,4 +21,8 @@ weighted_distances = E.*c_matrix;
 
 d = sqrt(sum(sum(weighted_distances)));
 
+if ~isreal(d)
+    d = 0;
+end
+
 end
