@@ -4,11 +4,17 @@
 "project_filename" : "if_gl.ncx",
 "sim_config_name" : "Default Simulation Configuration",
 "nC_seed":1234,
-"active_mf_fraction" : 0.3,
+"active_mf_fraction" : 0.5,
 "sim_duration" : 300.0,
-"n_stim_patterns" : 50,
-"ntrials" : 10,
+"n_stim_patterns" : 20,
+"ntrials" : 20,
 "n_grc_dend" : 4,
-"mf_number" : 4,
-"gr_number" : 14
+"network_scale" : 1.66,
+"min_mf_number" : 6,
+"grc_mf_ratio" : 3.,
+"bias_settings" : {
+'start' : 20,
+'stop' : -20,
+'num' : 5
+}
 }
