@@ -20,7 +20,7 @@ pr0=1/observations;
 % alphabet is now calculated by the decoder, not by the 
 % clustering algorithm.
 %alphabet=decodeFST(observations,clusters,book_vector,data_vector,bdims(2),0);
-alphabet=multineuron_decode(observations,clusters,conv_book,conv_data, distance_matrix);
+alphabet=multineuron_decode(observations,clusters, distance_matrix);
 mi=mutual_info(clusters,alphabet,pr0,ps,stimuli);
 issi=stim_spec(clusters,alphabet,pr0,ps,stimuli); 
 

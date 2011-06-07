@@ -1,7 +1,7 @@
 % function to perform decoding of inputs using the
 % designated set of clusters.
 
-function [alphabet]=multineuron_decode(observations,clusters,conv_book,conv_data, distance_matrix)
+function [alphabet]=multineuron_decode(observations,clusters, distance_matrix)
 
 alphabet=zeros(1,observations);
 mindist = min(distance_matrix,[],2);
