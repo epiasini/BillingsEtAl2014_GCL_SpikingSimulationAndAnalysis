@@ -18,8 +18,13 @@ for stim=1:stims
 end
 pr=zeros(1,clusters);
 for cluster=1:clusters
-    
-    num_r=max(size(find(alphabet==cluster)));
-    pr(cluster)=num_r*pr0;
+    occurrences = find(alphabet==cluster);
+    if ~isempty(occurrences)
+        num_r=max(size(occurrences));
+        pr(cluster)=num_r*pr0;
+    else
+        % in this case, size(occurrences) would be [1 0]...
+        pr(cluster) = 0;
+    end
      
 end  
