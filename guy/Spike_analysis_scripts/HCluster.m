@@ -121,7 +121,7 @@ for opt_clust=observations:-1:1
         for observation=1:observations
             distance_matrix(observation,clust_index) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,opt_clust,:)));
         end
-        joined = squeeze(data_tree(train_chunk,opt_clust,1:2));
+        joined = squeeze(data_tree(train_chunk,observations-opt_clust,1:2));
         relevant_columns(joined) = 0; % ignore clusters that don't exist anymore
         relevant_columns(clust_index) = 1; % take into account the new cluster
     end
