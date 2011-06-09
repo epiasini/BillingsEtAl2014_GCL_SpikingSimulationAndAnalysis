@@ -13,7 +13,7 @@ for scale = scale_values
         legend('20', '10', '0', '-10', '-20', '20_{dec}', '10_{dec}', '0_{dec}', '-10_{dec}', '-20_{dec}', 'Location', 'SouthEast')
         lim = ylim;
         line([20,20], [0, lim(2)], 'Color', 'r')
-        saveas(f, sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s%.2f/c%.2f/mi.png', scale, mixing))
+        saveas(f, sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s%.2f/c%.2f/mi_s%.2f_c%.2f.png', scale, mixing, scale, mixing))
         close(gcf)
     end
 end

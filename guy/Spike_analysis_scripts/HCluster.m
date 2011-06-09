@@ -106,7 +106,7 @@ for opt_clust=observations:-1:1
     % create codebook by calculating cluster centers
     o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
     [conv_book,spike_book]=symbols(opt_clust,o_clustering,...
-        squeeze(chunked_data(:,:,test_chunk,:)),squeeze(data(:,:,train_chunk,:)));
+        squeeze(chunked_data(:,:,train_chunk,:)),squeeze(data(:,:,train_chunk,:)));
     
     % prepare matrix of distances between observations and codewords
     clust_index = observations+(observations - opt_clust);
