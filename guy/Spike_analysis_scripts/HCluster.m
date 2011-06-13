@@ -99,35 +99,42 @@ issi_dec=zeros(observations,patts);
 fprintf('MI with the decoder')
 % prellocate space for distance matrix and its mask. Initialise mask
 distance_matrix = zeros(observations, observations+observations-1);
-relevant_columns = zeros(1, observations+observations-1);
+relevant_codewords = zeros(1, observations+observations-1);
 
 for opt_clust=observations:-1:1
     opt_clust
+
+    % associate by hand each observation with its cluster (the "cluster" function in matlab seems to scramble cluster indexes at each step of the hierarchical procedure), and decide which cluster/codeword indexes are "relevant" at this stage.
+    if opt_clust==observations
+        o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
+        relevant_codewords(1:observations) = 1;
+    else
+        clust_index = observations+(observations - opt_clust);
+        joined = squeeze(data_tree(train_chunk,observations-opt_clust,1:2));
+        relevant_codewords(joined) = 0; % ignore clusters that don't exist anymore
+        relevant_codewords(clust_index) = 1; % take into account the new cluster 
+        o_clustering(find(o_clustering==joined(1) | o_clustering==joined(2))) = clust_index;
+    end
+
     % create codebook by calculating cluster centers
-    o_clustering=cluster(squeeze(data_tree(train_chunk,:,:)),'maxclust',opt_clust);
-    [conv_book,spike_book]=symbols(opt_clust,o_clustering,...
+    [conv_book,spike_book]=symbols(relevant_codewords,o_clustering,...
         squeeze(chunked_data(:,:,train_chunk,:)),squeeze(data(:,:,train_chunk,:)));
     
     % prepare matrix of distances between observations and codewords
-    clust_index = observations+(observations - opt_clust);
     if opt_clust==observations
         for observation=1:observations
             for clust=1:opt_clust
                 distance_matrix(observation,clust) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,clust,:)));
             end
         end
-        relevant_columns(1:observations) = 1;
     else
         for observation=1:observations
-            distance_matrix(observation,clust_index) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,opt_clust,:)));
+            distance_matrix(observation,clust_index) =  multineuron_distance(squeeze(data(observation,:,test_chunk,:)), squeeze(conv_book(:,clust_index,:)));
         end
-        joined = squeeze(data_tree(train_chunk,observations-opt_clust,1:2));
-        relevant_columns(joined) = 0; % ignore clusters that don't exist anymore
-        relevant_columns(clust_index) = 1; % take into account the new cluster
     end
     
     % Recalculate mean information retrieval using the unseen data
-    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_columns)));
+    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_codewords)));
     
 end
 
