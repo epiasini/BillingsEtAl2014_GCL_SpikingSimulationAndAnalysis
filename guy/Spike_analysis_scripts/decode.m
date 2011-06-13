@@ -12,7 +12,7 @@ for observation=1:observations
     md=find(dist==min(dist));
     num_mins=max(size(md));
     if num_mins>1
-        alphabet(observation)=round(rand*(num_mins-1))+1;
+        alphabet(observation)=md(round(rand*(num_mins-1))+1);
     else
         alphabet(observation)=md;
     end        
