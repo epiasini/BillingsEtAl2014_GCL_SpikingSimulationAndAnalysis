@@ -100,6 +100,7 @@ fprintf('MI with the decoder')
 % prellocate space for distance matrix and its mask. Initialise mask
 distance_matrix = zeros(observations, observations+observations-1);
 relevant_codewords = zeros(1, observations+observations-1);
+separation = zeros(1,observations);
 
 for opt_clust=observations:-1:1
     opt_clust
@@ -114,8 +115,10 @@ for opt_clust=observations:-1:1
         relevant_codewords(joined) = 0; % ignore clusters that don't exist anymore
         relevant_codewords(clust_index) = 1; % take into account the new cluster 
         o_clustering(find(o_clustering==joined(1) | o_clustering==joined(2))) = clust_index;
+        % record cluster separation = 1/precision
+        separation(opt_clust) = data_tree(train_chunk, observations-opt_clust, 3);
     end
-
+    
     % create codebook by calculating cluster centers
     [conv_book,spike_book]=symbols(relevant_codewords,o_clustering,...
         squeeze(chunked_data(:,:,train_chunk,:)),squeeze(data(:,:,train_chunk,:)));
@@ -138,8 +141,12 @@ for opt_clust=observations:-1:1
     
 end
 
+% compute mi/precision = mi*separation, both from the 'direct' mi and from mi_dec
+mi_prec = mi(:,2).*separation(2:end)';
+mi_dec_prec = mi_dec.*separation;
+
 out_filename = sprintf('%s/result_b%02d', working_dir, bias)
-save(out_filename, 'mi', 'mi_dec') 
+save(out_filename, 'mi', 'mi_dec', 'mi_prec', 'mi_dec_prec', 'separation'); 
 
 
 
