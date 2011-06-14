@@ -136,6 +136,9 @@ for opt_clust=observations:-1:1
         end
     end
     
+    % (uncomment this to test with random cluster assignment)
+    %distance_matrix = distance_matrix(:,randperm(observations+observations-1));
+    
     % Recalculate mean information retrieval using the unseen data
     [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_codewords)));
     
