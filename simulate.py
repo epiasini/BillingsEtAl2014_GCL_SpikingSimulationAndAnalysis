@@ -77,7 +77,6 @@ i = 0
 while True:
     try:
         pm.doGenerate(sim_config_name, nC_seed)
-        is_generating = True
         while pm.isGenerating():        
             print 'Waiting for the project to be generated...'
             time.sleep(2)
@@ -146,11 +145,19 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         project.elecInputInfo.updateStim(bias_input)
 
         # regenerate network
-        pm.doGenerate(sim_config_name, nC_seed)
-        while pm.isGenerating():
-            print 'Waiting for the project to be regenerated...'
-            time.sleep(1)
-
+        while True:
+            try:
+                pm.doGenerate(sim_config_name, nC_seed)
+                while pm.isGenerating():        
+                    print 'Waiting for the project to be regenerated...'
+                    time.sleep(1)
+                break
+            except java.util.ConcurrentModificationException:
+                i = i + 1
+                print "ConcurrentModificationException raised by nC; retrying network generation."
+                if i>5:
+                    raise java.util.ConcurrentModificationException
+                
         for gr in range(n_gr):
             # set up thresholding current
             project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
