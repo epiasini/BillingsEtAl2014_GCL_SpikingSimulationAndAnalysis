@@ -3,7 +3,7 @@
 import subprocess
 import numpy as np
 
-base_name = "20_f.5_s1.33"
+base_name = "20_50_d4_f.5_s1.66"
 
 conf_path = '/home/ucbtepi/code/network/trunk/'
 

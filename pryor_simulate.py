@@ -8,7 +8,7 @@ from itertools import combinations
 
 from utils import conn_pattern_filename, stim_pattern_filename
 
-base_name = "20_f.5_s1.33"
+base_name = "20_50_d4_f.5_s1.66"
 size = 10
 
 conf_path = '/home/ucbtepi/code/network/trunk/'

@@ -4,7 +4,7 @@ function d = multineuron_distance(p, q)
 
 [cells, timepoints] = size(p); 
 
-c = 1;
+c = 0;
 c_matrix = ones(cells);
 c_matrix(~eye(size(c_matrix))) = c;
 

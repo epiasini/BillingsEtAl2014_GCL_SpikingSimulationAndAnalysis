@@ -179,8 +179,8 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             print "...success."
             print "Simulating: simulation reference %s" % str(sim_ref)
             pm.doRunNeuron(sim_config)
-            propsfile_path=temp_dir+"/simulations/"+sim_ref+"/simulation.props"
-            while os.path.exists(propsfile_path)==0:
+            timefile_path=temp_dir+"/simulations/"+sim_ref+"/time.dat"
+            while os.path.exists(timefile_path)==0:
                 time.sleep(2)
 
 # the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
