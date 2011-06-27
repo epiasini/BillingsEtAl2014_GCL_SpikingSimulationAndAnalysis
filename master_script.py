@@ -37,15 +37,15 @@ n_trials = 50
 min_mf_number = 6
 grc_mf_ratio = 3.
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [3]
-network_scale_range = [1.00, 1.33, 1.66]
-active_mf_fraction_range = [0.4, 0.5]
+n_grc_dend_range = [4]
+network_scale_range = [1.66]
+active_mf_fraction_range = [0.5]
 bias_range = [20., 10., 0., -10., -20.]
 #++++++++++++++++++++++++++
 
 ###testing
-n_stim_patterns = 10
-n_trials = 15
+n_stim_patterns = 20
+n_trials = 50
 
 ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range]
 parameter_space = itertools.product(*ranges)
@@ -109,31 +109,56 @@ for sim_dict in master_list:
     # submit simulations to the queue
     data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if not os.path.exists(data_archive_path):
-        sim_dict['jids'] = []
+        sim_dict['sim_jids'] = []
         sim_dict['sim_qsub_handles'] = []
         for rank in range(size_per_simulation):
             popen_command = itertools.chain(['qsub', 'simulate_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(size_per_simulation), str(rank)])
             handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
             sim_dict['sim_qsub_handles'].append(handle)
             jid = int((handle.communicate()[0]).split(' ')[2])
-            sim_dict['jids'].append(jid)
+            sim_dict['sim_jids'].append(jid)
             initial_jobs.add(jid)
 
 active_jobs = set()
 waiting_jobs = set(initial_jobs)
 
-#print('Job IDs are: %s' % str(jids))
-
 if any(h.returncode!=0 for s in master_list for h in s['sim_qsub_handles']):
     raise QueueError()
 
 while active_jobs or waiting_jobs:
-    #print([(s['params'], [j for j in s['jids'] if j in active_jobs]) for s in master_list if any(j in active_jobs for j in s['jids'])])
     time.sleep(10)
     active_jobs, waiting_jobs = update_job_sets(initial_jobs)
     print(active_jobs)
     print(waiting_jobs)
 
-print("Jobs seem to be completed.")
-    
-    
+
+#############################
+##====COMPRESSION STAGE====##
+#############################
+print("Simulation stage complete. Entering compression stage.")
+clean_up_after_compress = 1
+initial_compr_jobs = set()
+
+for sim_dict in master_list:
+    data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+    if not os.path.exists(data_archive_path):
+        popen_command = itertools.chain(['qsub', 'compress_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(clean_up_after_compress)])
+        handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        sim_dict['compr_qsub_handle'] = handle
+        jid = int((handle.communicate()[0]).split(' ')[2])
+        sim_dict['compr_jid'] = jid
+        initial_compr_jobs.add(jid)
+
+active_compr_jobs = set()
+waiting_compr_jobs = set(initial_compr_jobs)
+
+if any(s['compr_qsub_handle'].returncode!=0 for s in master_list):
+    raise QueueError()
+
+while active_compr_jobs or waiting_compr_jobs:
+    time.sleep(10)
+    active_compr_jobs, waiting_compr_jobs = update_job_sets(initial_compr_jobs)
+    print(active_compr_jobs)
+    print(waiting_compr_jobs)
+
+print("Compression stage seems to be complete.")

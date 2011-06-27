@@ -1,8 +1,7 @@
-
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/data/eugenio/network/trunk/simulate.py base_name bias size rank
+./nC.sh -python ~/data/eugenio/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias n_stim_patterns n_trials size rank
 """
 import random
 import time
@@ -186,9 +185,6 @@ while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*")) > old_file_num
     # this is meant to prevent the case in which the script exits while the results in the last folder are being written.
     old_file_number = len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*"))
     time.sleep(1)
-
-
-#todo: copy directly to data dir
 
 for dn in refs_list:
     destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + dn
