@@ -7,7 +7,7 @@ import itertools
 from math import factorial
 from subprocess import Popen, PIPE
 
-from utils import data_folder_path_ctor, data_archive_path_ctor, conn_pattern_filename, stim_pattern_filename
+from utils import data_folder_path_ctor, data_archive_path_ctor, conn_pattern_filename, stim_pattern_filename, an_result_path_ctor
 
 class QueueError(Exception):
     pass
@@ -19,11 +19,19 @@ class NetworkSizeError(Exception):
         return repr(self.value)
 
 def update_job_sets(initial_jobs_set):
+    # todo: move this function to a separate module, that eventually will become a process manager module
+    stat = Popen(['qstat'], stdout=PIPE, stderr=PIPE).communicate()[0]
     stat_running = Popen(['qstat', '-s', 'r'], stdout=PIPE, stderr=PIPE).communicate()[0]
     stat_waiting = Popen(['qstat', '-s', 'p'], stdout=PIPE, stderr=PIPE).communicate()[0]
     active_jobs_set = set([j for j in initial_jobs_set if str(j) in stat_running])
     waiting_jobs_set = set([j for j in initial_jobs_set if str(j) in stat_waiting])
-    return active_jobs_set, waiting_jobs_set
+    other_jobs_set = set([j for j in initial_jobs_set if str(j) in stat and j not in active_jobs_set.union(waiting_jobs_set)])
+    return active_jobs_set, waiting_jobs_set, other_jobs_set
+
+#++++general controls+++++
+simulate = True
+compress = True
+analyse = True
 
 #+++++fixed parameters+++++++
 project_path = '/home/ucbtepi/nC_projects/if_gl' # hardcoded in simulate.py
@@ -32,20 +40,16 @@ project_filename = 'if_gl.ncx' # hardcoded in simulate.py
 sim_config_name = 'Default Simulation Configuration' # hardcoded in simulate.py
 nC_seed = 1234 # hardcoded in simulate.py
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 20
-n_trials = 50
+n_stim_patterns = 10
+n_trials = 15
 min_mf_number = 6
 grc_mf_ratio = 3.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.66]
+network_scale_range = [1.33]
 active_mf_fraction_range = [0.5]
 bias_range = [20., 10., 0., -10., -20.]
 #++++++++++++++++++++++++++
-
-###testing
-n_stim_patterns = 20
-n_trials = 50
 
 ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range]
 parameter_space = itertools.product(*ranges)
@@ -63,6 +67,10 @@ if n_stim_patterns > max_patterns_encoded:
     raise NetworkSizeError("Network size inferior limit too small for chosen number of patterns! %d MFs can't represent %d patterns for at least one of the requested sparsity values." % (min_nmf, n_stim_patterns))
 
 master_list = [{'params': parameter_point} for parameter_point in parameter_space]
+
+############################
+##====SIMULATION STAGE====##
+############################
 initial_jobs = set()
 
 for sim_dict in master_list:
@@ -121,19 +129,20 @@ for sim_dict in master_list:
 
 active_jobs = set()
 waiting_jobs = set(initial_jobs)
+other_jobs = set()
 
-if any(h.returncode!=0 for s in master_list for h in s['sim_qsub_handles']):
+if any(h.returncode!=0 for s in master_list if 'sim_qsub_handles' in s.keys() for h in s['sim_qsub_handles']):
     raise QueueError()
 
-while active_jobs or waiting_jobs:
+while active_jobs or waiting_jobs or other_jobs: # I could just use a 'jobs' set...
     time.sleep(10)
-    active_jobs, waiting_jobs = update_job_sets(initial_jobs)
+    active_jobs, waiting_jobs, other_jobs = update_job_sets(initial_jobs)
     print(active_jobs)
     print(waiting_jobs)
 
 
 #############################
-##====COMPRESSION STAGE====##
+##====COMPRESSION STAGE====## TODO: avoid code replication by writing a generic "process manager"
 #############################
 print("Simulation stage complete. Entering compression stage.")
 clean_up_after_compress = 1
@@ -151,14 +160,48 @@ for sim_dict in master_list:
 
 active_compr_jobs = set()
 waiting_compr_jobs = set(initial_compr_jobs)
+other_compr_jobs = set()
 
-if any(s['compr_qsub_handle'].returncode!=0 for s in master_list):
+if any(s['compr_qsub_handle'].returncode!=0 for s in master_list if 'compr_qsub_handle' in s.keys()):
     raise QueueError()
 
-while active_compr_jobs or waiting_compr_jobs:
+while active_compr_jobs or waiting_compr_jobs or other_compr_jobs:
     time.sleep(10)
-    active_compr_jobs, waiting_compr_jobs = update_job_sets(initial_compr_jobs)
+    active_compr_jobs, waiting_compr_jobs, other_compr_jobs = update_job_sets(initial_compr_jobs)
     print(active_compr_jobs)
     print(waiting_compr_jobs)
 
 print("Compression stage seems to be complete.")
+
+##########################
+##====ANALYSIS STAGE====##
+##########################
+if analyse:
+    print("Entering analysis stage.")
+    initial_an_jobs = set()
+    for sim_dict in master_list:
+        n_grc_dend = sim_dict['params'][0]
+        scale = sim_dict['params'][1]
+        active_mf_fraction = sim_dict['params'][2]
+        bias = sim_dict['params'][3]
+        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        an_result_path = an_result_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        popen_command = itertools.chain(['qsub', 'hcluster_jobscript.sh'], [data_archive_path, an_result_path])
+        handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+        sim_dict['an_qsub_handle'] = handle
+        jid = int((handle.communicate()[0]).split(' ')[2])
+        sim_dict['an_jid'] = jid
+        initial_an_jobs.add(jid)
+
+        active_an_jobs = set()
+        waiting_an_jobs = set(initial_an_jobs)
+        other_an_jobs = set()
+
+    if any(s['an_qsub_handle'].returncode!=0 for s in master_list):
+        raise QueueError()
+    
+    while active_an_jobs or waiting_an_jobs or other_an_jobs:
+        time.sleep(10)
+        active_an_jobs, waiting_an_jobs, other_an_jobs = update_job_sets(initial_an_jobs)
+        print(active_an_jobs)
+        print(waiting_an_jobs)

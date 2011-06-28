@@ -15,10 +15,10 @@ clink=          'ward'; % Clustering linkage method
 %---------------------------------------------------------
 % Load data:
 
-working_dir = sprintf('/home/ucbtepi/code/network/data/f.5_20_-20/s%.2f', scale);
-hdf5_filename = sprintf('%s/20_f.5_s%.2f_b%02d.hdf5', working_dir, scale, bias)
-
-fprintf('loading spiketimes\n')
+hdf5_filename = data_archive_path
+fprintf('\n')
+out_filename = results_destination_path
+fprintf('\nloading spiketimes\n')
 [spikes_in, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 2);
 [spikes_ou, stim_number, trial_number]=loadspikes_h5py_compressed(hdf5_filename, 1);
 
@@ -148,7 +148,6 @@ end
 mi_prec = mi(:,2).*separation(2:end)';
 mi_dec_prec = mi_dec.*separation;
 
-out_filename = sprintf('%s/result_b%02d', working_dir, bias)
 save(out_filename, 'mi', 'mi_dec', 'mi_prec', 'mi_dec_prec', 'separation'); 
 
 
