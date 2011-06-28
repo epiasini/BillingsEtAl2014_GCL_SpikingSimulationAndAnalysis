@@ -149,6 +149,10 @@ clean_up_after_compress = 1
 initial_compr_jobs = set()
 
 for sim_dict in master_list:
+    n_grc_dend = sim_dict['params'][0]
+    scale = sim_dict['params'][1]
+    active_mf_fraction = sim_dict['params'][2]
+    bias = sim_dict['params'][3]
     data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if not os.path.exists(data_archive_path):
         popen_command = itertools.chain(['qsub', 'compress_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(clean_up_after_compress)])
@@ -200,7 +204,7 @@ if analyse:
     waiting_an_jobs = set(initial_an_jobs)
     other_an_jobs = set()
 
-    if any(s['an_qsub_handle'].returncode!=0 for s in master_list):
+    if any(s['an_qsub_handle'].returncode!=0 for s in master_list if 'an_qsub_handle' in s.keys()):
         raise QueueError()
     
     while active_an_jobs or waiting_an_jobs or other_an_jobs:
