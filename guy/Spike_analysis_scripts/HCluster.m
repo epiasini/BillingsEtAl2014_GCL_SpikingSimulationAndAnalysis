@@ -87,14 +87,13 @@ data=conv_data_ou;
 
 train_chunk=3;
 ps=ones(1,patts)*1/patts;
-[mi,issi]=info_heiracy(observations,ps,stimuli,squeeze(data_tree(train_chunk,:,:)));
+mi=info_heiracy(observations,ps,stimuli,squeeze(data_tree(train_chunk,:,:)));
 
 % Loop over numbers of clusters and find a decoder in each case using
 % train_s slices of data for training.
 
 test_chunk=2;
 mi_dec=zeros(1,observations);
-issi_dec=zeros(observations,patts);
 
 fprintf('MI with the decoder')
 % prellocate space for distance matrix and its mask. Initialise mask
@@ -140,7 +139,7 @@ for opt_clust=observations:-1:1
     %distance_matrix = distance_matrix(:,randperm(observations+observations-1));
     
     % Recalculate mean information retrieval using the unseen data
-    [mi_dec(opt_clust),issi_dec(opt_clust,:)]=multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_codewords)));
+    mi_dec(opt_clust) = multineuron_info_decode(observations,ps,stimuli,conv_book,squeeze(chunked_data(:,:,test_chunk,:)), distance_matrix(:,logical(relevant_codewords)));
     
 end
 

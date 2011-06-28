@@ -7,7 +7,7 @@
 % information. Also given is an array of the stimulus specific information
 % for each stimulus.
 
-function [mi,issi]=multineuron_info_decode(observations,ps,stimuli,conv_book,conv_data, distance_matrix)
+function mi=multineuron_info_decode(observations,ps,stimuli,conv_book,conv_data, distance_matrix)
 
 [observations, cells, timepoints] = size(conv_data);
 
@@ -22,7 +22,7 @@ pr0=1/observations;
 %alphabet=decodeFST(observations,clusters,book_vector,data_vector,bdims(2),0);
 alphabet=multineuron_decode(observations,clusters, distance_matrix);
 mi=mutual_info(clusters,alphabet,pr0,ps,stimuli);
-issi=stim_spec(clusters,alphabet,pr0,ps,stimuli); 
+%issi=stim_spec(clusters,alphabet,pr0,ps,stimuli); 
 
 
 
