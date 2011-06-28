@@ -187,15 +187,18 @@ if analyse:
         data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
         an_result_path = an_result_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
         popen_command = itertools.chain(['qsub', 'hcluster_jobscript.sh'], [data_archive_path, an_result_path])
-        handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-        sim_dict['an_qsub_handle'] = handle
-        jid = int((handle.communicate()[0]).split(' ')[2])
-        sim_dict['an_jid'] = jid
-        initial_an_jobs.add(jid)
 
-        active_an_jobs = set()
-        waiting_an_jobs = set(initial_an_jobs)
-        other_an_jobs = set()
+        if not os.path.exists(an_result_path):
+            handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+            sim_dict['an_qsub_handle'] = handle
+            jid = int((handle.communicate()[0]).split(' ')[2])
+            sim_dict['an_jid'] = jid
+            initial_an_jobs.add(jid)
+
+
+    active_an_jobs = set()
+    waiting_an_jobs = set(initial_an_jobs)
+    other_an_jobs = set()
 
     if any(s['an_qsub_handle'].returncode!=0 for s in master_list):
         raise QueueError()
