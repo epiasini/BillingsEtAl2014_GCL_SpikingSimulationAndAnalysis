@@ -40,13 +40,13 @@ project_filename = 'if_gl.ncx' # hardcoded in simulate.py
 sim_config_name = 'Default Simulation Configuration' # hardcoded in simulate.py
 nC_seed = 1234 # hardcoded in simulate.py
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 10
-n_trials = 15
+n_stim_patterns = 20
+n_trials = 100
 min_mf_number = 6
 grc_mf_ratio = 3.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.33]
+network_scale_range = [1.00]
 active_mf_fraction_range = [0.5]
 bias_range = [20., 10., 0., -10., -20.]
 #++++++++++++++++++++++++++
@@ -113,6 +113,7 @@ for sim_dict in master_list:
             for mf in sp:
                 stim_pattern_file.write(str(mf) + " ")
             stim_pattern_file.write("\n")
+            stim_pattern_file.close()
 
     # submit simulations to the queue
     data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
