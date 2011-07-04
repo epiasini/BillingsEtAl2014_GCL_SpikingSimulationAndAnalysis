@@ -1,18 +1,22 @@
 #!/bin/bash
 #$ -V
 #$ -S /bin/bash
+#$ -cwd
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l h_vmem=8G
+#$ -l h_vmem=4G
+#$ -l h_rt=12:00:00
 #$ -l s_stack=128M
 #$ -l h_stack=128M
-##$ -l nodes=2:ppn=8
+##$ -l virtual_free=1024M
 
 # "jobscripts" are things that should be passed to qsub.
 
-base_name=$1
-bias=$2
-clean_up=$3
+args_list=$@
 
-cd /home/ucbtepi/code/network/trunk
-/usr/bin/time /home/ucbtepi/bin/python compress.py $base_name $bias $clean_up
+echo $args_list
+
+hostname
+date
+
+/usr/bin/time /home/ucbtepi/bin/python compress.py $args_list

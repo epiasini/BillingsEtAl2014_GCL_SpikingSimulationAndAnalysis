@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/data/eugenio/network/trunk/simulate.py base_name bias size rank
+./nC.sh -python ~/data/eugenio/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias n_stim_patterns n_trials size rank
 """
 import random
 import time
@@ -19,41 +19,31 @@ from ucl.physiol.neuroconstruct.utils import NumberGenerator
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils import ref_constructor, conn_pattern_filename, stim_pattern_filename
+from utils import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
 
-print sys.argv
+min_mf_number = int(sys.argv[1])
+grc_mf_ratio = float(sys.argv[2])
+n_grc_dend = int(sys.argv[3])
+network_scale = float(sys.argv[4])
+active_mf_fraction = float(sys.argv[5])
+bias = float(sys.argv[6])
+n_stim_patterns = int(sys.argv[7])
+n_trials = int(sys.argv[8])
+size = int(sys.argv[9])
+rank = int(sys.argv[10])
 
-conf_path = '/home/ucbtepi/code/network/trunk/' # (absolute) path containing the <base_name>.conf.txt configuration file
-base_name = sys.argv[1] # common name for all the simulations done with a particular configuration. Mind that this script overwrites the simulation results, if called more than once with the same base_name.
+project_path = '/home/ucbtepi/nC_projects/if_gl/'
+project_filename = 'if_gl.ncx' # neuroConstruct project file name
+sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
+sim_config_name = 'Default Simulation Configuration'
+nC_seed = 1234
 
-bias = float(sys.argv[2]) # bias value (in pA; pay attention, because neuroConstruct wants the value in nA)
-
-size = int(sys.argv[3])
-rank = int(sys.argv[4])
-
-# read the configuration file and extract the variables that will be used
-conf_file = open(conf_path+base_name+'.conf.txt')
-conf = eval(conf_file.read())
-conf_file.close()
-
-project_path = conf['project_path'] # neuroConstruct project path (without the file name)
-project_filename = conf['project_filename'] # neuroConstruct project file name
-sim_path = conf['sim_path'] # usually, sim_path = project_path + "simulations/"
-sim_config_name = conf['sim_config_name'] # can be "Default Simulation Configuration"
-nC_seed = conf['nC_seed'] # seed for the generation of network structure and cell positions
-active_mf_fraction = conf['active_mf_fraction'] # fraction of mfs being stimulated (or, equivalently, probability for a single mf to be active)
-n_grc_dend = conf['n_grc_dend'] # number of mfs contacted by each grc
-sim_duration = conf['sim_duration'] # simulation duration (in ms)
-n_stim_patterns = conf['n_stim_patterns'] # number of different (random) stimulation patterns to try, at fixed mf input sparsity
-ntrials = conf['ntrials'] #  number of times that the simulation must be run, keeping everything fixed apart from the intrinsic randomness of the mf input spike times
-network_scale = conf['network_scale']
-grc_mf_ratio = conf['grc_mf_ratio']
-min_mf_number = conf['min_mf_number']
+sim_duration = 300.0
 
 mf_number = int(round(min_mf_number * network_scale))
 gr_number = int(round(mf_number * grc_mf_ratio))
 
-temp_dir = tempfile.mkdtemp(dir=project_path)
+temp_dir = tempfile.mkdtemp(dir=sim_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
 shutil.copytree(project_path+"morphologies", temp_dir+"/morphologies")
 shutil.copytree(project_path+"cellMechanisms", temp_dir+"/cellMechanisms")
@@ -100,12 +90,13 @@ n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
 print "Number of cells generated: " + str(n_generated_cells)
 
 # load connection pattern
-cpf = open(sim_path+conn_pattern_filename(base_name), "r")
+cpf = open(conn_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale), "r")
+print(cpf)
 conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readlines()]
 cpf.close()
 
 # load stimulation patterns
-spf = open(sim_path+stim_pattern_filename(base_name), "r")
+spf = open(stim_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, n_stim_patterns), "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
 
@@ -130,10 +121,10 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
     # delete all existing stimuli
     project.generatedElecInputs.reset()
 
-    for trial in range(ntrials):
+    for trial in range(n_trials):
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
-        sim_ref = ref_constructor(base_name=base_name, bias=bias, stimulus_pattern_index=spn, trial=trial)
+        sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
         refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
@@ -196,10 +187,13 @@ while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*")) > old_file_num
     time.sleep(1)
 
 for dn in refs_list:
-    if os.path.isdir(sim_path+dn):
-        shutil.rmtree(sim_path+dn)
-    print "Copying "+ temp_dir+"/simulations/"+dn + " to " + sim_path+dn
-    shutil.copytree(temp_dir+"/simulations/"+dn, sim_path+dn)
+    destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + dn
+    if os.path.isdir(destination):
+        shutil.rmtree(destination)
+    os.mkdir(destination)
+    print "Moving "+ temp_dir+"/simulations/"+dn + " to " + destination
+    for source in glob.glob(temp_dir+'/simulations/'+dn+'/*.h5'):
+        shutil.move(source, destination)
 
 shutil.rmtree(temp_dir)
 System.exit(0)

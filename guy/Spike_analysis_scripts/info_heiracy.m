@@ -7,7 +7,7 @@
 % information. Also given is an array of the stimulus specific information
 % for each stimulus.
 
-function [mi,issi]=info_heiracy(data_dims,ps,stimuli,code_tree)
+function mi=info_heiracy(data_dims,ps,stimuli,code_tree)
 
 % Assume each output is unique
 %code_list(chunked_data_ou,smode,slicedex);
@@ -16,16 +16,15 @@ pr0=1/data_dims;
 % Step through the tree and determine psr, and pr at each stage 
 
 mi=zeros(data_dims(1)-1,2);
-issi=zeros(data_dims(1)-1,max(stimuli));
+%issi=zeros(data_dims(1)-1,max(stimuli));
 
 for clusters=2:data_dims(1)
     
-    % alphabet is now calculated by the decode, not by the 
-    % clustering algorithm.
+    % alphabet is calculated by the clustering algorithm.
     alphabet=cluster(code_tree,'maxclust',clusters);
     mi(clusters-1,1)=clusters;
     mi(clusters-1,2)=mutual_info(clusters,alphabet,pr0,ps,stimuli);
-    issi(clusters-1,:)=stim_spec(clusters,alphabet,pr0,ps,stimuli);
+    %issi(clusters-1,:)=stim_spec(clusters,alphabet,pr0,ps,stimuli);
 
 end
 
