@@ -10,7 +10,7 @@ import pyentropy as pe
 from matplotlib import pyplot as plt
 
 sys.path.append("../")
-from utils import data_archive_path_ctor
+from utils import data_archive_path_ctor, mi_archive_path_ctor
 
 import pdb
 
@@ -79,7 +79,7 @@ network_scale = 1.00
 active_mf_fraction = 0.5
 bias = 20
 n_stim_patterns = 20
-n_trials = 50
+n_trials = 20
 
 sim_length = 300.
 tau = 5.
@@ -183,6 +183,18 @@ for n_clusts in range(n_tr_obs-1,0,-1):
     ts_decoded_mi_plugin[n_clusts-1] = s.I()
     s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
     ts_decoded_mi_qe[n_clusts-1] = s.I()    
+
+# save analysis results in a separate file
+mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
+spng = mi_archive.require_group(str(n_stim_patterns))
+target_group = spng.require_group(str(n_trials))
+datasets_to_be_deleted = [ds for ds in ['tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe'] if ds in target_group.keys()]
+for ds in datasets_to_be_deleted:
+    del target_group[ds]
+target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
+target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
+target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)    
+mi_archive.close()
 
 # plot
 fig = plt.figure()
