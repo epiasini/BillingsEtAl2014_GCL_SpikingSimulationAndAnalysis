@@ -14,7 +14,7 @@ from utils import data_archive_path_ctor
 
 import pdb
 
-TRAINING_RELATIVE_SIZE = .02
+TRAINING_RELATIVE_SIZE = .5
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -79,7 +79,7 @@ network_scale = 1.00
 active_mf_fraction = 0.5
 bias = 20
 n_stim_patterns = 20
-n_trials = 500
+n_trials = 50
 
 sim_length = 300.
 tau = 5.
@@ -190,9 +190,10 @@ ax = fig.add_subplot(111)
 ax.plot(tr_direct_mi, label='direct clustering on training data')
 ax.plot(ts_decoded_mi_plugin, label='decoder: plugin')
 ax.plot(ts_decoded_mi_qe, label='decoder: qe')
-ax.plot([20, 20], ax.get_ylim(), linestyle='--', color='black')
+ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
 ax.legend(loc='lower right')
 ax.set_xlabel('alphabet size (clusters in the decoder)')
 ax.set_ylabel('MI (bits)')
-ax.set_xticks(list(ax.get_xticks()) + [20])
+if not n_stim_patterns in ax.get_xticks():
+    ax.set_xticks(list(ax.get_xticks()) + [n_stim_patterns])
 plt.show()
