@@ -10,7 +10,7 @@ import re
 import shutil
 import numpy as np
 
-from utils import data_archive_path_ctor, data_folder_path_ctor, conn_pattern_filename, stim_pattern_filename, ref_ctor
+from utils.paths import data_archive_path_ctor, data_folder_path_ctor, conn_pattern_filename, stim_pattern_filename, ref_ctor
 
 min_mf_number = int(sys.argv[1])
 grc_mf_ratio = float(sys.argv[2])

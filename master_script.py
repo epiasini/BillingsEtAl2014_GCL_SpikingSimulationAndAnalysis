@@ -7,7 +7,7 @@ import itertools
 from math import factorial
 from subprocess import Popen, PIPE
 
-from utils import data_folder_path_ctor, data_archive_path_ctor, conn_pattern_filename, stim_pattern_filename, an_result_path_ctor
+from utils.paths import data_folder_path_ctor, data_archive_path_ctor, conn_pattern_filename, stim_pattern_filename, an_result_path_ctor
 
 class QueueError(Exception):
     pass
