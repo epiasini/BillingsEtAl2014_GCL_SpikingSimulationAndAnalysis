@@ -14,7 +14,7 @@ from utils import data_archive_path_ctor
 
 import pdb
 
-TRAINING_RELATIVE_SIZE = .3
+TRAINING_RELATIVE_SIZE = .02
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -79,7 +79,7 @@ network_scale = 1.00
 active_mf_fraction = 0.5
 bias = 20
 n_stim_patterns = 20
-n_trials = 100
+n_trials = 500
 
 sim_length = 300.
 tau = 5.
@@ -185,10 +185,14 @@ for n_clusts in range(n_tr_obs-1,0,-1):
     ts_decoded_mi_qe[n_clusts-1] = s.I()    
 
 # plot
-plt.plot(tr_direct_mi, label='direct clustering on training data')
-plt.plot(ts_decoded_mi_plugin, label='decoder: plugin')
-plt.plot(ts_decoded_mi_qe, label='decoder: qe')
-plt.legend()
-plt.xlabel('alphabet size (clusters in the decoder)')
-plt.ylabel('MI (bits)')
+fig = plt.figure()
+ax = fig.add_subplot(111)
+ax.plot(tr_direct_mi, label='direct clustering on training data')
+ax.plot(ts_decoded_mi_plugin, label='decoder: plugin')
+ax.plot(ts_decoded_mi_qe, label='decoder: qe')
+ax.plot([20, 20], ax.get_ylim(), linestyle='--', color='black')
+ax.legend(loc='lower right')
+ax.set_xlabel('alphabet size (clusters in the decoder)')
+ax.set_ylabel('MI (bits)')
+ax.set_xticks(list(ax.get_xticks()) + [20])
 plt.show()
