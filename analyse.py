@@ -16,22 +16,40 @@ from utils.analysis import loadspikes, convolve, multineuron_distance
 
 import pdb
 
-TRAINING_RELATIVE_SIZE = .5
+class TrainingSetSizeError(Exception):
+    pass
 
-## min_mf_number = int(sys.argv[1])
-## grc_mf_ratio = float(sys.argv[2])
-## n_grc_dend = int(sys.argv[3])
-## network_scale = float(sys.argv[4])
-## active_mf_fraction = float(sys.argv[5])
-## bias = float(sys.argv[6])
-## n_stim_patterns = int(sys.argv[7])
-## n_trials = int(sys.argv[8])
+#+++++fixed parameters+++++++
+sim_duration = 300.0 # hardcoded in simulate.py
+n_stim_patterns = 20
+min_mf_number = 6
+grc_mf_ratio = 3.
+tau = 5.
+dt = 2.
+multineuron_metric_mixing = 0
+#+++++parameter ranges+++++++++++++
+n_grc_dend_range = [4]
+network_scale_range = [1.00]
+active_mf_fraction_range = [0.5]
+bias_range = [20., 10., 0., -10., -20.]
+n_trials_range = [20, 50, 100]
+training_size_range = [10]
+#++++++++++++++++++++++++++
 
-def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_length, tau, dt, multineuron_metric_mixing, training_relative_size):
+#----parameter consistency control
+if any([s >= min(n_trials_range) for s in training_size_range]):
+    raise TrainingSetSizeError()
+
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range]
+parameter_space = itertools.product(*ranges)
+
+
+def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size):
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
     nspg = mi_archive.require_group('sp%d' % n_stim_patterns)
     ntrg = nspg.require_group('t%d' % n_trials)
-    target_group = ntrg.require_group('trl%f' % training_relative_size)
+    mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
+    target_group = mixg.require_group('train%d' % training_size)
     if all([ds in target_group.keys() for ds in ['tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
         print('found previously computed results in hdf5 archive.')
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
@@ -47,7 +65,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         n_cells = spikes.shape[1]
 
         # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
-        n_tr_obs_per_sp = int(TRAINING_RELATIVE_SIZE * n_trials)
+        n_tr_obs_per_sp = training_size
         n_ts_obs_per_sp = n_trials - n_tr_obs_per_sp
         train_idxs = list(itertools.chain(*([x+n_trials*sp for x in random.sample(range(n_trials), n_tr_obs_per_sp)] for sp in range(n_stim_patterns))))
         test_idxs = [x for x in range(n_obs) if x not in train_idxs]
@@ -58,8 +76,8 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         ts_spikes = spikes[test_idxs]
 
         # convolve spike train to generate vector fields
-        tr_fields = convolve(tr_spikes, sim_length, tau, dt)
-        ts_fields = convolve(ts_spikes, sim_length, tau, dt)
+        tr_fields = convolve(tr_spikes, sim_duration, tau, dt)
+        ts_fields = convolve(ts_spikes, sim_duration, tau, dt)
         n_timepoints = tr_fields.shape[2]
 
         # prepare multineuron distance function by partial application and calculate distances
@@ -144,39 +162,36 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
         target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)    
-
+    # close archive and return results
     mi_archive.close()
     return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe
 
-        # # plot
-        # fig = plt.figure()
-        # ax = fig.add_subplot(111)
-        # ax.plot(tr_direct_mi, label='direct clustering on training data')
-        # ax.plot(ts_decoded_mi_plugin, label='decoder: plugin')
-        # ax.plot(ts_decoded_mi_qe, label='decoder: qe')
-        # ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
-        # ax.legend(loc='lower right')
-        # ax.set_xlabel('alphabet size (clusters in the decoder)')
-        # ax.set_ylabel('MI (bits)')
-        # if not n_stim_patterns in ax.get_xticks():
-        #     ax.set_xticks(list(ax.get_xticks()) + [n_stim_patterns])
-        # plt.show()
 
+fig = plt.figure()
+ax = fig.add_subplot(111)
 
-min_mf_number = 6
-grc_mf_ratio = 3
-n_grc_dend = 4
-network_scale = 1.00
-active_mf_fraction = 0.5
-bias = 20
-n_stim_patterns = 20
-n_trials = 20
+for k,par_combination in enumerate(parameter_space):
+    # load parameter combination
+    n_grc_dend = par_combination[0]
+    network_scale = par_combination[1]
+    active_mf_fraction = par_combination[2]
+    bias = par_combination[3]
+    n_trials = par_combination[4]
+    training_size = par_combination[5]
+    # analyse data
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size)
+    # plot
+    if k==0:
+        ax.plot(tr_direct_mi, label='direct clustering on training data')
+        ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
+    
+    ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
+    ax.plot(ts_decoded_mi_qe, label='bias%d, trials%d, qe' % (bias, n_trials))
 
-sim_length = 300.
-tau = 5.
-dt = 2.
-multineuron_metric_mixing = 0
-
-training_relative_size = TRAINING_RELATIVE_SIZE
-
-tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_length, tau, dt, multineuron_metric_mixing, training_relative_size)
+ax.legend(loc='lower right')
+ax.set_xlabel('alphabet size (clusters in the decoder)')
+ax.set_ylabel('MI (bits)')
+if not n_stim_patterns in ax.get_xticks():
+    ax.set_xticks(list(ax.get_xticks()) + [n_stim_patterns])
+plt.show()
+    
