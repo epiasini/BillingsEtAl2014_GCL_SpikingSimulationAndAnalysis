@@ -174,26 +174,20 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             while os.path.exists(timefile_path)==0:
                 time.sleep(2)
 
-# the writing of the output files to disk can take a while after the simulations have finished, so this is to avoid the script exiting before all the results have been saved. This while loop puts the process to sleep until the results of the last simulation begin to be written to disk.
-while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*.h5")) < 2:
-    print "checking " + temp_dir+"/simulations/"+refs_list[-1]
-    print ("Waiting for NEURON to finish writing to disk...")
-    time.sleep(2)
-old_file_number = 0
-while len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*")) > old_file_number:
-    print ("Waiting for NEURON to finish writing the results of the last simulation...")
-    # this is meant to prevent the case in which the script exits while the results in the last folder are being written.
-    old_file_number = len(glob.glob(temp_dir+"/simulations/"+refs_list[-1]+"/*"))
-    time.sleep(1)
-
-for dn in refs_list:
-    destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + dn
-    if os.path.isdir(destination):
-        shutil.rmtree(destination)
-    os.mkdir(destination)
-    print "Moving "+ temp_dir+"/simulations/"+dn + " to " + destination
-    for source in glob.glob(temp_dir+'/simulations/'+dn+'/*.h5'):
-        shutil.move(source, destination)
+        # wait for NEURON to finish writing the results on disk
+        while len(glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5')) < 2:
+            print ("Waiting for NEURON to finish writing to disk...")
+            time.sleep(1)
+        
+        # copy results to main data folder and delete useless nC files
+        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + sim_ref
+        if os.path.isdir(destination):
+            shutil.rmtree(destination)
+        os.mkdir(destination)
+        print "Moving "+ temp_dir+"/simulations/"+sim_ref + " to " + destination
+        for source in glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5'):
+            shutil.move(source, destination)
+        shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
 
 shutil.rmtree(temp_dir)
 System.exit(0)

@@ -4,10 +4,10 @@
 #$ -cwd
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l h_vmem=2G
-#$ -l h_rt=12:00:00
-#$ -l s_stack=128M
-#$ -l h_stack=128M
+#$ -l h_vmem=4G
+#$ -l h_rt=24:00:00
+#$ -l s_stack=10M
+#$ -l h_stack=15M
 ##$ -l virtual_free=1024M
 
 # "jobscripts" are things that should be passed to qsub.
