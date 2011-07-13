@@ -26,25 +26,26 @@ min_mf_number = 6
 grc_mf_ratio = 3.
 tau = 5.
 dt = 2.
-multineuron_metric_mixing = 0
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [1.00]
 active_mf_fraction_range = [0.5]
-bias_range = [20., 10., 0., -10., -20.]
-n_trials_range = [20, 50, 100]
-training_size_range = [10]
+bias_range = [20.]
+n_trials_range = [200]
+training_size_range = [50]
+multineuron_metric_mixing_range = [0., 0.05, 0.1, 0.2, 0.5, 1]
 #++++++++++++++++++++++++++
 
 #----parameter consistency control
 if any([s >= min(n_trials_range) for s in training_size_range]):
     raise TrainingSetSizeError()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range]
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range, multineuron_metric_mixing_range]
 parameter_space = itertools.product(*ranges)
 
 
 def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size):
+    # prepare hdf5 archive
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
     nspg = mi_archive.require_group('sp%d' % n_stim_patterns)
     ntrg = nspg.require_group('t%d' % n_trials)
@@ -178,17 +179,19 @@ for k,par_combination in enumerate(parameter_space):
     bias = par_combination[3]
     n_trials = par_combination[4]
     training_size = par_combination[5]
+    multineuron_metric_mixing = par_combination[6]
     # analyse data
     tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size)
     # plot
-    if k==0:
-        ax.plot(tr_direct_mi, label='direct clustering on training data')
-        ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
-    
-    ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
-    ax.plot(ts_decoded_mi_qe, label='bias%d, trials%d, qe' % (bias, n_trials))
+    ax.plot(tr_direct_mi, label='direct clustering on training data')
+        
+    #ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
+    ax.plot(ts_decoded_mi_qe, label='mixing%.2f, qe' % (multineuron_metric_mixing))
+    #ax_diff.plot(ts_decoded_mi_plugin[1:]-ts_decoded_mi_plugin[:-1], label='derivative')
 
-ax.legend(loc='lower right')
+
+ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
+ax.legend(loc='upper right')
 ax.set_xlabel('alphabet size (clusters in the decoder)')
 ax.set_ylabel('MI (bits)')
 if not n_stim_patterns in ax.get_xticks():
