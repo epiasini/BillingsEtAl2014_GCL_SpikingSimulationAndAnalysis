@@ -26,6 +26,7 @@ min_mf_number = 6
 grc_mf_ratio = 3.
 tau = 5.
 dt = 2.
+plotting_mode = 'alphabet_size'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [1.00]
@@ -33,7 +34,7 @@ active_mf_fraction_range = [0.5]
 bias_range = [20.]
 n_trials_range = [200]
 training_size_range = [50]
-multineuron_metric_mixing_range = [0., 0.05, 0.1, 0.2, 0.5, 1]
+multineuron_metric_mixing_range = [0., 0.05]
 #++++++++++++++++++++++++++
 
 #----parameter consistency control
@@ -51,8 +52,9 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     ntrg = nspg.require_group('t%d' % n_trials)
     mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
     target_group = mixg.require_group('train%d' % training_size)
-    if all([ds in target_group.keys() for ds in ['tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
+    if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
         print('found previously computed results in hdf5 archive.')
+        decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
@@ -92,6 +94,9 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         # cluster training data
         print('clustering training data')
         tr_tree = linkage(tr_distances, method='weighted')
+
+        # create an array describing the precision of each clustering step
+        decoder_precision = (1./tr_tree[:,2])[::-1]
 
         # compute mutual information by using direct clustering on training data
         # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
@@ -157,17 +162,20 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             ts_decoded_mi_qe[n_clusts-1] = s.I()    
 
         # save analysis results in a separate file
-        datasets_to_be_deleted = [ds for ds in ['tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe'] if ds in target_group.keys()]
+        datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe'] if ds in target_group.keys()]
         for ds in datasets_to_be_deleted:
             del target_group[ds]
+        target_group.create_dataset('tr_indexes', data=np.array(train_idxs))
+        target_group.create_dataset('tr_linkage', data=tr_tree)
         target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
         target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)    
     # close archive and return results
     mi_archive.close()
-    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe
+    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision
 
 
+colors = 'bgrcmyk'
 fig = plt.figure()
 ax = fig.add_subplot(111)
 
@@ -181,20 +189,27 @@ for k,par_combination in enumerate(parameter_space):
     training_size = par_combination[5]
     multineuron_metric_mixing = par_combination[6]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size)
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size)
     # plot
-    ax.plot(tr_direct_mi, label='direct clustering on training data')
-        
-    #ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
-    ax.plot(ts_decoded_mi_qe, label='mixing%.2f, qe' % (multineuron_metric_mixing))
-    #ax_diff.plot(ts_decoded_mi_plugin[1:]-ts_decoded_mi_plugin[:-1], label='derivative')
+    color = colors[k%len(colors)]
+    if plotting_mode == 'precision':
+        ax.plot(decoder_precision, tr_direct_mi, label='train%d, direct' % (training_size), linestyle='-.', color=color)
+        #ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
+        ax.plot(decoder_precision, ts_decoded_mi_qe, label='train%d, qe' % (training_size), color=color)
+        ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], ax.get_ylim(), linestyle='--', color=color)
+    elif plotting_mode == 'alphabet_size':
+        ax.plot(tr_direct_mi, label='mixing%.2f, direct' % (multineuron_metric_mixing), linestyle='-.', color=color)
+        ax.plot(ts_decoded_mi_qe, label='mixing%.2f, qe' % (multineuron_metric_mixing), color=color)
+        ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color=color)
 
-
-ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
+#ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
 ax.legend(loc='upper right')
-ax.set_xlabel('alphabet size (clusters in the decoder)')
+if plotting_mode == 'precision':
+    ax.set_xlabel('decoder precision (1/cluster separation)')
+elif plotting_mode == 'alphabet_size':
+    ax.set_xlabel('alphabet size (clusters in the decoder)')
 ax.set_ylabel('MI (bits)')
-if not n_stim_patterns in ax.get_xticks():
-    ax.set_xticks(list(ax.get_xticks()) + [n_stim_patterns])
-plt.show()
+#if not prec_thresholds[0] in ax.get_xticks():
+#    ax.set_xticks(list(ax.get_xticks()) + [prec_thresholds[0]])
+#plt.show()
     
