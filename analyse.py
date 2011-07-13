@@ -26,21 +26,22 @@ min_mf_number = 6
 grc_mf_ratio = 3.
 tau = 5.
 dt = 2.
-multineuron_metric_mixing = 0
+plotting_mode = 'alphabet_size'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [1.00]
 active_mf_fraction_range = [0.5]
 bias_range = [20.]
 n_trials_range = [200]
-training_size_range = [25, 50, 100]
+training_size_range = [50]
+multineuron_metric_mixing_range = [0., 0.05]
 #++++++++++++++++++++++++++
 
 #----parameter consistency control
 if any([s >= min(n_trials_range) for s in training_size_range]):
     raise TrainingSetSizeError()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range]
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range, multineuron_metric_mixing_range]
 parameter_space = itertools.product(*ranges)
 
 
@@ -186,19 +187,27 @@ for k,par_combination in enumerate(parameter_space):
     bias = par_combination[3]
     n_trials = par_combination[4]
     training_size = par_combination[5]
+    multineuron_metric_mixing = par_combination[6]
     # analyse data
     tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size)
     # plot
     color = colors[k%len(colors)]
-    ax.plot(decoder_precision, tr_direct_mi, label='train%d, direct' % (training_size), linestyle='-.', color=color)
-    #ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
-    ax.plot(decoder_precision, ts_decoded_mi_qe, label='train%d, qe' % (training_size), color=color)
-    #ax_diff.plot(ts_decoded_mi_plugin[1:]-ts_decoded_mi_plugin[:-1], label='derivative')
-    ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], ax.get_ylim(), linestyle='--', color=color)
+    if plotting_mode == 'precision':
+        ax.plot(decoder_precision, tr_direct_mi, label='train%d, direct' % (training_size), linestyle='-.', color=color)
+        #ax.plot(ts_decoded_mi_plugin, label='bias%d, trials%d, plugin' % (bias, n_trials))
+        ax.plot(decoder_precision, ts_decoded_mi_qe, label='train%d, qe' % (training_size), color=color)
+        ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], ax.get_ylim(), linestyle='--', color=color)
+    elif plotting_mode == 'alphabet_size':
+        ax.plot(tr_direct_mi, label='mixing%.2f, direct' % (multineuron_metric_mixing), linestyle='-.', color=color)
+        ax.plot(ts_decoded_mi_qe, label='mixing%.2f, qe' % (multineuron_metric_mixing), color=color)
+        ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color=color)
 
 #ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
 ax.legend(loc='upper right')
-ax.set_xlabel('decoder precision (1/cluster separation)')
+if plotting_mode == 'precision':
+    ax.set_xlabel('decoder precision (1/cluster separation)')
+elif plotting_mode == 'alphabet_size':
+    ax.set_xlabel('alphabet size (clusters in the decoder)')
 ax.set_ylabel('MI (bits)')
 #if not prec_thresholds[0] in ax.get_xticks():
 #    ax.set_xticks(list(ax.get_xticks()) + [prec_thresholds[0]])
