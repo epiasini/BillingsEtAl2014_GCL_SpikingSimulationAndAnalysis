@@ -56,13 +56,14 @@ def multineuron_distance(p, q, c=0):
     return d
 
 
-def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size):
+def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
     # prepare hdf5 archive
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
     nspg = mi_archive.require_group('sp%d' % n_stim_patterns)
     ntrg = nspg.require_group('t%d' % n_trials)
     mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
-    target_group = mixg.require_group('train%d' % training_size)
+    trsg = mixg.require_group('train%d' % training_size)
+    target_group = trsg.require_group('method_%s' % linkage_method)
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
         print('found previously computed results in hdf5 archive.')
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
@@ -104,7 +105,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
 
         # cluster training data
         print('clustering training data')
-        tr_tree = linkage(tr_distances, method='weighted')
+        tr_tree = linkage(tr_distances, method=linkage_method)
 
         # create an array describing the precision of each clustering step
         decoder_precision = (1./tr_tree[:,2])[::-1]
