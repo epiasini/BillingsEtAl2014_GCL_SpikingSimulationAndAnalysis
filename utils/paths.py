@@ -26,5 +26,5 @@ def datafiles_base_name(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bia
 def data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
     return "%s.hdf5" % datafiles_base_name(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
 
-def an_result_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
-    return "%s.mat" % datafiles_base_name(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+def mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias):
+    return "%s/mi.hdf5" % data_folder_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias)

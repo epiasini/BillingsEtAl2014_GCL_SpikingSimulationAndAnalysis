@@ -19,7 +19,7 @@ from ucl.physiol.neuroconstruct.utils import NumberGenerator
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
+from utils.paths import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
 
 min_mf_number = int(sys.argv[1])
 grc_mf_ratio = float(sys.argv[2])
