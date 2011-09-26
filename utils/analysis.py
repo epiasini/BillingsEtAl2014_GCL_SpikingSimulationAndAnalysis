@@ -64,12 +64,14 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
     trsg = mixg.require_group('train%d' % training_size)
     target_group = trsg.require_group('method_%s' % linkage_method)
+    tr_tree = None        
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
         print('found previously computed results in hdf5 archive.')
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
+        tr_tree = np.array(target_group['tr_linkage'])
     else:
         print('no previous results found. computing from the simulation data.')
         cell_type = 'grc'
@@ -171,7 +173,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
             ts_decoded_mi_plugin[n_clusts-1] = s.I()
             s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
-            ts_decoded_mi_qe[n_clusts-1] = s.I()    
+            ts_decoded_mi_qe[n_clusts-1] = s.I()
 
         # save analysis results in a separate file
         datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe'] if ds in target_group.keys()]
@@ -184,4 +186,4 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)    
     # close archive and return results
     mi_archive.close()
-    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision
+    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree
