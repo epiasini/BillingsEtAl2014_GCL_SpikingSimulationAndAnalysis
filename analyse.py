@@ -27,7 +27,7 @@ dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.66]
+network_scale_range = [1.00, 2.00]
 active_mf_fraction_range = [0.5]
 bias_range = [0.]
 n_trials_range = [200]
@@ -72,16 +72,17 @@ for k,par_combination in enumerate(parameter_space):
     # plot
     color = colors[k%len(colors)]
     if plotting_mode == 'precision':
-        ax.semilogx(decoder_precision, ts_decoded_mi_plugin, label='test set size: %d, decoded (plugin)' % (n_trials-training_size), linestyle='-.', color=color)
-        ax.semilogx(decoder_precision, ts_decoded_mi_qe, label='test set size: %d, decoded (qe)' % (n_trials-training_size), color=color)
+        ax.semilogx(decoder_precision, tr_direct_mi, label='scale: %.2f, direct' % (network_scale), linestyle='-.', color=color)
+        ax.semilogx(decoder_precision, ts_decoded_mi_qe, label=r'scale: %.2f, decoded' % (network_scale), color=color)
         ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], ax.get_ylim(), linestyle='--', color=color)
         #ax2.semilogy(tr_direct_mi/np.log2(n_stim_patterns), decoder_precision, linestyle='', marker='+')
     elif plotting_mode == 'alphabet_size':
-        ax.plot(tr_direct_mi, label='mixing%.2f, direct' % (multineuron_metric_mixing), linestyle='-.', color=color)
-        ax.plot(ts_decoded_mi_qe, label='mixing%.2f, qe' % (multineuron_metric_mixing), color=color)
-        ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color=color)
+        ax.plot(np.arange(1, n_stim_patterns*training_size), tr_direct_mi, label=r'$\vartheta = %.2f^{\circ}$, direct' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), linestyle='-.', color=color)
+        ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'$\vartheta = %.2f^{\circ}$, decoded' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), color=color)
+        if k==len(parameter_space)-1:
+            ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='k')
     d_ax = dend_fig.add_subplot(1,len(parameter_space),k)
-    d_ax.set_title('Network scale parameter: %.2f' % network_scale)
+    d_ax.set_title('Network scale parameter: %.2f' % (network_scale))
     d_ax.set_xlabel('Datapoint index')
     d_ax.set_ylabel('Inter-node multiunit V.R. distance (a.u.)')
     dend_axes.append(d_ax)
