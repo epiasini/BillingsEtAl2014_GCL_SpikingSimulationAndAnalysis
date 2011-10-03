@@ -55,21 +55,26 @@ def multineuron_distance(p, q, c=0):
         d = 0
     return d
 
-
-def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
-    # prepare hdf5 archive
+def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
     nspg = mi_archive.require_group('sp%d' % n_stim_patterns)
     ntrg = nspg.require_group('t%d' % n_trials)
     mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
     trsg = mixg.require_group('train%d' % training_size)
     target_group = trsg.require_group('method_%s' % linkage_method)
+    return mi_archive, target_group
+
+def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
+    # prepare hdf5 archive
+    mi_archive, target_group = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    tr_tree = None        
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe']]):
         print('found previously computed results in hdf5 archive.')
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
+        tr_tree = np.array(target_group['tr_linkage'])
     else:
         print('no previous results found. computing from the simulation data.')
         cell_type = 'grc'
@@ -171,7 +176,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
             ts_decoded_mi_plugin[n_clusts-1] = s.I()
             s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
-            ts_decoded_mi_qe[n_clusts-1] = s.I()    
+            ts_decoded_mi_qe[n_clusts-1] = s.I()
 
         # save analysis results in a separate file
         datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe'] if ds in target_group.keys()]
@@ -184,4 +189,18 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)    
     # close archive and return results
     mi_archive.close()
-    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision
+    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree
+
+
+def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
+    '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
+    mi_archive, target_group = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    tr_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type)[target_group['tr_indexes']]
+    tr_vectors = convolve(tr_spikes, sim_duration, tau, dt)
+    flat_clustering = fcluster(target_group['tr_linkage'], n_clusts, criterion='maxclust')
+    clust_idxs = sorted(list(set(flat_clustering)))
+    centroids = np.array([np.mean(tr_vectors[flat_clustering==c], axis=0) for c in clust_idxs])
+    mi_archive.close()
+    return clust_idxs, centroids
+    
+    
