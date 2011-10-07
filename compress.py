@@ -64,9 +64,9 @@ for spn, sp in enumerate(stim_patterns):
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 
         try:
-            mf_spike_file = h5py.File(single_trial_path + "/MFs.SPIKE_min40.h5")
+            mf_spike_file = h5py.File(single_trial_path + "/MFs.SPIKE_0.h5")
             try:
-                target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_min40'])
+                target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_0'])
             except KeyError:
                 print ("MFs: Missing dataset!")
                 missing_mf_datasets.add(spn)
@@ -76,9 +76,9 @@ for spn, sp in enumerate(stim_patterns):
             missing_directories.add(spn)
         
         try:
-            grc_spike_file = h5py.File(single_trial_path + "/GrCs.SPIKE_min40.h5")
+            grc_spike_file = h5py.File(single_trial_path + "/GrCs.SPIKE_min48.h5")
             try:
-                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
+                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min48'])
             except KeyError:
                 print ("GrCs: Missing/empty dataset!")
                 target_data_group.create_dataset("grc_spiketimes", data=-np.ones(shape=(1,n_gr), dtype=np.float))
