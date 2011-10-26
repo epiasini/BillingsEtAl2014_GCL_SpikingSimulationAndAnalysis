@@ -76,9 +76,9 @@ for spn, sp in enumerate(stim_patterns):
             missing_directories.add(spn)
         
         try:
-            grc_spike_file = h5py.File(single_trial_path + "/GrCs.SPIKE_min48.h5")
+            grc_spike_file = h5py.File(single_trial_path + "/GrCs.SPIKE_min40.h5")
             try:
-                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min48'])
+                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
             except KeyError:
                 print ("GrCs: Missing/empty dataset!")
                 target_data_group.create_dataset("grc_spiketimes", data=-np.ones(shape=(1,n_gr), dtype=np.float))
