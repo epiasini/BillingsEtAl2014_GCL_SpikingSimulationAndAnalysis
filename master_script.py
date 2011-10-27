@@ -18,15 +18,45 @@ class NetworkSizeError(Exception):
     def __str__(self):
         return repr(self.value)
 
-def update_job_sets(initial_jobs_set):
-    # todo: move this function to a separate module, that eventually will become a process manager module
-    stat = Popen(['qstat'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    stat_running = Popen(['qstat', '-s', 'r'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    stat_waiting = Popen(['qstat', '-s', 'p'], stdout=PIPE, stderr=PIPE).communicate()[0]
-    active_jobs_set = set([j for j in initial_jobs_set if str(j) in stat_running])
-    waiting_jobs_set = set([j for j in initial_jobs_set if str(j) in stat_waiting])
-    other_jobs_set = set([j for j in initial_jobs_set if str(j) in stat and j not in active_jobs_set.union(waiting_jobs_set)])
-    return active_jobs_set, waiting_jobs_set, other_jobs_set
+class ProcessManager(object):
+    def __init__(self):
+        self.__managed_jobs = set() # all the jobs in the queue that are being managed by this manager
+        self.running_jobs = set() # all (managed) running jobs
+        self.waiting_jobs = set() # all (managed) waiting jobs
+        self.other_jobs = set() # all the other managed jobs (e.g. jobs that are being transferred)
+        self.__qsub_commands = dict() # historical record of the qsub commands that generated each managed job
+    def __managed_jids_from_qstat(self, *qstat_argument_list):
+        stat_lines = Popen(itertools.chain(['qstat'], qstat_argument_list), stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+        return set(int(l.split()[0]) for l in stat_lines[2:] if len(l)>0).intersection(self.__managed_jobs)
+        
+    def submit_job(self, qsub_argument_list):
+        popen_command = itertools.chain(['qsub'], qsub_argument_list)
+        handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
+#        if handle.returncode!=0:
+#            raise QueueError()
+        jid = int((handle.communicate()[0]).split(' ')[2])
+        self.__qsub_commands[jid] = qsub_argument_list
+        self.__managed_jobs.add(jid)
+        self.update_job_sets()
+        return jid
+    def delete_job(self, jid):
+        call(['qdel', str(jid)])
+        self.update_job_sets()
+    def update_job_sets(self):
+        self.running_jobs = self.__managed_jids_from_qstat('-s', 'r')
+        self.waiting_jobs = self.__managed_jids_from_qstat('-s', 'p')
+        self.other_jobs = set(jid for jid in self.__managed_jids_from_qstat() if jid not in self.running_jobs.union(self.waiting_jobs))
+    def update_and_check_for_CME(self):
+        self.update_job_sets()
+        for jid in self.running_jobs:
+            try:
+                with open('/home/ucbtepi/log/simulate_jobscript.sh.e{jid}'.format(jid=jid), 'r') as f:
+                    if 'ConcurrentModificationException' in f.read():
+                        self.delete_job(jid)
+                        new_jid = self.submit_job(self.__qsub_commands[jid])
+                        print('Found ConcurrentModificationException in job {old_jid}. Deleting job and resubmitted as {new_jid}.'.format(old_jid=jid, new_jid=new_jid))
+            except IOError as (errno, strerror):
+                print('I/O Error {errno}:{strerror}'.format(errno=errno, strerror=strerror))
 
 #++++general controls+++++
 simulate = True
@@ -41,14 +71,14 @@ sim_config_name = 'Default Simulation Configuration' # hardcoded in simulate.py
 nC_seed = 1234 # hardcoded in simulate.py
 sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
-n_trials = 1000
+n_trials = 500
 min_mf_number = 6
 grc_mf_ratio = 3.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [1.66]
 active_mf_fraction_range = [0.5]
-bias_range = [0.]
+bias_range = [0., -10., -25., -45.]
 #++++++++++++++++++++++++++
 
 ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range]
@@ -67,7 +97,7 @@ if n_stim_patterns > max_patterns_encoded:
     raise NetworkSizeError("Network size inferior limit too small for chosen number of patterns! %d MFs can't represent %d patterns for at least one of the requested sparsity values." % (min_nmf, n_stim_patterns))
 
 master_list = [{'params': parameter_point} for parameter_point in parameter_space]
-
+process_manager = ProcessManager()
 ############################
 ##====SIMULATION STAGE====##
 ############################
@@ -119,57 +149,19 @@ if simulate:
         # submit simulations to the queue
         data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
         if not os.path.exists(data_archive_path):
-            sim_dict['sim_jids'] = []
-            sim_dict['sim_qsub_handles'] = []
             for rank in range(size_per_simulation):
-                popen_command = itertools.chain(['qsub', 'simulate_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(size_per_simulation), str(rank)])
-                handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                sim_dict['sim_qsub_handles'].append(handle)
-                jid = int((handle.communicate()[0]).split(' ')[2])
-                sim_dict['sim_jids'].append(jid)
-                initial_jobs.add(jid)
-
-    active_jobs = set()
-    waiting_jobs = set(initial_jobs)
-    other_jobs = set()
-
-    if any(h.returncode!=0 for s in master_list if 'sim_qsub_handles' in s.keys() for h in s['sim_qsub_handles']):
-        raise QueueError()
-
-    while active_jobs or waiting_jobs or other_jobs: # I could just use a 'jobs' set...
-        time.sleep(10)
+                qsub_argument_list = itertools.chain(['simulate_jobscript.sh', str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials), str(size_per_simulation), str(rank)])
+                process_manager.submit_job(qsub_argument_list)
+                
+    while process_manager.running_jobs or process_manager.waiting_jobs or process_manager.other_jobs:
         # check for jobs that may have stalled due to the dreaded ConcurrentModificationException by parsing the error log files, since I don't seem to be able to catch that exception at the jython level.
-        for j in active_jobs:
-            try:
-                f = open('/home/ucbtepi/log/simulate_jobscript.sh.e%d' % j, 'r')
-                if 'ConcurrentModificationException' in f.read():
-                    print('Found ConcurrentModificationException in job %d!' % j)
-                    k,sim_dict = [(k,x) for (k,x) in enumerate(master_list) if j in x['sim_jids']][0] # I'm not enforcing it, but this shoul _really_ be a one-item list.
-                    for j in sim_dict['sim_jids']:
-                        # one could improve performance by rescheduling just the jobs that failed, but for the moment redoing all the 'related' jobs (i.e., the ones in the same sim_dict) seems less risky. And also, to do that I would need to keep track of the jid<->rank correspondence.
-                        call(['qdel', str(j)])
-                        initial_jobs.remove(j)
-                    master_list[k]['sim_jids'] = []
-                    master_list[k]['sim_qsub_handles'] = []
-                    for rank in range(size_per_simulation):
-                        # duplicated code from above!!
-                        popen_command = itertools.chain(['qsub', 'simulate_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(size_per_simulation), str(rank)])
-                        handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-                        master_list[k]['sim_qsub_handles'].append(handle)
-                        jid = int((handle.communicate()[0]).split(' ')[2])
-                        master_list[k]['sim_jids'].append(jid)
-                        initial_jobs.add(jid)
-                f.close()
-            except IOError as (errno, strerror):
-                print('I/O Error %s: %s' % (str(errno), strerror))
-        # update job status sets
-        active_jobs, waiting_jobs, other_jobs = update_job_sets(initial_jobs)
-        print(active_jobs)
-        print(waiting_jobs)
+        process_manager.update_and_check_for_CME()
+        print('{rj} running, {wj} waiting, {oj} other jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        time.sleep(60)
     print("Simulation stage complete.")
 
 #############################
-##====COMPRESSION STAGE====## TODO: avoid code replication by writing a generic "process manager"
+##====COMPRESSION STAGE====##
 #############################
 if compress:
     print("Entering compression stage.")
@@ -183,26 +175,14 @@ if compress:
         bias = sim_dict['params'][3]
         data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
         if not os.path.exists(data_archive_path):
-            popen_command = itertools.chain(['qsub', 'compress_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(int(clean_up_after_compress))])
-            handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            sim_dict['compr_qsub_handle'] = handle
-            jid = int((handle.communicate()[0]).split(' ')[2])
-            sim_dict['compr_jid'] = jid
-            initial_compr_jobs.add(jid)
-
-    active_compr_jobs = set()
-    waiting_compr_jobs = set(initial_compr_jobs)
-    other_compr_jobs = set()
+            qsub_argument_list = itertools.chain(['compress_jobscript.sh', str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials), str(int(clean_up_after_compress))])
+            process_manager.submit_job(qsub_argument_list)            
+            #popen_command = itertools.chain(['qsub', 'compress_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(int(clean_up_after_compress))])
     
-    if any(s['compr_qsub_handle'].returncode!=0 for s in master_list if 'compr_qsub_handle' in s.keys()):
-        raise QueueError()
-    
-    while active_compr_jobs or waiting_compr_jobs or other_compr_jobs:
-        time.sleep(10)
-        active_compr_jobs, waiting_compr_jobs, other_compr_jobs = update_job_sets(initial_compr_jobs)
-        print(active_compr_jobs)
-        print(waiting_compr_jobs)
-        
+    while process_manager.running_jobs or process_manager.waiting_jobs or process_manager.other_jobs:
+        process_manager.update_job_sets()
+        print('{rj} running, {wj} waiting, {oj} other_jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        time.sleep(60)
     print("Compression stage seems to be complete.")
 
 ##########################
