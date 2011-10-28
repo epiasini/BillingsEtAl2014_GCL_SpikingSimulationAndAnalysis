@@ -30,7 +30,7 @@ plotting_mode = 'precision'
 n_grc_dend_range = [4]
 network_scale_range = [1.66]
 active_mf_fraction_range = [0.5]
-bias_range = [-20]
+bias_range = [0, -10, -25, -45]
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -100,9 +100,11 @@ for k,par_combination in enumerate(parameter_space):
     for j,c in enumerate(centroids):
         c_ax = centroids_fig.add_subplot(max(int(np.ceil(len(centroids)/3.)), 1), 3, j)
         conv_plots.append(plot_data_vector(c_ax, c))
-    max_clim = max([plot.get_clim()[1] for plot in conv_plots])
+    clims = [plot.get_clim()[1] for plot in conv_plots]
+    max_clim = max(clims)
     for plot in conv_plots:
         plot.set_clim(vmin=None, vmax=max_clim)
+    centroids_fig.suptitle('Centroids at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$.\nnet scale %.2f, bias %.2f, mixing %.2f ,MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ %.2f' % (network_scale, bias, multineuron_metric_mixing, ts_decoded_mi_qe[n_stim_patterns]))
 
 
 
@@ -110,7 +112,7 @@ for k,par_combination in enumerate(parameter_space):
 #    ax.plot(network_scale_range, l, label='b:%d' % (bias_range[k]))
 
 # i_at_npatt_plot = ax2.imshow(info_at_npatterns, interpolation='nearest', cmap='hot')
-# i_at_npatt_cbar = fig2.colorbar(i_at_npatt_plot)
+# i_at_npatt_cbar = fig2.colorbar(i_at_npatt_plot, use_gridspec=True)
 # i_at_npatt_cbar.set_label('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
 # ax2.set_xticks(np.arange(len(bias_range)))
 # ax2.set_xticklabels([str(x) for x in bias_range])

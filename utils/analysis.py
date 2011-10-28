@@ -50,10 +50,7 @@ def multineuron_distance(p, q, c=0):
     delta = p-q
     E = np.dot(delta, delta.transpose())
     weighted_distances = E * (np.eye(E.shape[0]) + c*(np.ones_like(E) - np.eye(E.shape[0])))
-    d = np.sqrt(weighted_distances.sum())
-    if np.isnan(d):
-        d = 0
-    return d
+    return np.nan_to_num(np.sqrt(weighted_distances.sum()))
 
 def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
