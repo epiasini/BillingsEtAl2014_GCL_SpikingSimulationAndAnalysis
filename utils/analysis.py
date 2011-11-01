@@ -9,7 +9,7 @@ import pyentropy as pe
 
 import pdb
 
-#from .paths import data_archive_path_ctor, mi_archive_path_ctor
+from .paths import data_archive_path_ctor, mi_archive_path_ctor
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -48,23 +48,11 @@ def convolve(obs_array, sim_length, tau, dt):
                 conv[o, c, spike_index:spike_index+kernel_length] += kernel
     return conv
 
-def multineuron_distance(p, q, c=0):
+def multineuron_distance(p,q, theta):
     delta = p-q
-    E = np.dot(delta, delta.transpose())
-    weighted_distances = E * (np.eye(E.shape[0]) + c*(np.ones_like(E) - np.eye(E.shape[0])))
-    return np.nan_to_num(np.sqrt(weighted_distances.sum()))
-
-def multineuron_distance_orthogonal(p,q):
-    delta = p-q
-    return np.sqrt(np.dot(delta, delta.transpose()).sum())
-
-def alt_distance(p,q, c=0):
-    delta = p-q
-    N = delta.shape[0]
-    theta = (np.eye(N) + c*(np.ones((N, N)) - np.eye(N)))
     return np.sqrt(np.einsum('mt,mt', np.einsum('nt,nm->mt', delta, theta), delta))
 
-def alt_distance_orthogonal(p,q):
+def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
@@ -115,7 +103,11 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
 
         # prepare multineuron distance function by partial application and calculate distances
         print('computing distances between training observations')
-        fixed_c_multineuron_distance = functools.partial(multineuron_distance, c=multineuron_metric_mixing)
+        if multineuron_metric_mixing!=0:
+            theta = (np.eye(n_cells) + multineuron_metric_mixing*(np.ones((n_cells, n_cells)) - np.eye(n_cells)))
+            fixed_c_multineuron_distance = functools.partial(multineuron_distance, theta=theta)
+        else:
+            fixed_c_multineuron_distance = multineuron_distance_labeled_line
         tr_distances = []
         for h in range(n_tr_obs):
             for k in range(h+1, n_tr_obs):
