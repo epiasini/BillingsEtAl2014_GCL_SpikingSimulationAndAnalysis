@@ -62,12 +62,11 @@ def alt_distance(p,q, c=0):
     delta = p-q
     N = delta.shape[0]
     theta = (np.eye(N) + c*(np.ones((N, N)) - np.eye(N)))
-    return np.sqrt(np.einsum('nt,nm,mt', delta, theta, delta))
+    return np.sqrt(np.einsum('mt,mt', np.einsum('nt,nm->mt', delta, theta), delta))
 
 def alt_distance_orthogonal(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
-
 
 def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
