@@ -7,7 +7,9 @@ import functools
 import itertools
 import pyentropy as pe
 
-from .paths import data_archive_path_ctor, mi_archive_path_ctor
+import pdb
+
+#from .paths import data_archive_path_ctor, mi_archive_path_ctor
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -51,6 +53,21 @@ def multineuron_distance(p, q, c=0):
     E = np.dot(delta, delta.transpose())
     weighted_distances = E * (np.eye(E.shape[0]) + c*(np.ones_like(E) - np.eye(E.shape[0])))
     return np.nan_to_num(np.sqrt(weighted_distances.sum()))
+
+def multineuron_distance_orthogonal(p,q):
+    delta = p-q
+    return np.sqrt(np.dot(delta, delta.transpose()).sum())
+
+def alt_distance(p,q, c=0):
+    delta = p-q
+    N = delta.shape[0]
+    theta = (np.eye(N) + c*(np.ones((N, N)) - np.eye(N)))
+    return np.sqrt(np.einsum('nt,nm,mt', delta, theta, delta))
+
+def alt_distance_orthogonal(p,q):
+    delta = p-q
+    return np.sqrt(np.einsum('nt,nt', delta, delta))
+
 
 def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
     mi_archive = h5py.File(mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias))
