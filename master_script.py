@@ -132,7 +132,6 @@ if compress:
         if not os.path.exists(data_archive_path):
             qsub_argument_list = itertools.chain(['compress_jobscript.sh', str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials), str(int(clean_up_after_compress))])
             process_manager.submit_job(qsub_argument_list)            
-            #popen_command = itertools.chain(['qsub', 'compress_jobscript.sh'], [str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials)], [str(int(clean_up_after_compress))])
     
     while process_manager.queue_is_not_empty():
         process_manager.update_job_sets()
@@ -145,35 +144,17 @@ if compress:
 ##########################
 if analyse:
     print("Entering analysis stage.")
-    initial_an_jobs = set()
-    for sim_dict in master_list:
-        n_grc_dend = sim_dict['params'][0]
-        scale = sim_dict['params'][1]
-        active_mf_fraction = sim_dict['params'][2]
-        bias = sim_dict['params'][3]
-        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
-        an_result_path = an_result_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
-        popen_command = itertools.chain(['qsub', 'hcluster_jobscript.sh'], [data_archive_path, an_result_path])
+    an_ranges = [[min_mf_number], [grc_mf_ratio], n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, [n_stim_patterns], n_trials_range, [sim_duration], [an_tau], [an_dt], multineuron_metric_mixing_range, training_size_range, linkage_methods_range]
+    an_parameter_space = [str(x) for x in itertools.product(*an_ranges)]
 
-        if not os.path.exists(an_result_path):
-            handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            sim_dict['an_qsub_handle'] = handle
-            jid = int((handle.communicate()[0]).split(' ')[2])
-            sim_dict['an_jid'] = jid
-            initial_an_jobs.add(jid)
-
-
-    active_an_jobs = set()
-    waiting_an_jobs = set(initial_an_jobs)
-    other_an_jobs = set()
-
-    if any(s['an_qsub_handle'].returncode!=0 for s in master_list if 'an_qsub_handle' in s.keys()):
-        raise QueueError()
-    
-    while active_an_jobs or waiting_an_jobs or other_an_jobs:
-        time.sleep(10)
-        active_an_jobs, waiting_an_jobs, other_an_jobs = update_job_sets(initial_an_jobs)
-        print(active_an_jobs)
-        print(waiting_an_jobs)
+    for k,par_combination in enumerate(an_parameter_space):
+        qsub_argument_list = itertools.chain(['analyse_jobscript.sh'], par_combination)
+        process_manager.submit_job(qsub_argument_list)
+        
+   while process_manager.queue_is_not_empty():
+        process_manager.update_job_sets()
+        print('{rj} running, {wj} waiting, {oj} other_jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        time.sleep(60)
+    print("Analysis stage complete.")
 
 print("Master script execution terminated.")
