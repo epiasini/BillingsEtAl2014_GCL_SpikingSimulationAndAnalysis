@@ -9,7 +9,7 @@
 #$ -l s_stack=10M
 #$ -l h_stack=15M
 #$ -l h_vmem=4G
-#$ -l h_rt=24:00:00
+#$ -l h_rt=72:00:00
 
 args_list=$@
 

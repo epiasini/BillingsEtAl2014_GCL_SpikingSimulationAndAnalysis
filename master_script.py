@@ -9,16 +9,21 @@ from math import factorial
 from utils.paths import data_folder_path_ctor, data_archive_path_ctor, conn_pattern_filename, stim_pattern_filename
 from utils.queue import ProcessManager
 
+#+++++Exceptions+++++
 class NetworkSizeError(Exception):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return repr(self.value)
 
+class TrainingSetSizeError(Exception):
+    pass
+
 #++++general controls+++++
 simulate = True
 compress = True
-analyse = False
+analyse = True
+
 
 #+++++fixed parameters+++++++
 project_path = '/home/ucbtepi/nC_projects/if_gl' # hardcoded in simulate.py
@@ -28,15 +33,23 @@ sim_config_name = 'Default Simulation Configuration' # hardcoded in simulate.py
 nC_seed = 1234 # hardcoded in simulate.py
 sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
-n_trials = 100
+n_trials = 500
 min_mf_number = 6
-grc_mf_ratio = 3.
+grc_mf_ratio = 2.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.66]
-active_mf_fraction_range = [0.5]
-bias_range = [0., -10.]
+network_scale_range = [5]
+active_mf_fraction_range = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
+bias_range = [0., -5., -10., -15., -20., -25., -30., -35., -40., -45.]
 #++++++++++++++++++++++++++
+###analysis
+an_tau = 5
+an_dt = 2
+multineuron_metric_mixing_range = [0.]
+training_size_range = [40]
+linkage_methods_range = ['ward']
+
+
 
 ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range]
 parameter_space = itertools.product(*ranges)
@@ -144,14 +157,18 @@ if compress:
 ##########################
 if analyse:
     print("Entering analysis stage.")
-    an_ranges = [[min_mf_number], [grc_mf_ratio], n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, [n_stim_patterns], n_trials_range, [sim_duration], [an_tau], [an_dt], multineuron_metric_mixing_range, training_size_range, linkage_methods_range]
-    an_parameter_space = [str(x) for x in itertools.product(*an_ranges)]
+    #----parameter consistency control
+    if any([s >= n_trials for s in training_size_range]):
+        raise TrainingSetSizeError()
+    
+    an_ranges = [[min_mf_number], [grc_mf_ratio], n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, [n_stim_patterns], [n_trials], [sim_duration], [an_tau], [an_dt], multineuron_metric_mixing_range, training_size_range, linkage_methods_range]
+    an_parameter_space = [[str(value) for value in combination] for combination in itertools.product(*an_ranges)]
 
     for k,par_combination in enumerate(an_parameter_space):
         qsub_argument_list = itertools.chain(['analyse_jobscript.sh'], par_combination)
         process_manager.submit_job(qsub_argument_list)
         
-   while process_manager.queue_is_not_empty():
+    while process_manager.queue_is_not_empty():
         process_manager.update_job_sets()
         print('{rj} running, {wj} waiting, {oj} other_jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
         time.sleep(60)
