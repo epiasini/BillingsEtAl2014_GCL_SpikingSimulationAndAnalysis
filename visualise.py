@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 
 from utils.graphic import plot_data_vector
-from utils.analysis import analyse_single_configuration, cluster_centroids
+from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p
 
 #+++++debugging stuff+++++
 import pdb
@@ -22,16 +22,16 @@ class TrainingSetSizeError(Exception):
 sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
 min_mf_number = 6
-grc_mf_ratio = 2.
+grc_mf_ratio = 3.
 tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [5]
-active_mf_fraction_range = list(np.arange(.5, 1, .1))
-bias_range = list(np.arange(-25., -30., -5.))
-n_trials_range = [500]
+network_scale_range = [1.33]
+active_mf_fraction_range = list(np.arange(.5, .6, .1))
+bias_range = [0, -10, -25, -45] #list(np.arange(0., -30., -5.))
+n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
 linkage_methods_range = ['ward']
@@ -52,11 +52,14 @@ fig = plt.figure()
 ax = fig.add_subplot(111)
 fig2 = plt.figure()
 ax2 = fig2.add_subplot(111)
+kl_fig = plt.figure()
+kl_ax = kl_fig.add_subplot(111)
 #dend_fig = plt.figure()
 dend_axes = []
 centroid_figs = []
 
 info_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
+kl_div_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 centroid_sets = []
 ccp = []
 for k,par_combination in enumerate(parameter_space):
@@ -70,8 +73,9 @@ for k,par_combination in enumerate(parameter_space):
     multineuron_metric_mixing = par_combination[6]
     linkage_method = par_combination[7]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
     info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_qe[n_stim_patterns]
+    kl_div_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = kl_divergence_from_flat_p(q=px_at_same_size_point)
     # plot
     color = colors[k%len(colors)]
     if plotting_mode == 'precision':
@@ -121,6 +125,18 @@ ax2.set_yticks(np.arange(len(active_mf_fraction_range)))
 ax2.set_yticklabels([str(y) for y in active_mf_fraction_range])
 ax2.set_ylabel('MF activation probability')
 ax2.set_title('Effect of sparseness and inhibition')
+
+
+kl_plot = kl_ax.imshow(kl_div_values, interpolation='none', cmap='coolwarm', origin='lower')
+kl_cbar = kl_fig.colorbar(kl_plot, use_gridspec=True)
+kl_cbar.set_label('KL divergence between original and encoded/decoded input distribution (bits)')
+kl_ax.set_xticks(np.arange(len(bias_range)))
+kl_ax.set_xticklabels([str(x) for x in bias_range])
+kl_ax.set_xlabel('Threshold current (pA)')
+kl_ax.set_yticks(np.arange(len(active_mf_fraction_range)))
+kl_ax.set_yticklabels([str(y) for y in active_mf_fraction_range])
+kl_ax.set_ylabel('MF activation probability')
+kl_ax.set_title('Effect of sparseness and inhibition')
 
 #ax.plot([n_stim_patterns, n_stim_patterns], ax.get_ylim(), linestyle='--', color='black')
 ax.legend(loc='upper left')
