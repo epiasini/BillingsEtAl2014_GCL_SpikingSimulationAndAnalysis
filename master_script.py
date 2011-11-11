@@ -33,7 +33,7 @@ sim_config_name = 'Default Simulation Configuration' # hardcoded in simulate.py
 nC_seed = 1234 # hardcoded in simulate.py
 sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
-n_trials = 500
+n_trials = 200
 min_mf_number = 6
 grc_mf_ratio = 2.
 #+++++parameter ranges+++++++++++++
@@ -123,8 +123,9 @@ if simulate:
                 
     while process_manager.queue_is_not_empty():
         # check for jobs that may have stalled due to the dreaded ConcurrentModificationException by parsing the error log files, since I don't seem to be able to catch that exception at the jython level.
-        process_manager.update_and_check_for_CME()
-        print('{rj} running, {wj} waiting, {oj} other jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        process_manager.update_jobs_and_check_for_CME()
+        process_manager.update_prequeue()
+        print('{rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs), pqj=process_manager.get_prequeue_length()))
         time.sleep(60)
     print("Simulation stage complete.")
 
@@ -148,7 +149,8 @@ if compress:
     
     while process_manager.queue_is_not_empty():
         process_manager.update_job_sets()
-        print('{rj} running, {wj} waiting, {oj} other_jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        process_manager.update_prequeue()        
+        print('{rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs), pqj=process_manager.get_prequeue_length()))
         time.sleep(60)
     print("Compression stage seems to be complete.")
 
@@ -170,7 +172,8 @@ if analyse:
         
     while process_manager.queue_is_not_empty():
         process_manager.update_job_sets()
-        print('{rj} running, {wj} waiting, {oj} other_jobs'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs)))
+        process_manager.update_prequeue()        
+        print('{rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs), pqj=process_manager.get_prequeue_length()))
         time.sleep(60)
     print("Analysis stage complete.")
 
