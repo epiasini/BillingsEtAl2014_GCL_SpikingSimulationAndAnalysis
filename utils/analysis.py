@@ -73,7 +73,6 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     mi_archive, target_group, archive_lock = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
     tr_tree = None        
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']]):
-        print('found previously computed results in hdf5 archive.')
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
@@ -81,7 +80,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         tr_tree = np.array(target_group['tr_linkage'])
         px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
     else:
-        print('no previous results found. computing from the simulation data.')
+        print('No previous results found. computing from the simulation data.')
         cell_type = 'grc'
         n_obs = n_stim_patterns * n_trials
 
