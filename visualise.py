@@ -27,15 +27,17 @@ tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [4]
+n_grc_dend_range = [6]
 network_scale_range = [5]
-active_mf_fraction_range = list(np.arange(.5, 1, .1))
-bias_range = list(np.arange(-25., -30., -5.))
-n_trials_range = [500]
+active_mf_fraction_range = list(np.arange(.1, 1, .1))
+bias_range = list(np.arange(-5., -55., -5.))
+n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
 linkage_methods_range = ['ward']
 #++++++++++++++++++++++++++
+
+plot_barcodes = False
 
 #----parameter consistency control
 if any([s >= min(n_trials_range) for s in training_size_range]):
@@ -57,8 +59,9 @@ dend_axes = []
 centroid_figs = []
 
 info_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
-centroid_sets = []
-ccp = []
+if plot_barcodes:
+    centroid_sets = []
+
 for k,par_combination in enumerate(parameter_space):
     # load parameter combination
     n_grc_dend = par_combination[0]
@@ -91,20 +94,21 @@ for k,par_combination in enumerate(parameter_space):
     #dend_axes.append(d_ax)
     #dendrogram(tr_tree, color_threshold=tr_tree[-n_stim_patterns+1,2], no_labels=True)
 
-    # build and plot a representation of the "typical" centroids at the |A_in|=|A_out| point.
-    #clust_idxs, centroids = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
-    #centroid_sets.append(centroids)
-    #centroids_fig = plt.figure()
-    #centroid_figs.append(centroids_fig)
-    #conv_plots = []
-    #for j,c in enumerate(centroids):
-    #    c_ax = centroids_fig.add_subplot(max(int(np.ceil(len(centroids)/3.)), 1), 3, j)
-    #    conv_plots.append(plot_data_vector(c_ax, c))
-    #clims = [plot.get_clim()[1] for plot in conv_plots]
-    #max_clim = max(clims)
-    #for plot in conv_plots:
-    #    plot.set_clim(vmin=None, vmax=max_clim)
-    #centroids_fig.suptitle('Centroids at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$.\nnet scale %.2f, bias %.2f, mixing %.2f ,MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ %.2f' % (network_scale, bias, multineuron_metric_mixing, ts_decoded_mi_qe[n_stim_patterns]))
+    if plot_barcodes:
+        # build and plot a representation of the "typical" centroids at the |A_in|=|A_out| point.
+        clust_idxs, centroids = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
+        centroid_sets.append(centroids)
+        centroids_fig = plt.figure()
+        centroid_figs.append(centroids_fig)
+        conv_plots = []
+        for j,c in enumerate(centroids):
+           c_ax = centroids_fig.add_subplot(max(int(np.ceil(len(centroids)/3.)), 1), 3, j)
+           conv_plots.append(plot_data_vector(c_ax, c))
+        clims = [plot.get_clim()[1] for plot in conv_plots]
+        max_clim = max(clims)
+        for plot in conv_plots:
+           plot.set_clim(vmin=None, vmax=max_clim)
+        centroids_fig.suptitle('Centroids at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$.\nnet scale %.2f, act. prob. %.1f, bias %.2f, mixing %.2f ,MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ %.2f' % (network_scale, active_mf_fraction, bias, multineuron_metric_mixing, ts_decoded_mi_qe[n_stim_patterns]))
 
 
 
