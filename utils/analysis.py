@@ -223,5 +223,4 @@ def kl_divergence(p,q):
 
 def kl_divergence_from_flat_p(q):
     p = np.ones_like(q, dtype=np.float)/len(q)
-    print kl_divergence(p,q)
     return kl_divergence(p,q)
