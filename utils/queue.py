@@ -49,7 +49,6 @@ class ProcessManager(object):
         self.running_jobs = self.__managed_jids_from_qstat('-s', 'r')
         self.waiting_jobs = self.__managed_jids_from_qstat('-s', 'p')
         self.other_jobs = set(jid for jid in self.__managed_jids_from_qstat() if jid not in self.running_jobs.union(self.waiting_jobs))
-        self.get_total_jobs_number() = len(self.running_jobs) + len(self.waiting_jobs) + len(self.other_jobs)
     def update_jobs_and_check_for_CME(self):
         self.update_job_sets()
         for jid in self.running_jobs:
