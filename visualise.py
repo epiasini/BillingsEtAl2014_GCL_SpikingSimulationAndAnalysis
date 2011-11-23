@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 
 from utils.graphic import plot_data_vector
-from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p
+from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, mean_synchrony
 
 #+++++debugging stuff+++++
 import pdb
@@ -23,6 +23,11 @@ plot_dendrograms = False
 plot_mutual_information = True
 plot_kl_divergence = False
 plot_barcodes = False
+plot_activity_levels = False
+plot_out_entropy = False
+plot_noise_entropy = False
+plot_separation = False
+plot_synchrony = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
@@ -33,11 +38,11 @@ tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [4]
+n_grc_dend_range = [10]
 network_scale_range = [5.]
 active_mf_fraction_range = list(np.arange(.1, 1, .1))
 bias_range = list(np.arange(0., -50., -5.))
-n_trials_range = [500]
+n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
 linkage_methods_range = ['ward']
@@ -64,9 +69,15 @@ if plot_mutual_information:
     info_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_kl_divergence:
     kl_div_values = [[None for each in bias_range] for each in active_mf_fraction_range]
+if plot_out_entropy:
+    out_entropy_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_barcodes:
     centroid_figs = []
     centroid_sets = []
+if plot_separation:
+    separation_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
+if plot_synchrony:
+    sync_mean_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 
 for k,par_combination in enumerate(parameter_space):
     # load parameter combination
@@ -82,8 +93,11 @@ for k,par_combination in enumerate(parameter_space):
     tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
     if plot_mutual_information:
         info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_qe[n_stim_patterns]
+        #print 'OS: ',output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if plot_kl_divergence:
         kl_div_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = kl_divergence_from_flat_p(q=px_at_same_size_point)
+    if plot_out_entropy:
+        out_entropy_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = entropy(px_at_same_size_point)
     # plot
     color = colors[k%len(colors)]
     if plot_mi_detail and plotting_mode == 'precision':
@@ -97,29 +111,67 @@ for k,par_combination in enumerate(parameter_space):
         if k==len(parameter_space)-1:
             mi_det_ax.plot([n_stim_patterns, n_stim_patterns], mi_det_ax.get_ylim(), linestyle='--', color='k')
     if plot_dendrograms:
-        d_ax = dend_fig.add_subplot(1,len(parameter_space),k)
-        d_ax.set_title('Network scale parameter: %.2f' % (network_scale))
-        d_ax.set_xlabel('Datapoint index')
-        d_ax.set_ylabel('Inter-node multiunit V.R. distance (a.u.)')
+        n = active_mf_fraction_range.index(active_mf_fraction)
+        m = bias_range.index(bias)
+        idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
+        print n,m,idx
+        d_ax = dend_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
+        #d_ax.set_title('$I_b$=%.1f pA , $P_{MF}$=%.1f' % (bias, active_mf_fraction))
+        #d_ax.set_xlabel('Datapoint index')
+        #d_ax.set_ylabel('Inter-node multiunit V.R. distance (a.u.)')
         dend_axes.append(d_ax)
         dendrogram(tr_tree, color_threshold=tr_tree[-n_stim_patterns+1,2], no_labels=True)
-
+        d_ax.set_yticks([])
     if plot_barcodes:
         # build and plot a representation of the "typical" centroids at the |A_in|=|A_out| point.
-        clust_idxs, centroids = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
+        clust_idxs, centroids, clust_sizes = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
+        centroid_sparsities = [(centroid.max(axis=1)>0).sum()/float(centroids.shape[1]) for centroid in centroids]
         centroid_sets.append(centroids)
         centroids_fig = plt.figure()
         centroid_figs.append(centroids_fig)
         conv_plots = []
         for j,c in enumerate(centroids):
            c_ax = centroids_fig.add_subplot(max(int(np.ceil(len(centroids)/3.)), 1), 3, j)
+           c_ax.set_title('%d points; 1-spars.=%.2f' % (clust_sizes[j], centroid_sparsities[j]))
            conv_plots.append(plot_data_vector(c_ax, c))
         clims = [plot.get_clim()[1] for plot in conv_plots]
         max_clim = max(clims)
         for plot in conv_plots:
            plot.set_clim(vmin=None, vmax=max_clim)
         centroids_fig.suptitle('Centroids at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$.\nnet scale %.2f, act. prob. %.1f, bias %.2f, mixing %.2f ,MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ %.2f' % (network_scale, active_mf_fraction, bias, multineuron_metric_mixing, ts_decoded_mi_qe[n_stim_patterns]))
+    if plot_activity_levels:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.hist(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).flatten(), bins=30)
+    if plot_separation:
+        separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
+    if plot_synchrony:
+        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
 
+
+def plot_2d_heatmap(data, x_ref_range, y_ref_range, xlabel, ylabel, cbar_label, title):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    plot = ax.imshow(data, interpolation='none', cmap='coolwarm', origin='lower')
+    cbar = fig.colorbar(plot, use_gridspec=True)
+    cbar.set_label(cbar_label)
+    ax.set_xticks(np.arange(len(x_ref_range)))
+    ax.set_xticklabels([str(x) for x in x_ref_range])
+    ax.set_xlabel(xlabel)
+    ax.set_yticks(np.arange(len(y_ref_range)))
+    ax.set_yticklabels([str(y) for y in y_ref_range])
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    
+if plot_separation:
+    cbar_label = 'Cluster separation at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$'
+    title = 'Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
+    plot_2d_heatmap(separation_at_npatterns, bias_range, active_mf_fraction_range, xlabel='Threshold current (pA)', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
+
+if plot_synchrony:
+    cbar_label = 'Average output synchrony'
+    title = 'Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
+    plot_2d_heatmap(sync_mean_values, bias_range, active_mf_fraction_range, xlabel='Threshold current (pA)', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
 
 if plot_mutual_information:
     mi_fig = plt.figure()
@@ -148,6 +200,36 @@ if plot_kl_divergence:
     kl_ax.set_yticklabels([str(y) for y in active_mf_fraction_range])
     kl_ax.set_ylabel('MF activation probability')
     kl_ax.set_title('Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials))
+
+if plot_out_entropy:
+    oe_fig = plt.figure()
+    oe_ax = oe_fig.add_subplot(111)
+    oe_plot = oe_ax.imshow(out_entropy_values, interpolation='none', cmap='coolwarm', origin='lower')
+    oe_cbar = oe_fig.colorbar(oe_plot, use_gridspec=True)
+    oe_cbar.set_label('Output entropy (bits)')
+    oe_ax.set_xticks(np.arange(len(bias_range)))
+    oe_ax.set_xticklabels([str(x) for x in bias_range])
+    oe_ax.set_xlabel('Threshold current (pA)')
+    oe_ax.set_yticks(np.arange(len(active_mf_fraction_range)))
+    oe_ax.set_yticklabels([str(y) for y in active_mf_fraction_range])
+    oe_ax.set_ylabel('MF activation probability')
+    oe_ax.set_title('Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials))
+
+if plot_noise_entropy:
+    noise_entropy_values = (np.array(out_entropy_values) - np.array(info_at_npatterns))/np.array(out_entropy_values)
+    ne_fig = plt.figure()
+    ne_ax = ne_fig.add_subplot(111)
+    ne_plot = ne_ax.imshow(noise_entropy_values, interpolation='none', cmap='coolwarm', origin='lower')
+    ne_cbar = ne_fig.colorbar(ne_plot, use_gridspec=True)
+    ne_cbar.set_label('Fraction of output entropy due to noise')
+    ne_ax.set_xticks(np.arange(len(bias_range)))
+    ne_ax.set_xticklabels([str(x) for x in bias_range])
+    ne_ax.set_xlabel('Threshold current (pA)')
+    ne_ax.set_yticks(np.arange(len(active_mf_fraction_range)))
+    ne_ax.set_yticklabels([str(y) for y in active_mf_fraction_range])
+    ne_ax.set_ylabel('MF activation probability')
+    ne_ax.set_title('Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials))
+    
 
 if plot_mi_detail:
     mi_det_ax.legend(loc='upper left')

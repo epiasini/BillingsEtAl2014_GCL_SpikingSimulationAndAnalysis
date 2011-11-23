@@ -9,7 +9,7 @@ import fcntl
 
 import pyentropy as pe
 
-from .paths import data_archive_path_ctor, mi_archive_path_ctor
+from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -18,13 +18,13 @@ def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias
     
     n_cells = archive['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
 
-    n_expcted_obs = n_stim_patterns * n_trials
+    n_expected_obs = n_stim_patterns * n_trials
     
     observation_list = [x[1]['{0}_spiketimes'.format(cell_type)] for s in archive.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
     
     max_n_spikes = max([o.shape[0] for o in observation_list])
 
-    spikes = -1 * np.ones(shape=(n_expcted_obs, n_cells, max_n_spikes))
+    spikes = -1 * np.ones(shape=(n_expected_obs, n_cells, max_n_spikes))
     
     for k, o in enumerate(observation_list):
         spikes[k][:,0:o.shape[0]] = np.array(o).transpose()
@@ -80,7 +80,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         tr_tree = np.array(target_group['tr_linkage'])
         px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
     else:
-        print('No previous results found. computing from the simulation data.')
+        print('Need to analyse from %s' % mi_archive.filename)
         cell_type = 'grc'
         n_obs = n_stim_patterns * n_trials
 
@@ -204,7 +204,6 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
     return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point
 
-
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
     mi_archive, target_group, archive_lock = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
@@ -212,10 +211,11 @@ def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, ac
     tr_vectors = convolve(tr_spikes, sim_duration, tau, dt)
     flat_clustering = fcluster(target_group['tr_linkage'], n_clusts, criterion='maxclust')
     clust_idxs = sorted(list(set(flat_clustering)))
+    clust_sizes = [(flat_clustering==c).sum() for c in clust_idxs]
     centroids = np.array([np.mean(tr_vectors[flat_clustering==c], axis=0) for c in clust_idxs])
     mi_archive.close()
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
-    return clust_idxs, centroids
+    return clust_idxs, centroids, clust_sizes
     
 def kl_divergence(p,q):
     return (p * np.log2(p/q)).sum()
@@ -223,3 +223,33 @@ def kl_divergence(p,q):
 def kl_divergence_from_flat_p(q):
     p = np.ones_like(q, dtype=np.float)/len(q)
     return kl_divergence(p,q)
+
+def entropy(p):
+    return -(p[p>0]*np.log2(p[p>0])).sum()
+    
+def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    grc_act_prob = np.mean([(ob[0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
+    return grc_act_prob
+    
+def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    # TODO: need convolution?
+    out_spike_array[out_spike_array==-1] = 0
+    activity_level_out_array = np.array(out_spike_array, dtype=np.bool).sum(axis=2)
+    return activity_level_out_array
+    
+def synchrony(p):
+    n = p.shape[0]
+    sync = 0
+    for i, cell1 in enumerate(p):
+        for j, cell2 in enumerate(p[i:]):
+            sync += np.nan_to_num(np.correlate(cell1, cell2)/np.sqrt((np.square(cell1).sum() * np.square(cell2).sum())))
+    return (2/float(n*(n-1)))*sync
+
+def mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    out_spikes = out_spikes[random.sample(range(out_spikes.shape[0]), 100)]
+    out_vectors = convolve(out_spikes, sim_duration, tau, dt)
+    return np.mean([synchrony(p) for p in out_vectors])
+
