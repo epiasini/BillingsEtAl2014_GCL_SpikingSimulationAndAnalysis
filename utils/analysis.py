@@ -272,6 +272,7 @@ def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fractio
     if 'mean_synchrony' in target_group.keys():
         synchrony = np.array(target_group['mean_synchrony'])
     else:
+        print('Analysing synchrony from %s' % archive.filename)
         close_archive(archive, archive_lock)
         synchrony = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
         archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
