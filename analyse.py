@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 import sys
 
-from utils.analysis import analyse_single_configuration
+from utils.analysis import analyse_single_configuration, analyse_synchrony
 
 min_mf_number = int(sys.argv[1])
 grc_mf_ratio = float(sys.argv[2])
@@ -21,6 +21,7 @@ linkage_method = sys.argv[14]
 
 analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
 
+analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
 
 
 
