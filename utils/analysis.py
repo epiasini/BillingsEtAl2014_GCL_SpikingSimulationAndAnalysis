@@ -68,6 +68,10 @@ def open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction,
     target_group = trsg.require_group('method_%s' % linkage_method)
     return mi_archive, target_group, archive_lock
 
+def close_archive(archive, archive_lock):
+    archive.close()
+    fcntl.lockf(archive_lock, fcntl.LOCK_UN)
+
 def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
     # prepare hdf5 archive
     mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
@@ -81,6 +85,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
     else:
         print('Need to analyse from %s' % mi_archive.filename)
+        close_archive(mi_archive, archive_lock)
         cell_type = 'grc'
         n_obs = n_stim_patterns * n_trials
 
@@ -190,6 +195,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             
 
         # save analysis results in a separate file
+        mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
         datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point'] if ds in target_group.keys()]
         for ds in datasets_to_be_deleted:
             del target_group[ds]
@@ -213,8 +219,7 @@ def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, ac
     clust_idxs = sorted(list(set(flat_clustering)))
     clust_sizes = [(flat_clustering==c).sum() for c in clust_idxs]
     centroids = np.array([np.mean(tr_vectors[flat_clustering==c], axis=0) for c in clust_idxs])
-    mi_archive.close()
-    fcntl.lockf(archive_lock, fcntl.LOCK_UN)
+    close_archive(mi_archive, archive_lock)
     return clust_idxs, centroids, clust_sizes
     
 def kl_divergence(p,q):
@@ -263,13 +268,10 @@ def open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fractio
     target_group = ntrg
     return archive, target_group, archive_lock
 
-def close_archive(archive, archive_lock):
-    archive.close()
-    fcntl.lockf(archive_lock, fcntl.LOCK_UN)
-
 def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
     archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if 'mean_synchrony' in target_group.keys():
+        print('Found synchrony value in %s' % archive.filename)
         synchrony = np.array(target_group['mean_synchrony'])
     else:
         print('Analysing synchrony from %s' % archive.filename)

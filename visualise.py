@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 
 from utils.graphic import plot_data_vector
-from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, mean_synchrony
+from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, analyse_synchrony
 
 #+++++debugging stuff+++++
 import pdb
@@ -38,7 +38,7 @@ tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [10]
+n_grc_dend_range = [4]
 network_scale_range = [5.]
 active_mf_fraction_range = list(np.arange(.1, 1, .1))
 bias_range = list(np.arange(0., -50., -5.))
@@ -146,7 +146,7 @@ for k,par_combination in enumerate(parameter_space):
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
     if plot_synchrony:
-        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
+        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
 
 
 def plot_2d_heatmap(data, x_ref_range, y_ref_range, xlabel, ylabel, cbar_label, title):
