@@ -28,7 +28,8 @@ plot_out_entropy = False
 plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
-plot_distance_matrix = True
+plot_distance_matrix = False
+plot_mi_vs_activity = True
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
@@ -41,8 +42,8 @@ plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.5, 1, .1))
-bias_range = list(np.arange(-15., -20., -5.))
+active_mf_fraction_range = list(np.arange(.8, 1, .1))
+bias_range = list(np.arange(-25., -30., -5.))
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -77,10 +78,19 @@ if plot_barcodes:
     centroid_sets = []
 if plot_separation:
     separation_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
+if plot_activity_levels:
+    al_fig = plt.figure()
 if plot_synchrony:
     sync_mean_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_distance_matrix:
     dist_fig = plt.figure()
+if plot_mi_vs_activity:
+    mi_for_activ_plot = []
+    average_output_levels = []
+    average_output_saturation = []
+    if not plot_mutual_information:
+        plot_mutual_information = True
+        info_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
 
 for k,par_combination in enumerate(parameter_space):
     # load parameter combination
@@ -143,9 +153,15 @@ for k,par_combination in enumerate(parameter_space):
            plot.set_clim(vmin=None, vmax=max_clim)
         centroids_fig.suptitle('Centroids at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$.\nnet scale %.2f, act. prob. %.1f, bias %.2f, mixing %.2f ,MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ %.2f' % (network_scale, active_mf_fraction, bias, multineuron_metric_mixing, ts_decoded_mi_qe[n_stim_patterns]))
     if plot_activity_levels:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.hist(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).flatten(), bins=30)
+        n = active_mf_fraction_range.index(active_mf_fraction)
+        m = bias_range.index(bias)
+        idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
+        print n,m,idx
+        al_ax = al_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
+        al_ax.hist(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).flatten(), bins=5)
+        al_ax.set_xticks([])
+        al_ax.set_yticks([])
+        
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
     if plot_synchrony:
@@ -159,6 +175,11 @@ for k,par_combination in enumerate(parameter_space):
         dist_ax.imshow(distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt), interpolation='none', cmap='coolwarm')
         dist_ax.set_xticks([])
         dist_ax.set_yticks([])
+    if plot_mi_vs_activity:
+        print(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        mi_for_activ_plot.append(info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)])
+        average_output_levels.append(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).mean())
+        average_output_saturation.append(output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials))
     
 if plot_separation:
     cbar_label = 'Cluster separation at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$'
@@ -240,6 +261,17 @@ if plot_dendrograms:
     dend_axes_ylim = (0, max([ax.get_ylim()[1] for ax in dend_axes]))
     for ax in dend_axes:
         ax.set_ylim(dend_axes_ylim)
+
+if plot_mi_vs_activity:
+    miva_fig = plt.figure()
+    miva_ax = miva_fig.add_subplot(111)
+    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
+    miva_ax.set_xlabel('average number of spikes')
+    miva_ax.set_ylabel('spatial saturation')
+    miva_cbar = miva_fig.colorbar(miva_points, use_gridspec=True)
+    miva_cbar.set_label('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
+    miva_fig.savefig('mi_vs_activity.png')
+    
 
 plt.show()
     
