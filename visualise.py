@@ -6,8 +6,8 @@ import itertools
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram
 
-from utils.graphic import plot_data_vector
-from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, analyse_synchrony
+from utils.graphic import plot_data_vector, plot_2d_heatmap
+from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, analyse_synchrony, distance_matrix
 
 #+++++debugging stuff+++++
 import pdb
@@ -20,7 +20,7 @@ class TrainingSetSizeError(Exception):
 
 plot_mi_detail = False
 plot_dendrograms = False
-plot_mutual_information = True
+plot_mutual_information = False
 plot_kl_divergence = False
 plot_barcodes = False
 plot_activity_levels = False
@@ -28,6 +28,7 @@ plot_out_entropy = False
 plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
+plot_distance_matrix = True
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
@@ -40,8 +41,8 @@ plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.1, 1, .1))
-bias_range = list(np.arange(0., -50., -5.))
+active_mf_fraction_range = list(np.arange(.5, 1, .1))
+bias_range = list(np.arange(-15., -20., -5.))
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -78,6 +79,8 @@ if plot_separation:
     separation_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_synchrony:
     sync_mean_values = [[None for each in bias_range] for each in active_mf_fraction_range]
+if plot_distance_matrix:
+    dist_fig = plt.figure()
 
 for k,par_combination in enumerate(parameter_space):
     # load parameter combination
@@ -147,21 +150,15 @@ for k,par_combination in enumerate(parameter_space):
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
     if plot_synchrony:
         sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
-
-
-def plot_2d_heatmap(data, x_ref_range, y_ref_range, xlabel, ylabel, cbar_label, title):
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    plot = ax.imshow(data, interpolation='none', cmap='coolwarm', origin='lower')
-    cbar = fig.colorbar(plot, use_gridspec=True)
-    cbar.set_label(cbar_label)
-    ax.set_xticks(np.arange(len(x_ref_range)))
-    ax.set_xticklabels([str(x) for x in x_ref_range])
-    ax.set_xlabel(xlabel)
-    ax.set_yticks(np.arange(len(y_ref_range)))
-    ax.set_yticklabels([str(y) for y in y_ref_range])
-    ax.set_ylabel(ylabel)
-    ax.set_title(title)
+    if plot_distance_matrix:
+        n = active_mf_fraction_range.index(active_mf_fraction)
+        m = bias_range.index(bias)
+        idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
+        print n,m,idx
+        dist_ax = dist_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
+        dist_ax.imshow(distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt), interpolation='none', cmap='coolwarm')
+        dist_ax.set_xticks([])
+        dist_ax.set_yticks([])
     
 if plot_separation:
     cbar_label = 'Cluster separation at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$'

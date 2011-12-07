@@ -2,7 +2,7 @@ import numpy as np
 import h5py
 import random
 from scipy.cluster.hierarchy import linkage, fcluster
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform
 import functools
 import itertools
 import fcntl
@@ -281,4 +281,17 @@ def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fractio
         target_group.create_dataset('mean_synchrony', data=synchrony)
     close_archive(archive, archive_lock)
     return synchrony
+    
+def distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    out_vectors = convolve(out_spikes, sim_duration, tau, dt)
+    distances = []
+    for h, vec in enumerate(out_vectors):
+        for k in range(h+1, out_vectors.shape[0]):
+            distances.append(multineuron_distance_labeled_line(out_vectors[h], out_vectors[k]))
+    distances = squareform(np.array(distances))
+    return distances
+    
+    
+    
     
