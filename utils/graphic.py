@@ -1,3 +1,4 @@
+import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 
@@ -26,3 +27,4 @@ def plot_2d_heatmap(data, x_ref_range, y_ref_range, xlabel, ylabel, cbar_label, 
     ax.set_yticklabels([str(y) for y in y_ref_range])
     ax.set_ylabel(ylabel)
     ax.set_title(title)
+    return fig, ax

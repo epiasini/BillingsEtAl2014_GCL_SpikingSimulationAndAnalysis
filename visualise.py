@@ -23,13 +23,14 @@ plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
 plot_barcodes = False
-plot_activity_levels = False
+plot_activity_levels = True
 plot_out_entropy = False
 plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
 plot_distance_matrix = False
-plot_mi_vs_activity = True
+plot_mi_vs_activity = False
+plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
@@ -42,7 +43,7 @@ plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.8, 1, .1))
+active_mf_fraction_range = list(np.arange(.9, 1, .1))
 bias_range = list(np.arange(-25., -30., -5.))
 n_trials_range = [200]
 training_size_range = [40]
@@ -80,6 +81,8 @@ if plot_separation:
     separation_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_activity_levels:
     al_fig = plt.figure()
+    al_avg_fig = plt.figure()
+    avg_levels = []
 if plot_synchrony:
     sync_mean_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_distance_matrix:
@@ -91,6 +94,8 @@ if plot_mi_vs_activity:
     if not plot_mutual_information:
         plot_mutual_information = True
         info_at_npatterns = [[None for each in bias_range] for each in active_mf_fraction_range]
+if plot_mi_vs_dn_and_sparsity:
+    info_vs_dn_and_sparsity = [[None for each in n_grc_dend_range] for each in active_mf_fraction_range]
 
 for k,par_combination in enumerate(parameter_space):
     # load parameter combination
@@ -157,10 +162,12 @@ for k,par_combination in enumerate(parameter_space):
         m = bias_range.index(bias)
         idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
         print n,m,idx
+        ola = output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
         al_ax = al_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
-        al_ax.hist(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).flatten(), bins=5)
+        al_ax.hist(ola.flatten(), bins=5)
         al_ax.set_xticks([])
         al_ax.set_yticks([])
+        avg_levels.append(ola.mean())
         
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
@@ -180,7 +187,8 @@ for k,par_combination in enumerate(parameter_space):
         mi_for_activ_plot.append(info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)])
         average_output_levels.append(output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials).mean())
         average_output_saturation.append(output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials))
-    
+    if plot_mi_vs_dn_and_sparsity:        
+        info_vs_dn_and_sparsity[active_mf_fraction_range.index(active_mf_fraction)][n_grc_dend_range.index(n_grc_dend)] = ts_decoded_mi_qe[n_stim_patterns]
 if plot_separation:
     cbar_label = 'Cluster separation at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$'
     title = 'Effect of sparseness and inhibition\n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
@@ -271,6 +279,18 @@ if plot_mi_vs_activity:
     miva_cbar = miva_fig.colorbar(miva_points, use_gridspec=True)
     miva_cbar.set_label('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
     miva_fig.savefig('mi_vs_activity.png')
+
+if plot_mi_vs_dn_and_sparsity:
+    cbar_label = 'MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)'
+    title = 'MI vs sparseness and $n_{dend}$\nbias=-25pA, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
+    plot_2d_heatmap(info_vs_dn_and_sparsity, n_grc_dend_range, active_mf_fraction_range, xlabel='granule cell dendrites', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
+    
+if plot_activity_levels:
+    print avg_levels, bias_range, active_mf_fraction_range
+    cbar_label = 'number of spikes'
+    title = 'Average activity vs sparseness and inhibition \n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
+    fig, ax = plot_2d_heatmap(np.array(avg_levels).reshape(len(bias_range), len(active_mf_fraction_range)), bias_range, active_mf_fraction_range, xlabel='granule cell dendrites', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
+    fig.savefig('SaI_avg_activity.png')
     
 
 plt.show()
