@@ -23,14 +23,14 @@ plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
 plot_barcodes = False
-plot_activity_levels = True
+plot_activity_levels = False
 plot_out_entropy = False
 plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
 plot_distance_matrix = False
 plot_mi_vs_activity = False
-plot_mi_vs_dn_and_sparsity = False
+plot_mi_vs_dn_and_sparsity = True
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
@@ -41,7 +41,7 @@ tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [4]
+n_grc_dend_range = [1,2,3,4,5,6,7,8,9,10]
 network_scale_range = [5.]
 active_mf_fraction_range = list(np.arange(.1, 1, .1))
 bias_range = list(np.arange(0., -50., -5.))
@@ -282,7 +282,7 @@ if plot_mi_vs_activity:
 
 if plot_mi_vs_dn_and_sparsity:
     cbar_label = 'MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)'
-    title = 'MI vs sparseness and $n_{dend}$\nbias=-25pA, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
+    title = 'MI vs sparseness and $n_{dend}$\nbias=%dpA, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (int(bias), int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
     plot_2d_heatmap(info_vs_dn_and_sparsity, n_grc_dend_range, active_mf_fraction_range, xlabel='granule cell dendrites', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
     
 if plot_activity_levels:
