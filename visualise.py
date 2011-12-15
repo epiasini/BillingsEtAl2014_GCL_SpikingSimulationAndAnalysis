@@ -43,8 +43,8 @@ plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.9, 1, .1))
-bias_range = list(np.arange(-25., -30., -5.))
+active_mf_fraction_range = list(np.arange(.1, 1, .1))
+bias_range = list(np.arange(0., -50., -5.))
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -82,7 +82,7 @@ if plot_separation:
 if plot_activity_levels:
     al_fig = plt.figure()
     al_avg_fig = plt.figure()
-    avg_levels = []
+    avg_levels = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_synchrony:
     sync_mean_values = [[None for each in bias_range] for each in active_mf_fraction_range]
 if plot_distance_matrix:
@@ -167,7 +167,7 @@ for k,par_combination in enumerate(parameter_space):
         al_ax.hist(ola.flatten(), bins=5)
         al_ax.set_xticks([])
         al_ax.set_yticks([])
-        avg_levels.append(ola.mean())
+        avg_levels[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ola.mean()
         
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
@@ -289,7 +289,7 @@ if plot_activity_levels:
     print avg_levels, bias_range, active_mf_fraction_range
     cbar_label = 'number of spikes'
     title = 'Average activity vs sparseness and inhibition \n$n_{dend}$=%d, $n_{MF}$=%d,  $|\mathcal{A}_{in}|$=%d, $N_{trials}$=%d' % (n_grc_dend, int(round(network_scale_range[0]*min_mf_number)), n_stim_patterns, n_trials)
-    fig, ax = plot_2d_heatmap(np.array(avg_levels).reshape(len(bias_range), len(active_mf_fraction_range)), bias_range, active_mf_fraction_range, xlabel='granule cell dendrites', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
+    fig, ax = plot_2d_heatmap(avg_levels, bias_range, active_mf_fraction_range, xlabel='Threshold current (pA)', ylabel='MF activation probability', cbar_label=cbar_label, title=title)
     fig.savefig('SaI_avg_activity.png')
     
 
