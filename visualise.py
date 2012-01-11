@@ -41,8 +41,8 @@ tau = 5.
 dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [4]
-network_scale_range = [1.]
+n_grc_dend_range = [3,4,5]
+network_scale_range = [5.]
 active_mf_fraction_range = list(np.arange(.1, 1, .1))
 bias_range = list(np.arange(0., -50., -5.))
 n_trials_range = [200]
@@ -275,7 +275,7 @@ if plot_dendrograms:
 if plot_mi_vs_activity:
     miva_fig = plt.figure()
     miva_ax = miva_fig.add_subplot(111)
-    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
+    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
     miva_ax.set_xlabel('average number of spikes')
     miva_ax.set_ylabel('spatial saturation')
     miva_cbar = miva_fig.colorbar(miva_points, use_gridspec=True)
@@ -283,7 +283,8 @@ if plot_mi_vs_activity:
     miva_fig.savefig('mi_vs_activity.png')
 
     mi_b_ns_fig, mi_b_ns_ax = plt.subplots()
-    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap='coolwarm')
+    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
+    mi_b_ns_ax.set_xlim(mi_b_ns_ax.get_xlim()[::-1])
     mi_b_ns_ax.set_xlabel('Threshold current (pA)')
     mi_b_ns_ax.set_ylabel('average number of spikes')
     mi_b_ns_cbar = mi_b_ns_fig.colorbar(mi_b_ns_points, use_gridspec=True)
@@ -291,7 +292,8 @@ if plot_mi_vs_activity:
     mi_b_ns_fig.savefig('mi_vs_bias_and_nspikes.png')
 
     mi_b_sat_fig, mi_b_sat_ax = plt.subplots()
-    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
+    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
+    mi_b_sat_ax.set_xlim(mi_b_sat_ax.get_xlim()[::-1])
     mi_b_sat_ax.set_xlabel('Threshold current (pA)')
     mi_b_sat_ax.set_ylabel('output spatial saturation')
     mi_b_sat_cbar = mi_b_sat_fig.colorbar(mi_b_sat_points, use_gridspec=True)
