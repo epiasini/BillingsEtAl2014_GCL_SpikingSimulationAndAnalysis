@@ -34,7 +34,7 @@ plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 6
+n_stim_patterns = 20
 min_mf_number = 6
 grc_mf_ratio = 2.
 tau = 5.
