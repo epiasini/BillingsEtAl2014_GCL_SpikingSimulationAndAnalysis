@@ -234,7 +234,7 @@ def entropy(p):
     
 def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
     out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
-    grc_act_prob = np.mean([(ob[0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
+    grc_act_prob = np.mean([(ob[:,0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
     return grc_act_prob
     
 def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):

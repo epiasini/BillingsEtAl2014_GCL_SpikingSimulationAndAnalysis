@@ -34,7 +34,7 @@ plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 20
+n_stim_patterns = 6
 min_mf_number = 6
 grc_mf_ratio = 2.
 tau = 5.
@@ -42,7 +42,7 @@ dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [5.]
+network_scale_range = [1.]
 active_mf_fraction_range = list(np.arange(.1, 1, .1))
 bias_range = list(np.arange(0., -50., -5.))
 n_trials_range = [200]
@@ -297,7 +297,14 @@ if plot_mi_vs_activity:
     mi_b_sat_cbar = mi_b_sat_fig.colorbar(mi_b_sat_points, use_gridspec=True)
     mi_b_sat_cbar.set_label('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
     mi_b_sat_fig.savefig('mi_vs_bias_and_out_saturation.png')
-    
+
+    # plot mi vs (firing rate over saturation) coefficient
+    c_list = np.array(average_output_levels, dtype=np.float)/np.array(average_output_saturation, dtype=np.float)
+    mi_c_fig, mi_c_ax = plt.subplots()
+    mi_c_points = mi_c_ax.scatter(c_list, mi_for_activ_plot)
+    mi_c_ax.set_xlabel('output spike number/saturation')
+    mi_c_ax.set_ylabel('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
+    mi_c_fig.savefig('mi_bias-over-saturation.png')
 
 if plot_mi_vs_dn_and_sparsity:
     cbar_label = 'MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)'
