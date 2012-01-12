@@ -2,14 +2,14 @@ import numpy as np
 import h5py
 import random
 from scipy.cluster.hierarchy import linkage, fcluster
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist, squareform
 import functools
 import itertools
 import fcntl
 
 import pyentropy as pe
 
-from .paths import data_archive_path_ctor, mi_archive_path_ctor
+from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 
 def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
     
@@ -18,13 +18,13 @@ def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias
     
     n_cells = archive['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
 
-    n_expcted_obs = n_stim_patterns * n_trials
+    n_expected_obs = n_stim_patterns * n_trials
     
     observation_list = [x[1]['{0}_spiketimes'.format(cell_type)] for s in archive.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
     
     max_n_spikes = max([o.shape[0] for o in observation_list])
 
-    spikes = -1 * np.ones(shape=(n_expcted_obs, n_cells, max_n_spikes))
+    spikes = -1 * np.ones(shape=(n_expected_obs, n_cells, max_n_spikes))
     
     for k, o in enumerate(observation_list):
         spikes[k][:,0:o.shape[0]] = np.array(o).transpose()
@@ -56,7 +56,7 @@ def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
-def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
+def open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
     filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias)
     archive_lock = open(filename, 'a')
     fcntl.lockf(archive_lock, fcntl.LOCK_EX)
@@ -68,9 +68,13 @@ def open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bi
     target_group = trsg.require_group('method_%s' % linkage_method)
     return mi_archive, target_group, archive_lock
 
+def close_archive(archive, archive_lock):
+    archive.close()
+    fcntl.lockf(archive_lock, fcntl.LOCK_UN)
+
 def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
     # prepare hdf5 archive
-    mi_archive, target_group, archive_lock = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
     tr_tree = None        
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']]):
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
@@ -80,7 +84,8 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         tr_tree = np.array(target_group['tr_linkage'])
         px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
     else:
-        print('No previous results found. computing from the simulation data.')
+        print('Need to analyse from %s' % mi_archive.filename)
+        close_archive(mi_archive, archive_lock)
         cell_type = 'grc'
         n_obs = n_stim_patterns * n_trials
 
@@ -190,6 +195,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             
 
         # save analysis results in a separate file
+        mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
         datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point'] if ds in target_group.keys()]
         for ds in datasets_to_be_deleted:
             del target_group[ds]
@@ -204,18 +210,17 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
     return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point
 
-
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
-    mi_archive, target_group, archive_lock = open_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
     tr_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type)[target_group['tr_indexes']]
     tr_vectors = convolve(tr_spikes, sim_duration, tau, dt)
     flat_clustering = fcluster(target_group['tr_linkage'], n_clusts, criterion='maxclust')
     clust_idxs = sorted(list(set(flat_clustering)))
+    clust_sizes = [(flat_clustering==c).sum() for c in clust_idxs]
     centroids = np.array([np.mean(tr_vectors[flat_clustering==c], axis=0) for c in clust_idxs])
-    mi_archive.close()
-    fcntl.lockf(archive_lock, fcntl.LOCK_UN)
-    return clust_idxs, centroids
+    close_archive(mi_archive, archive_lock)
+    return clust_idxs, centroids, clust_sizes
     
 def kl_divergence(p,q):
     return (p * np.log2(p/q)).sum()
@@ -223,3 +228,70 @@ def kl_divergence(p,q):
 def kl_divergence_from_flat_p(q):
     p = np.ones_like(q, dtype=np.float)/len(q)
     return kl_divergence(p,q)
+
+def entropy(p):
+    return -(p[p>0]*np.log2(p[p>0])).sum()
+    
+def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    grc_act_prob = np.mean([(ob[:,0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
+    return grc_act_prob
+    
+def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    # TODO: need convolution?
+    out_spike_array[out_spike_array==-1] = 0
+    activity_level_out_array = np.array(out_spike_array, dtype=np.bool).sum(axis=2)
+    return activity_level_out_array
+    
+def synchrony(p):
+    n = p.shape[0]
+    sync = 0
+    for i, cell1 in enumerate(p):
+        for j, cell2 in enumerate(p[i:]):
+            sync += np.nan_to_num(np.correlate(cell1, cell2)/np.sqrt((np.square(cell1).sum() * np.square(cell2).sum())))
+    return (2/float(n*(n-1)))*sync
+
+def mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    out_spikes = out_spikes[random.sample(range(out_spikes.shape[0]), 100)]
+    out_vectors = convolve(out_spikes, sim_duration, tau, dt)
+    return np.mean([synchrony(p) for p in out_vectors])
+
+def open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+    filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias)
+    archive_lock = open(filename, 'a')
+    fcntl.lockf(archive_lock, fcntl.LOCK_EX)
+    archive = h5py.File(filename)
+    nspg = archive.require_group('sp%d' % n_stim_patterns)
+    ntrg = nspg.require_group('t%d' % n_trials)
+    target_group = ntrg
+    return archive, target_group, archive_lock
+
+def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+    if 'mean_synchrony' in target_group.keys():
+        print('Found synchrony value in %s' % archive.filename)
+        synchrony = np.array(target_group['mean_synchrony'])
+    else:
+        print('Analysing synchrony from %s' % archive.filename)
+        close_archive(archive, archive_lock)
+        synchrony = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
+        archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        target_group.create_dataset('mean_synchrony', data=synchrony)
+    close_archive(archive, archive_lock)
+    return synchrony
+    
+def distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+    out_vectors = convolve(out_spikes, sim_duration, tau, dt)
+    distances = []
+    for h, vec in enumerate(out_vectors):
+        for k in range(h+1, out_vectors.shape[0]):
+            distances.append(multineuron_distance_labeled_line(out_vectors[h], out_vectors[k]))
+    distances = squareform(np.array(distances))
+    return distances
+    
+    
+    
+    
