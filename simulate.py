@@ -13,13 +13,13 @@ import os.path
 
 from java.lang import System, Float
 from java.io import File
-from java.util import Vector
+from java.util import Vector, ArrayList
 
 from ucl.physiol.neuroconstruct.project import ProjectManager, CellGroupsInfo, SingleElectricalInput, SearchPattern, MaxMinLength, SynapticProperties, ConnectivityConditions
 from ucl.physiol.neuroconstruct.project.stimulation import RandomSpikeTrainInstanceProps
-from ucl.physiol.neuroconstruct.project.cellchoice import FixedNumberCells
+from ucl.physiol.neuroconstruct.project.cellchoice import FixedNumberCells, AllCells
 from ucl.physiol.neuroconstruct.utils import NumberGenerator
-from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings
+from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, IClampSettings
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
@@ -109,7 +109,6 @@ cpf.close()
 spf = open(stim_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, n_stim_patterns), "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
-print stim_patterns
 
 # calculate which patterns are mine to simulate
 patterns_per_chunk = n_stim_patterns/size
@@ -124,15 +123,18 @@ print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
 
-# delete all existing connections
-project.generatedNetworkConnections.reset()
-
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
-    # delete all existing stimuli
-    project.generatedElecInputs.reset()
-
     for trial in range(n_trials):
+        # delete all existing connections
+        project.generatedNetworkConnections.reset()
+        project.morphNetworkConnectionsInfo.deleteAllNetConns()
+        sim_config.setNetConns(ArrayList())        
+        # delete all existing stimuli
+        project.generatedElecInputs.reset()
+        project.elecInputInfo.deleteAllStims()
+        sim_config.setInputs(ArrayList())
+
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
         sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
@@ -141,10 +143,9 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 
         #Set the thresholding current
         bias_in_nA = 0.001 * bias
-        bias_input = project.elecInputInfo.getStim("bias")
-        bias_input.setAmp(NumberGenerator(bias_in_nA))
-        bias_input.setDur(NumberGenerator(sim_duration))
-        project.elecInputInfo.updateStim(bias_input)
+        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, sim_duration, bias_in_nA, False)
+        project.elecInputInfo.addStim(bias_input)
+        sim_config.addInput(bias_input.getReference())
 
         # regenerate network
         i = 0
@@ -160,11 +161,11 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 print "ConcurrentModificationException raised by nC; retrying network generation."
                 if i>5:
                     raise java.util.ConcurrentModificationException
-                
+        
         for mf in range(mf_number):
             if mf in sp:
                 # create random spiking stimuli on active MFs, following the current stimulus pattern
-                rate = max(0, random.gauss(stim_rate_mu, stim_rate_sigma))
+                rate = max(0.1, random.gauss(stim_rate_mu, stim_rate_sigma))
                 rate_in_khz = rate/1000.
                 stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
                 project.elecInputInfo.addStim(stim)
