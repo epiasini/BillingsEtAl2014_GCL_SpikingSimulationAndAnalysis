@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias n_stim_patterns n_trials size rank
+./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias stim_rate_mu stim_rate_sigma noise_rate_mu noise_rate_sigma n_stim_patterns n_trials size rank
 """
 import random
 import time
@@ -32,10 +32,14 @@ n_grc_dend = int(sys.argv[3])
 network_scale = float(sys.argv[4])
 active_mf_fraction = float(sys.argv[5])
 bias = float(sys.argv[6])
-n_stim_patterns = int(sys.argv[7])
-n_trials = int(sys.argv[8])
-size = int(sys.argv[9])
-rank = int(sys.argv[10])
+stim_rate_mu = float(sys.argv[7])
+stim_rate_sigma = float(sys.argv[8])
+noise_rate_mu = float(sys.argv[9])
+noise_rate_sigma = float(sys.argv[10])
+n_stim_patterns = int(sys.argv[11])
+n_trials = int(sys.argv[12])
+size = int(sys.argv[13])
+rank = int(sys.argv[14])
 
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
@@ -45,8 +49,8 @@ nC_seed = 1234
 
 stim_rate_mu = 120
 stim_rate_sigma = 30
-silent_rate_mu = 0
-silent_rate_sigma = 30
+noise_rate_mu = 0
+noise_rate_sigma = 10
 
 sim_duration = 300.0
 
@@ -166,14 +170,14 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             if mf in sp:
                 # create random spiking stimuli on active MFs, following the current stimulus pattern
                 rate = max(0.1, random.gauss(stim_rate_mu, stim_rate_sigma))
-                rate_in_khz = rate/1000.
-                stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
-                project.elecInputInfo.addStim(stim)
-                sim_config.addInput(stim.getReference())
-                project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
-            # netconn set-up (remember that all the connections originating from the same MF are identical)
             else:
-                rate = stim_rate_mu # placeholder value. TODO: use distribution close to 0
+                rate = max(0.1, random.gauss(noise_rate_mu, noise_rate_sigma))
+            rate_in_khz = rate/1000.
+            stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
+            project.elecInputInfo.addStim(stim)
+            sim_config.addInput(stim.getReference())
+            project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
+            # netconn set-up (remember that all the connections originating from the same MF are identical)
             syn_props_list = Vector([SynapticProperties('NMDA'), SynapticProperties('AMPA_direct'), SynapticProperties('AMPA_spillover')])
             for synp in syn_props_list:
                 synp.setFixedDelay(0)
@@ -215,7 +219,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             time.sleep(1)
         
         # copy results to main data folder and delete useless nC files
-        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + sim_ref
+        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma) + '/' + sim_ref
         if os.path.isdir(destination):
             shutil.rmtree(destination)
         os.mkdir(destination)

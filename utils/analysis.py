@@ -11,9 +11,9 @@ import pyentropy as pe
 
 from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 
-def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type):
+def loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type):
     
-    archive_filename = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+    archive_filename = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
     archive = h5py.File(archive_filename)
     
     n_cells = archive['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
@@ -56,8 +56,8 @@ def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
-def open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
-    filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias)
+def open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method):
+    filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma)
     archive_lock = open(filename, 'a')
     fcntl.lockf(archive_lock, fcntl.LOCK_EX)
     mi_archive = h5py.File(filename)
@@ -72,9 +72,9 @@ def close_archive(archive, archive_lock):
     archive.close()
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
 
-def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
+def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method):
     # prepare hdf5 archive
-    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
     tr_tree = None        
     if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']]):
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
@@ -90,7 +90,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         n_obs = n_stim_patterns * n_trials
 
         # load data
-        spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type)
+        spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type)
         n_cells = spikes.shape[1]
 
         # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
@@ -195,7 +195,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             
 
         # save analysis results in a separate file
-        mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+        mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
         datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point'] if ds in target_group.keys()]
         for ds in datasets_to_be_deleted:
             del target_group[ds]
@@ -210,10 +210,10 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
     return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point
 
-def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
+def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
-    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
-    tr_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type)[target_group['tr_indexes']]
+    mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
+    tr_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type)[target_group['tr_indexes']]
     tr_vectors = convolve(tr_spikes, sim_duration, tau, dt)
     flat_clustering = fcluster(target_group['tr_linkage'], n_clusts, criterion='maxclust')
     clust_idxs = sorted(list(set(flat_clustering)))
@@ -232,12 +232,12 @@ def kl_divergence_from_flat_p(q):
 def entropy(p):
     return -(p[p>0]*np.log2(p[p>0])).sum()
     
-def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
-    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
+    out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type='grc')
     grc_act_prob = np.mean([(ob[:,0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
     return grc_act_prob
     
-def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
+def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
     out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
     # TODO: need convolution?
     out_spike_array[out_spike_array==-1] = 0
@@ -252,14 +252,14 @@ def synchrony(p):
             sync += np.nan_to_num(np.correlate(cell1, cell2)/np.sqrt((np.square(cell1).sum() * np.square(cell2).sum())))
     return (2/float(n*(n-1)))*sync
 
-def mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
-    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+def mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type='grc')
     out_spikes = out_spikes[random.sample(range(out_spikes.shape[0]), 100)]
     out_vectors = convolve(out_spikes, sim_duration, tau, dt)
     return np.mean([synchrony(p) for p in out_vectors])
 
-def open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials):
-    filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias)
+def open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
+    filename = mi_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma)
     archive_lock = open(filename, 'a')
     fcntl.lockf(archive_lock, fcntl.LOCK_EX)
     archive = h5py.File(filename)
@@ -268,22 +268,22 @@ def open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fractio
     target_group = ntrg
     return archive, target_group, archive_lock
 
-def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
-    archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+def analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
     if 'mean_synchrony' in target_group.keys():
         print('Found synchrony value in %s' % archive.filename)
         synchrony = np.array(target_group['mean_synchrony'])
     else:
         print('Analysing synchrony from %s' % archive.filename)
         close_archive(archive, archive_lock)
-        synchrony = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
-        archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        synchrony = mean_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt)
+        archive, target_group, archive_lock = open_sync_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         target_group.create_dataset('mean_synchrony', data=synchrony)
     close_archive(archive, archive_lock)
     return synchrony
     
-def distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt):
-    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
+def distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt):
+    out_spikes = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type='grc')
     out_vectors = convolve(out_spikes, sim_duration, tau, dt)
     distances = []
     for h, vec in enumerate(out_vectors):
