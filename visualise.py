@@ -18,6 +18,19 @@ np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 class TrainingSetSizeError(Exception):
     pass
 
+class Plotter(object):
+    def __init__(self):
+        pass
+    def iteration_step(self):
+        pass
+    def final_step(self):
+        pass
+
+def Mi_plotter(Plotter):
+    def __init__(self, coords)
+
+
+
 plot_mi_detail = False
 plot_dendrograms = False
 plot_mutual_information = True
@@ -34,7 +47,6 @@ plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 20
 min_mf_number = 6
 grc_mf_ratio = 2.
 tau = 5.
@@ -49,6 +61,7 @@ stim_rate_mu_range = [120]
 stim_rate_sigma_range = [30]
 noise_rate_mu_range = [0.]
 noise_rate_sigma_range = [10.]
+n_stim_patterns_range = [20]
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -59,11 +72,9 @@ linkage_methods_range = ['ward']
 if any([s >= min(n_trials_range) for s in training_size_range]):
     raise TrainingSetSizeError()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range, n_stim_patterns_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
+param_coords = []
 parameter_space = list(itertools.product(*ranges))
-
-
-
 
 colors = 'bgrcmyk'
 if plot_mi_detail:
@@ -102,22 +113,11 @@ if plot_mi_vs_activity:
 if plot_mi_vs_dn_and_sparsity:
     info_vs_dn_and_sparsity = [[None for each in n_grc_dend_range] for each in active_mf_fraction_range]
 
-for k,par_combination in enumerate(parameter_space):
-    # load parameter combination
-    n_grc_dend = par_combination[0]
-    network_scale = par_combination[1]
-    active_mf_fraction = par_combination[2]
-    bias = par_combination[3]
-    stim_rate_mu = par_combination[4]
-    stim_rate_sigma = par_combination[5]
-    noise_rate_mu = par_combination[6]
-    noise_rate_sigma = par_combination[7]
-    n_trials = par_combination[8]
-    training_size = par_combination[9]
-    multineuron_metric_mixing = par_combination[10]
-    linkage_method = par_combination[11]
+for k,pp in enumerate(parameter_space):
+    parameter_space[k] = Analysis_pp(sim_duration=sim_duration, min_mf_number=min_mf_number, grc_mf_ratio=grc_mf_ratio, n_grc_dend=pp[0], network_scale=pp[1], active_mf_fraction=pp[2], bias=pp[3], stim_rate_mu=pp[4], stim_rate_sigma=pp[5], noise_rate_mu=pp[6], noise_rate_sigma=pp[7], n_stim_patterns_range=pp[8], n_trials=pp[9], training_size=pp[10], multineuron_metric_mipping=pp[11], linkage_method=pp[12], tau=tau, dt=dt)
+    pp = parameter_space[k]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
+    pp.run_analysis()
     if plot_mutual_information:
         info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_qe[n_stim_patterns]
         #print 'OS: ',output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
