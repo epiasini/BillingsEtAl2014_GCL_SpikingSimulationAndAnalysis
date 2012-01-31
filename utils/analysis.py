@@ -9,8 +9,10 @@ import fcntl
 
 import pyentropy as pe
 
-from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
-from .parameters import Param_space_point
+#from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
+#from .parameters import Param_space_point
+from paths import data_folder_path_ctor, data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
+from parameters import Param_space, Param_space_point
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""
@@ -37,16 +39,25 @@ def multineuron_distance_labeled_line(p,q):
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
 class Analysis_pp(Param_space_point):
-    def __init__(self, training_size, multineuron_metric_mixing, linkage_method, tau, dt, **kwds):
-        super(Analysis_pp, self).__init__(**kwds)
+    def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, training_size, multineuron_metric_mixing, linkage_method, tau, dt):
+        super(Analysis_pp, self).__init__(sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         self.training_size = training_size
         self.multineuron_metric_mixing = multineuron_metric_mixing
-        self.linkage_method = linkage_method
+        self.linkage_method = int(linkage_method)
         self.tau = tau
         self.dt = dt
+        self.linkage_method_string = ['ward']
+        #--derived results
+        self.tr_direct_mi = None
+        self.ts_decoded_mi_plugin = None
+        self.ts_decoded_mi_qe = None
+        self.tr_tree = None
+        self.px_at_same_size_point = None
     def __repr__(self):
-        analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method, self.tau, self.dt)
+        analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
         return super(Analysis_pp, self).__repr__() + analysis_specific_repr
+    def get_mi_archive_path(self):
+        return "{0}/mi.hdf5".format(data_folder_path_ctor(self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma))
     def get_spikes(self, cell_type):
         archive_filename = self.get_data_archive_path()
         archive = h5py.File(archive_filename) 
@@ -64,29 +75,41 @@ class Analysis_pp(Param_space_point):
         self._archive_lock = open(filename, 'a')
         fcntl.lockf(self._archive_lock, fcntl.LOCK_EX)
         self._mi_archive = h5py.File(filename)
-        nspg = self._mi_archive.require_group('sp%d' % n_stim_patterns)
-        ntrg = nspg.require_group('t%d' % n_trials)
-        mixg = ntrg.require_group('mix%.2f' % multineuron_metric_mixing)
-        trsg = mixg.require_group('train%d' % training_size)
-        target_group = trsg.require_group('method_%s' % linkage_method)
+        nspg = self._mi_archive.require_group('sp%d' % self.n_stim_patterns)
+        ntrg = nspg.require_group('t%d' % self.n_trials)
+        mixg = ntrg.require_group('mix%.2f' % self.multineuron_metric_mixing)
+        trsg = mixg.require_group('train%d' % self.training_size)
+        target_group = trsg.require_group('method_%s' % self.linkage_method_string[self.linkage_method])
         return target_group
     def close_mi_archive(self):
         self._mi_archive.close()
         fcntl.lockf(self._archive_lock, fcntl.LOCK_UN)
-    def run_analysis(self):
-        # prepare hdf5 archive
+    def are_results_loaded(self):
+        return all([self.tr_direct_mi, self.ts_decoded_mi_plugin, self.ts_decoded_mi_qe, self.tr_tree, self.px_at_same_size_point])
+    def is_archive_complete(self):
         target_group = self.open_mi_archive()
-        tr_tree = None        
-        if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']]):
-            self.decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
-            self.tr_direct_mi = np.array(target_group['tr_direct_mi'])
-            self.ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
-            self.ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
-            self.tr_tree = np.array(target_group['tr_linkage'])
-            self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
+        answer = all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']])
+        self.close_mi_archive()
+        return answer
+    def load_results_from_archive(self):
+        target_group = self.open_mi_archive()
+        self.decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
+        self.tr_direct_mi = np.array(target_group['tr_direct_mi'])
+        self.ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
+        self.ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
+        self.tr_tree = np.array(target_group['tr_linkage'])
+        self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
+        self.close_mi_archive()
+    def run_analysis(self):
+        if self.are_results_loaded():
+            # we have the results already
+            pass
+        elif self.is_archive_complete():
+            # we don't have them, but they're stored on disk in the hdf5 archive
+            self.load_results_from_archive()
         else:
-            print("Analysing from: {0}".format(self))
-            self.close_mi_archive()
+            # we actually need to calculate them
+            print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
             spikes = self.get_spikes(cell_type='grc')
@@ -118,7 +141,7 @@ class Analysis_pp(Param_space_point):
                     tr_distances.append(fixed_c_multineuron_distance(tr_fields[h], tr_fields[k]))
             # cluster training data
             print('clustering training data')
-            tr_tree = linkage(tr_distances, method=self.linkage_method)
+            tr_tree = linkage(tr_distances, method=self.linkage_method_string[self.linkage_method])
             # create an array describing the precision of each clustering step
             decoder_precision = (1./tr_tree[:,2])[::-1]
             # compute mutual information by using direct clustering on training data
@@ -184,9 +207,7 @@ class Analysis_pp(Param_space_point):
                 ts_decoded_mi_qe[n_clusts-1] = s.I()
                 if n_clusts == self.n_stim_patterns:
                     px_at_same_size_point = s.PX
-
-
-            # save analysis results in a separate file
+            # save analysis results in the archive
             target_group = self.open_mi_archive()
             datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point'] if ds in target_group.keys()]
             for ds in datasets_to_be_deleted:
@@ -197,16 +218,79 @@ class Analysis_pp(Param_space_point):
             target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
             target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
             target_group.create_dataset('px_at_same_size_point', data=px_at_same_size_point)
-        # close archive
-        self.close_mi_archive()
-        # update attributes and return results
-        self.tr_direct_mi = tr_direct_mi
-        self.ts_decoded_mi_plugin = ts_decoded_mi_plugin
-        self.ts_decoded_mi_qe = ts_decoded_mi_qe
-        self.tr_tree = tr_tree
-        self.px_at_same_size_point = px_at_same_size_point
-        return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point
+            # close archive
+            self.close_mi_archive()
+            # update attributes
+            self.tr_direct_mi = tr_direct_mi
+            self.ts_decoded_mi_plugin = ts_decoded_mi_plugin
+            self.ts_decoded_mi_qe = ts_decoded_mi_qe
+            self.tr_tree = tr_tree
+            self.px_at_same_size_point = px_at_same_size_point
 
+Analysis_param_space_mesh = np.vectorize(Analysis_pp)
+
+class Analysis_ps(Param_space):
+    def __new__(cls,
+                sim_duration_slice,
+                min_mf_number_slice,
+                grc_mf_ratio_slice,
+                n_grc_dend_slice,
+                network_scale_slice,
+                active_mf_fraction_slice,
+                bias_slice,
+                stim_rate_mu_slice,
+                stim_rate_sigma_slice,
+                noise_rate_mu_slice,
+                noise_rate_sigma_slice,
+                n_stim_patterns_slice,
+                n_trials_slice,
+                trainig_size_slice,
+                multineuron_metric_mixing_slice,
+                linkage_method_slice,
+                tau_slice,
+                dt_slice):
+        m = np.mgrid[sim_duration_slice,
+                     min_mf_number_slice,
+                     grc_mf_ratio_slice,
+                     n_grc_dend_slice,
+                     network_scale_slice,
+                     active_mf_fraction_slice,
+                     bias_slice,
+                     stim_rate_mu_slice,
+                     stim_rate_sigma_slice,
+                     noise_rate_mu_slice,
+                     noise_rate_sigma_slice,
+                     n_stim_patterns_slice,
+                     n_trials_slice,
+                     trainig_size_slice,
+                     multineuron_metric_mixing_slice,
+                     linkage_method_slice,
+                     tau_slice,
+                     dt_slice]
+        
+        obj = Analysis_param_space_mesh(*m).view(cls)
+        return obj
+    def __array_finalize__(self, obj):
+        self.DIDXS = {
+            'sim_duration': 0,
+            'min_mf_number': 1,
+            'grc_mf_ratio': 2,
+            'n_grc_dend': 3,
+            'network_scale': 4,
+            'active_mf_fraction': 5,
+            'bias': 6,
+            'stim_rate_mu': 7,
+            'stim_rate_sigma': 8,
+            'noise_rate_mu': 9,
+            'noise_rate_sigma': 10,
+            'n_stim_patterns': 11,
+            'n_trials': 12,
+            'training_size': 13,
+            'mutineuron_metric_mixing': 14,
+            'linkage_method': 15,
+            'tau': 16,
+            'dt': 17           
+            }
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
