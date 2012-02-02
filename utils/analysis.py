@@ -81,7 +81,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
-        ts_decoded_mi_pt = np.array(['ts_decoded_mi_pt'])
+        ts_decoded_mi_pt = np.array(target_group['ts_decoded_mi_pt'])
         tr_tree = np.array(target_group['tr_linkage'])
         px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
     else:
@@ -208,7 +208,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
         target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
-        target_group.create_dataset('ts_decoded_mi_pt', data=ts_decoded_mi_qe)
+        target_group.create_dataset('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
         target_group.create_dataset('px_at_same_size_point', data=px_at_same_size_point)
     # close archive and return results
     mi_archive.close()
