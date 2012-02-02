@@ -34,7 +34,7 @@ plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 6
+n_stim_patterns = 20
 min_mf_number = 6
 grc_mf_ratio = 2.
 tau = 5.
@@ -42,9 +42,9 @@ dt = 2.
 plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.]
-active_mf_fraction_range = list(np.arange(.1, 1, .1))
-bias_range = list(np.arange(0., -50., -5.))
+network_scale_range = [5.]
+active_mf_fraction_range = list(np.arange(.5, .6, .1))
+bias_range = list(np.arange(-25., -30., -5.))
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
