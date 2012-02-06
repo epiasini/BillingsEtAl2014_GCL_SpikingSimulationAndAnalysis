@@ -84,29 +84,39 @@ class Analysis_pp(Param_space_point):
     def close_mi_archive(self):
         self._mi_archive.close()
         fcntl.lockf(self._archive_lock, fcntl.LOCK_UN)
-    def are_results_loaded(self):
+    def _are_results_loaded(self):
         return all([self.tr_direct_mi, self.ts_decoded_mi_plugin, self.ts_decoded_mi_qe, self.tr_tree, self.px_at_same_size_point])
-    def is_archive_complete(self):
+    def _is_archive_complete(self):
         target_group = self.open_mi_archive()
         answer = all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']])
         self.close_mi_archive()
         return answer
-    def load_results_from_archive(self):
-        target_group = self.open_mi_archive()
-        self.decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
-        self.tr_direct_mi = np.array(target_group['tr_direct_mi'])
-        self.ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
-        self.ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
-        self.tr_tree = np.array(target_group['tr_linkage'])
-        self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
-        self.close_mi_archive()
-    def run_analysis(self):
-        if self.are_results_loaded():
+    def _load_results_from_archive(self):
+        if self._is_archive_complete():
+            # the analysis results we're looking for are in the corresponding hdf5 archive on disk
+            target_group = self.open_mi_archive()
+            self.decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
+            self.tr_direct_mi = np.array(target_group['tr_direct_mi'])
+            self.ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
+            self.ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
+            self.tr_tree = np.array(target_group['tr_linkage'])
+            self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
+            self.close_mi_archive()
+            return True
+        else:
+            # the hdf5 archive seems to be incomplete or missing
+            return False
+    def load_analysis_results(self):
+        if self._are_results_loaded():
             # we have the results already
+            return True
+        else:
+            # we need to load them from the hdf5 archive, if it exists
+            return self._load_results_from_archive()
+    def run_analysis(self):
+        if self.load_analysis_results():
+            # we have the results already (loaded in memory or on the disk)
             pass
-        elif self.is_archive_complete():
-            # we don't have them, but they're stored on disk in the hdf5 archive
-            self.load_results_from_archive()
         else:
             # we actually need to calculate them
             print("Analysing for: {0}".format(self))
@@ -227,6 +237,7 @@ class Analysis_pp(Param_space_point):
             self.tr_tree = tr_tree
             self.px_at_same_size_point = px_at_same_size_point
 
+# A numpy ndarray with object dtype, and composed of (Analysis_pp)s.
 Analysis_param_space_mesh = np.vectorize(Analysis_pp)
 
 class Analysis_ps(Param_space):
@@ -266,31 +277,30 @@ class Analysis_ps(Param_space):
                      multineuron_metric_mixing_slice,
                      linkage_method_slice,
                      tau_slice,
-                     dt_slice]
-        
+                     dt_slice]        
         obj = Analysis_param_space_mesh(*m).view(cls)
         return obj
     def __array_finalize__(self, obj):
-        self.DIDXS = {
-            'sim_duration': 0,
-            'min_mf_number': 1,
-            'grc_mf_ratio': 2,
-            'n_grc_dend': 3,
-            'network_scale': 4,
-            'active_mf_fraction': 5,
-            'bias': 6,
-            'stim_rate_mu': 7,
-            'stim_rate_sigma': 8,
-            'noise_rate_mu': 9,
-            'noise_rate_sigma': 10,
-            'n_stim_patterns': 11,
-            'n_trials': 12,
-            'training_size': 13,
-            'mutineuron_metric_mixing': 14,
-            'linkage_method': 15,
-            'tau': 16,
-            'dt': 17           
-            }
+        self.DIDXS = [
+            'sim_duration',
+            'min_mf_number',
+            'grc_mf_ratio',
+            'n_grc_dend',
+            'network_scale',
+            'active_mf_fraction',
+            'bias',
+            'stim_rate_mu',
+            'stim_rate_sigma',
+            'noise_rate_mu',
+            'noise_rate_sigma',
+            'n_stim_patterns',
+            'n_trials',
+            'training_size',
+            'mutineuron_metric_mixing',
+            'linkage_method',
+            'tau',
+            'dt'           
+            ]
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''

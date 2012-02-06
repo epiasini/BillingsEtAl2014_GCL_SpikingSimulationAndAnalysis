@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 
 class Param_space_point(object):
     def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
@@ -21,35 +22,103 @@ class Param_space_point(object):
 Param_space_mesh = np.vectorize(Param_space_point)
 
 class Param_space(np.ndarray):
-    def __new__(cls, sim_duration_slice, min_mf_number_slice, grc_mf_ratio_slice, n_grc_dend_slice, network_scale_slice, active_mf_fraction_slice, bias_slice, stim_rate_mu_slice, stim_rate_sigma_slice, noise_rate_mu_slice, noise_rate_sigma_slice, n_stim_patterns_slice, n_trials_slice):
-        m = np.mgrid[sim_duration_slice, min_mf_number_slice, grc_mf_ratio_slice, n_grc_dend_slice, network_scale_slice, active_mf_fraction_slice, bias_slice, stim_rate_mu_slice, stim_rate_sigma_slice, noise_rate_mu_slice, noise_rate_sigma_slice, n_stim_patterns_slice, n_trials_slice]
+    def __new__(cls,
+                sim_duration_slice,
+                min_mf_number_slice,
+                grc_mf_ratio_slice,
+                n_grc_dend_slice,
+                network_scale_slice,
+                active_mf_fraction_slice,
+                bias_slice,
+                stim_rate_mu_slice,
+                stim_rate_sigma_slice,
+                noise_rate_mu_slice,
+                noise_rate_sigma_slice,
+                n_stim_patterns_slice,
+                n_trials_slice):
+        m = np.mgrid[sim_duration_slice,
+                     min_mf_number_slice,
+                     grc_mf_ratio_slice,
+                     n_grc_dend_slice,
+                     network_scale_slice,
+                     active_mf_fraction_slice,
+                     bias_slice,
+                     stim_rate_mu_slice,
+                     stim_rate_sigma_slice,
+                     noise_rate_mu_slice,
+                     noise_rate_sigma_slice,
+                     n_stim_patterns_slice,
+                     n_trials_slice]
         obj = Param_space_mesh(*m).view(cls)
         return obj
     def __array_finalize__(self, obj):
-        self.DIDXS = {
-            'sim_duration': 0,
-            'min_mf_number': 1,
-            'grc_mf_ratio': 2,
-            'n_grc_dend': 3,
-            'network_scale': 4,
-            'active_mf_fraction': 5,
-            'bias': 6,
-            'stim_rate_mu': 7,
-            'stim_rate_sigma': 8,
-            'noise_rate_mu': 9,
-            'noise_rate_sigma': 10,
-            'n_stim_patterns': 11,
-            'n_trials': 12
-            }
+        # Dimensional InDeXS. Dictionary or list? I like the 'semantic' nature of a dictionary, but lists have a natural ordering and a natural way of updating when a dimension is added or removed.
+        self.DIDXS = [
+            'sim_duration',
+            'min_mf_number',
+            'grc_mf_ratio',
+            'n_grc_dend',
+            'network_scale',
+            'active_mf_fraction',
+            'bias',
+            'stim_rate_mu',
+            'stim_rate_sigma',
+            'noise_rate_mu',
+            'noise_rate_sigma',
+            'n_stim_patterns',
+            'n_trials'
+            ]
+    def didx(self, parameter):
+        return self.DIDXS.index(parameter)
+    def param(self, didx):
+        return self.DIDXS[didx]
     def get_range(self, parameter):
         # TODO: improving by vectorising getattr
-        return np.unique(np.array([getattr(x, parameter, None) for x in self.flatten()]))
-    def get_idx(self, parameter, value):
+        return np.unique(np.array([getattr(x, parameter, None) for x in self.flat]))
+    def get_attribute_array(self, attribute):
+        return np.array([getattr(x, attribute, None) for x in self.flat]).reshape(self.shape)
+    def get_idx_from_value(self, parameter, value):
         return np.searchsorted(self.get_range(parameter), value)
-    def embedded_subspace(self, parameter, value):
-        idx = self.get_idx(parameter, value)
-        return np.split(self, self.shape[self.DIDXS[parameter]], self.DIDXS[parameter])[idx]
-    def subspace(self, parameter, value):
-        # WARNING: not consistent yet (doesn't update the DIDXS)
-        return np.squeeze(self.embedded_subspace(parameter, value))
-
+    def _remove_dimensional_index(self, parameter):
+        # to be called only by get_hyperplane
+        del self.DIDXS[self.didx(parameter)]
+    def get_embedded_hyperplane(self, parameter, value):
+        """Returns a new Parameter_space object made only of those points that satisfy the condition parameter==value. The dimensionality of the space is unchanged."""
+        idx = self.get_idx_from_value(parameter, value)
+        return np.split(self, self.shape[self.didx(parameter)], self.didx(parameter))[idx]
+    def get_hyperplane(self, parameter, value):
+        hp = self.get_embedded_hyperplane(parameter, value)
+        hp = hp.squeeze(hp.didx(parameter))
+        hp._remove_dimensional_index(parameter)
+        return hp
+    def get_subspace(self, *parameter_value_pairs):
+        """Returns a new Parameter_space object where one or more parameters (dimensions) have been fixed, as an intersection of embedded hyperplanes. The dimensionality of the space is reduced to account for this (this is why the subspace is not 'embedded')."""
+        temp = self.get_hyperplane(*parameter_value_pairs[0])
+        for pair in parameter_value_pairs[1:]:
+            temp = temp.get_hyperplane(*pair)
+        return temp
+    def get_nontrivial_subspace(self, *parameter_value_pairs):
+        temp = self.get_subspace(*parameter_value_pairs)
+        print temp.DIDXS
+        print len(temp.DIDXS)
+        print [temp.param(k) for (k,s) in enumerate(temp.shape) if s==1]
+        for parameter in [temp.param(k) for k,s in enumerate(temp.shape) if s==1]:
+            temp = temp.squeeze(temp.didx(parameter))
+            temp._remove_dimensional_index(parameter)
+        return temp
+    def plot_2d_heatmap(self, heat_dim, fig_title=''):
+        if len(self.shape) > 2:
+            raise Error()
+        fig, ax = plt.subplots()
+        plot = ax.imshow(self.get_attribute_array(heat_dim), interpolation='none', cmap='coolwarm', origin='lower')
+        cbar = fig.colorbar(plot, use_gridspec=True)
+        cbar.set_label(heat_dim)
+        #ax.set_xticks(self.get_range())
+        #ax.set_xticklabels([str(x) for x in x_ref_range])
+        #ax.set_xlabel(xlabel)
+        #ax.set_yticks(np.arange(len(y_ref_range)))
+        #ax.set_yticklabels([str(y) for y in y_ref_range])
+        #ax.set_ylabel(ylabel)
+        #ax.set_title(title)
+        return fig, ax
+        
