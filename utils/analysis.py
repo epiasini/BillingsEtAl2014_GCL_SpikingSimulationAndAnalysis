@@ -12,7 +12,7 @@ import pyentropy as pe
 #from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 #from .parameters import Param_space_point
 from paths import data_folder_path_ctor, data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
-from parameters import Param_space, Param_space_point
+from parameters import ParamSpace, ParamSpacePoint
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""
@@ -38,9 +38,9 @@ def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
-class Analysis_pp(Param_space_point):
+class AnalysisPp(ParamSpacePoint):
     def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, training_size, multineuron_metric_mixing, linkage_method, tau, dt):
-        super(Analysis_pp, self).__init__(sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
+        super(AnalysisPp, self).__init__(sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         self.training_size = training_size
         self.multineuron_metric_mixing = multineuron_metric_mixing
         self.linkage_method = int(linkage_method)
@@ -55,7 +55,7 @@ class Analysis_pp(Param_space_point):
         self.px_at_same_size_point = None
     def __repr__(self):
         analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
-        return super(Analysis_pp, self).__repr__() + analysis_specific_repr
+        return super(AnalysisPp, self).__repr__() + analysis_specific_repr
     def get_mi_archive_path(self):
         return "{0}/mi.hdf5".format(data_folder_path_ctor(self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma))
     def get_spikes(self, cell_type):
@@ -237,10 +237,10 @@ class Analysis_pp(Param_space_point):
             self.tr_tree = tr_tree
             self.px_at_same_size_point = px_at_same_size_point
 
-# A numpy ndarray with object dtype, and composed of (Analysis_pp)s.
-Analysis_param_space_mesh = np.vectorize(Analysis_pp)
+# A numpy ndarray with object dtype, and composed of (AnalysisPp)s.
+AnalysisParamSpaceMesh = np.vectorize(AnalysisPp)
 
-class Analysis_ps(Param_space):
+class AnalysisPs(ParamSpace):
     def __new__(cls,
                 sim_duration_slice,
                 min_mf_number_slice,
@@ -278,10 +278,8 @@ class Analysis_ps(Param_space):
                      linkage_method_slice,
                      tau_slice,
                      dt_slice]        
-        obj = Analysis_param_space_mesh(*m).view(cls)
-        return obj
-    def __array_finalize__(self, obj):
-        self.DIDXS = [
+        obj = AnalysisParamSpaceMesh(*m).view(cls)
+        obj.DIDXS = [
             'sim_duration',
             'min_mf_number',
             'grc_mf_ratio',
@@ -301,6 +299,10 @@ class Analysis_ps(Param_space):
             'tau',
             'dt'           
             ]
+        return obj
+    def __array_finalize__(self, obj):
+        if obj is None: return
+        self.DIDXS = getattr(obj, 'DIDXS', [])[:]
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''

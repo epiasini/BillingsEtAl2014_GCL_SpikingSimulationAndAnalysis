@@ -1,7 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
-class Param_space_point(object):
+class ParamSpacePoint(object):
     def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
         self.sim_duration = sim_duration
         self.min_mf_number = min_mf_number
@@ -19,9 +19,9 @@ class Param_space_point(object):
     def __repr__(self):
         return "sim_dur: {0} | min_mf_number: {1} | gmr: {2} | gd: {3} | s: {4} | mf: {5} | b: {6} | sr_mu: {7} | sr_s: {8} | nr_mu: {9} | nr_s: {10} | np: {11} | t: {12}".format(self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
 
-Param_space_mesh = np.vectorize(Param_space_point)
+ParamSpaceMesh = np.vectorize(ParamSpacePoint)
 
-class Param_space(np.ndarray):
+class ParamSpace(np.ndarray):
     def __new__(cls,
                 sim_duration_slice,
                 min_mf_number_slice,
@@ -36,6 +36,10 @@ class Param_space(np.ndarray):
                 noise_rate_sigma_slice,
                 n_stim_patterns_slice,
                 n_trials_slice):
+        # Create the ndarray instance of our type, given the usual
+        # ndarray input arguments.  This will call the standard
+        # ndarray constructor, but return an object of our type.
+        # It also triggers a call to ParamSpace.__array_finalize__
         m = np.mgrid[sim_duration_slice,
                      min_mf_number_slice,
                      grc_mf_ratio_slice,
@@ -49,11 +53,9 @@ class Param_space(np.ndarray):
                      noise_rate_sigma_slice,
                      n_stim_patterns_slice,
                      n_trials_slice]
-        obj = Param_space_mesh(*m).view(cls)
-        return obj
-    def __array_finalize__(self, obj):
+        obj = ParamSpaceMesh(*m).view(cls)
         # Dimensional InDeXS. Dictionary or list? I like the 'semantic' nature of a dictionary, but lists have a natural ordering and a natural way of updating when a dimension is added or removed.
-        self.DIDXS = [
+        obj.DIDXS = [
             'sim_duration',
             'min_mf_number',
             'grc_mf_ratio',
@@ -68,6 +70,34 @@ class Param_space(np.ndarray):
             'n_stim_patterns',
             'n_trials'
             ]
+        # Finally, we must return the newly created object:
+        return obj
+    def __array_finalize__(self, obj):
+        # ``self`` is a new object resulting from
+        # ndarray.__new__(Param_space, ...), therefore it only has
+        # attributes that the ndarray.__new__ constructor gave it -
+        # i.e. those of a standard ndarray.
+        #
+        # We could have got to the ndarray.__new__ call in 3 ways:
+        # From an explicit constructor - e.g. ParamSpace():
+        #    obj is None
+        #    (we're in the middle of the ParamSpace.__new__
+        #    constructor, and self.DIDXS will be set when we return to
+        #    ParamSpace.__new__)
+        if obj is None: return
+        # From view casting - e.g arr.view(ParamSpace):
+        #    obj is arr
+        #    (type(obj) can be ParamSpace)
+        # From new-from-template - e.g paramspace[:3]
+        #    type(obj) is ParamSpace
+        #
+        # Note that it is here, rather than in the __new__ method,
+        # that we set the default value for DIDXS, because this
+        # method sees all creation of default objects - with the
+        # ParamSpace.__new__ constructor, but also with
+        # arr.view(ParamSpace).
+        self.DIDXS = getattr(obj, 'DIDXS', [])[:]
+        # We do not need to return anything
     def didx(self, parameter):
         return self.DIDXS.index(parameter)
     def param(self, didx):
@@ -99,9 +129,6 @@ class Param_space(np.ndarray):
         return temp
     def get_nontrivial_subspace(self, *parameter_value_pairs):
         temp = self.get_subspace(*parameter_value_pairs)
-        print temp.DIDXS
-        print len(temp.DIDXS)
-        print [temp.param(k) for (k,s) in enumerate(temp.shape) if s==1]
         for parameter in [temp.param(k) for k,s in enumerate(temp.shape) if s==1]:
             temp = temp.squeeze(temp.didx(parameter))
             temp._remove_dimensional_index(parameter)
