@@ -107,6 +107,14 @@ class ParamSpace(np.ndarray):
         return np.unique(np.array([getattr(x, parameter, None) for x in self.flat]))
     def get_attribute_array(self, attribute):
         return np.array([getattr(x, attribute, None) for x in self.flat]).reshape(self.shape)
+    # def get_attribute_array(self, attribute, **kwargs):
+    #     attr_list = []
+    #     for x in self.flat:
+    #         attr = getattr(x, attribute, None)
+    #         if callable(attr):
+    #             attr = attr(**kwargs)
+    #         attr_list.append(attr)
+    #     return np.array(attr_list).reshape(self.shape)
     def get_idx_from_value(self, parameter, value):
         return np.searchsorted(self.get_range(parameter), value)
     def _remove_dimensional_index(self, parameter):
@@ -135,17 +143,19 @@ class ParamSpace(np.ndarray):
         return temp
     def plot_2d_heatmap(self, heat_dim, fig_title=''):
         if len(self.shape) > 2:
-            raise Error()
+            raise Exception()
+        x_param = self.param(1)
+        y_param = self.param(0)        
         fig, ax = plt.subplots()
         plot = ax.imshow(self.get_attribute_array(heat_dim), interpolation='none', cmap='coolwarm', origin='lower')
         cbar = fig.colorbar(plot, use_gridspec=True)
         cbar.set_label(heat_dim)
-        #ax.set_xticks(self.get_range())
-        #ax.set_xticklabels([str(x) for x in x_ref_range])
-        #ax.set_xlabel(xlabel)
-        #ax.set_yticks(np.arange(len(y_ref_range)))
-        #ax.set_yticklabels([str(y) for y in y_ref_range])
-        #ax.set_ylabel(ylabel)
-        #ax.set_title(title)
+        ax.set_xticks(np.arange(self.shape[1]))
+        ax.set_xticklabels([str(x) for x in self.get_range(x_param)])
+        ax.set_xlabel(x_param)
+        ax.set_yticks(np.arange(self.shape[0]))
+        ax.set_yticklabels([str(y) for y in self.get_range(y_param)])
+        ax.set_ylabel(y_param)
+        ax.set_title(fig_title)
         return fig, ax
         

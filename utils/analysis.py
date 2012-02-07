@@ -85,7 +85,7 @@ class AnalysisPp(ParamSpacePoint):
         self._mi_archive.close()
         fcntl.lockf(self._archive_lock, fcntl.LOCK_UN)
     def _are_results_loaded(self):
-        return all([self.tr_direct_mi, self.ts_decoded_mi_plugin, self.ts_decoded_mi_qe, self.tr_tree, self.px_at_same_size_point])
+        return all([self.tr_direct_mi!=None, self.ts_decoded_mi_plugin!=None, self.ts_decoded_mi_qe!=None, self.tr_tree!=None, self.px_at_same_size_point!=None])
     def _is_archive_complete(self):
         target_group = self.open_mi_archive()
         answer = all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']])
@@ -102,6 +102,9 @@ class AnalysisPp(ParamSpacePoint):
             self.tr_tree = np.array(target_group['tr_linkage'])
             self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
             self.close_mi_archive()
+            self.point_mi_plugin = self.ts_decoded_mi_plugin[self.n_stim_patterns]
+            self.point_mi_qe = self.ts_decoded_mi_qe[self.n_stim_patterns]
+            self.point_separation = 1./self.decoder_precision[self.n_stim_patterns]
             return True
         else:
             # the hdf5 archive seems to be incomplete or missing
@@ -303,6 +306,11 @@ class AnalysisPs(ParamSpace):
     def __array_finalize__(self, obj):
         if obj is None: return
         self.DIDXS = getattr(obj, 'DIDXS', [])[:]
+    def run_analysis(self):
+        for p in self.flat:
+            p.run_analysis()
+    def load_analysis_results(self):
+        return [p.load_analysis_results() for p in self.flat]
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
