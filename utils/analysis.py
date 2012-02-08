@@ -76,10 +76,11 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     # prepare hdf5 archive
     mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
     tr_tree = None        
-    if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'ts_decoded_mi_pt', 'ts_decoded_mi_nsb', 'px_at_same_size_point']]):
+    if all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_bootstrap', 'ts_decoded_mi_qe', 'ts_decoded_mi_pt', 'ts_decoded_mi_nsb', 'px_at_same_size_point']]):
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
+        ts_decoded_mi_bootstrap = np.array(target_group['ts_decoded_mi_bootstrap')]
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
         ts_decoded_mi_pt = np.array(target_group['ts_decoded_mi_pt'])
         ts_decoded_mi_nsb = np.array(target_group['ts_decoded_mi_nsb'])
@@ -158,6 +159,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
                 distances[n,m] = fixed_c_multineuron_distance(observation, symbol)
         # --now iterate over the number of clusters and, step by step, train the decoder and use it to calculate mi
         ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
+        ts_decoded_mi_bootstrap = np.zeros(n_tr_obs-1)
         ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
         ts_decoded_mi_pt = np.zeros(n_tr_obs-1)
         ts_decoded_mi_nsb = np.zeros(n_tr_obs-1)        
@@ -190,8 +192,18 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             X_dims = (Xn, Xm)
             X = decoded_output
             s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+            # "bootstrap" shuffle estimate of bias.
+            bootstrap_n = 10
+            bootstrap_bias_estimate = 0
+            for nb in range(bootstrap_n):
+                shX = np.random.permutation(X)
+                shs = pe.SortedDiscreteSystem(shX, X_dims, Ym, Ny)
+                shs.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
+                bootstrap_bias_estimate += shs.I()/bootstrap_n
+            
             s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
             ts_decoded_mi_plugin[n_clusts-1] = s.I()
+            ts_decoded_mi_bootstrap[n_clusts-1] = s.I() - bootstrap_bias_estimate
             s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
             ts_decoded_mi_qe[n_clusts-1] = s.I()
             s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
@@ -204,13 +216,14 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
 
         # save analysis results in a separate file
         mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
-        datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'ts_decoded_mi_pt', 'ts_decoded_mi_nsb', 'px_at_same_size_point'] if ds in target_group.keys()]
+        datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_bootstrap', 'ts_decoded_mi_qe', 'ts_decoded_mi_pt', 'ts_decoded_mi_nsb', 'px_at_same_size_point'] if ds in target_group.keys()]
         for ds in datasets_to_be_deleted:
             del target_group[ds]
         target_group.create_dataset('tr_indexes', data=np.array(train_idxs))
         target_group.create_dataset('tr_linkage', data=tr_tree)
         target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
         target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
+        target_group.create_dataset('ts_decoded_mi_bootstrap', data=ts_decoded_mi_bootstrap)
         target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
         target_group.create_dataset('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
         target_group.create_dataset('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)        
@@ -218,7 +231,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
     # close archive and return results
     mi_archive.close()
     fcntl.lockf(archive_lock, fcntl.LOCK_UN)
-    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point
+    return tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_bootstrap, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
