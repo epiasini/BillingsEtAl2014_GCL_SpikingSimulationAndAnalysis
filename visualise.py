@@ -18,22 +18,13 @@ np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 class TrainingSetSizeError(Exception):
     pass
 
-class Plotter(object):
-    def __init__(self):
-        pass
-    def iteration_step(self):
-        pass
-    def final_step(self):
-        pass
-
-def Mi_plotter(Plotter):
-    def __init__(self, coords)
+        
 
 
 
 plot_mi_detail = False
 plot_dendrograms = False
-plot_mutual_information = True
+plot_mutual_information = False
 plot_kl_divergence = False
 plot_barcodes = False
 plot_activity_levels = False

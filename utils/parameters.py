@@ -1,6 +1,16 @@
 import numpy as np
 from matplotlib import pyplot as plt
 
+class PSlice(object):
+    """Conceptually, a subclass of the builtin slice class. Defaults to a single-point slice when just one argument is given."""
+    def __init__(self, start, stop=None, step=1):
+        self.start = start
+        if stop==None:
+            self.stop = start + 1
+        else:
+            self.stop = stop
+        self.step = step
+
 class ParamSpacePoint(object):
     def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
         self.sim_duration = sim_duration
