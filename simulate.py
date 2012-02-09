@@ -23,8 +23,7 @@ from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, ICla
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils.paths import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
-from utils.simulation import plast_correction_factor
+from utils.simulation import SimulationPoint, plast_correction_factor
 
 min_mf_number = int(sys.argv[1])
 grc_mf_ratio = float(sys.argv[2])
@@ -53,6 +52,20 @@ noise_rate_mu = 0
 noise_rate_sigma = 10
 
 sim_duration = 300.0
+
+point = SimulationPoint(sim_duration,
+                 min_mf_number,
+                 grc_mf_ratio,
+                 n_grc_dend,
+                 network_scale,
+                 active_mf_fraction,
+                 bias,
+                 stim_rate_mu,
+                 stim_rate_sigma,
+                 noise_rate_mu,
+                 noise_rate_sigma,
+                 n_stim_patterns,
+                 n_trials)
 
 mf_number = int(round(min_mf_number * network_scale))
 gr_number = int(round(mf_number * grc_mf_ratio))
@@ -104,13 +117,13 @@ n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
 print "Number of cells generated: " + str(n_generated_cells)
 
 # load connection pattern
-cpf = open(conn_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale), "r")
+cpf = open(point.conn_pattern_filename, "r")
 print(cpf)
 conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readlines()]
 cpf.close()
 
 # load stimulation patterns
-spf = open(stim_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, n_stim_patterns), "r")
+spf = open(point.stim_pattern_filename, "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
 
@@ -141,7 +154,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
-        sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
+        sim_ref = point.get_ref(spn, trial)
         refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
@@ -219,7 +232,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             time.sleep(1)
         
         # copy results to main data folder and delete useless nC files
-        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma) + '/' + sim_ref
+        destination = point.data_folder_path + '/' + sim_ref
         if os.path.isdir(destination):
             shutil.rmtree(destination)
         os.mkdir(destination)

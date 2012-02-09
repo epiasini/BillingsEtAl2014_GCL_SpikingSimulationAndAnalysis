@@ -11,8 +11,8 @@ import pyentropy as pe
 
 #from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 #from .parameters import Param_space_point
-from paths import data_folder_path_ctor, data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
-from parameters import ParamSpace, ParamSpacePoint
+from pure import ParamSpacePoint
+from archival import SpikeArchive, ResultsArchive
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""
@@ -38,9 +38,40 @@ def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
-class AnalysisPp(ParamSpacePoint):
-    def __init__(self, sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, training_size, multineuron_metric_mixing, linkage_method, tau, dt):
-        super(AnalysisPp, self).__init__(sim_duration, min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
+class AnalysisPoint(ParamSpacePoint):
+    def __init__(self,
+                 sim_duration,
+                 min_mf_number,
+                 grc_mf_ratio,
+                 n_grc_dend,
+                 network_scale,
+                 active_mf_fraction,
+                 bias,
+                 stim_rate_mu,
+                 stim_rate_sigma,
+                 noise_rate_mu,
+                 noise_rate_sigma,
+                 n_stim_patterns,
+                 n_trials,
+                 training_size,
+                 multineuron_metric_mixing,
+                 linkage_method,
+                 tau,
+                 dt):
+        super(AnalysisPoint, self).__init__(sim_duration,
+                                            min_mf_number,
+                                            grc_mf_ratio,
+                                            n_grc_dend,
+                                            network_scale,
+                                            active_mf_fraction,
+                                            bias,
+                                            stim_rate_mu,
+                                            stim_rate_sigma,
+                                            noise_rate_mu,
+                                            noise_rate_sigma,
+                                            n_stim_patterns,
+                                            n_trials)
+        #--analysis-specific coordinates
         self.training_size = training_size
         self.multineuron_metric_mixing = multineuron_metric_mixing
         self.linkage_method = int(linkage_method)
@@ -53,9 +84,12 @@ class AnalysisPp(ParamSpacePoint):
         self.ts_decoded_mi_qe = None
         self.tr_tree = None
         self.px_at_same_size_point = None
+        #--archive objects
+        self.spikes_arch = SpikeArchive(self)
+        self.results_arch = ResultsArchive(self)
     def __repr__(self):
         analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
-        return super(AnalysisPp, self).__repr__() + analysis_specific_repr
+        return super(AnalysisPoint, self).__repr__() + analysis_specific_repr
     def get_mi_archive_path(self):
         return "{0}/mi.hdf5".format(data_folder_path_ctor(self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma))
     def get_spikes(self, cell_type):
