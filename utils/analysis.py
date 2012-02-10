@@ -5,14 +5,14 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist, squareform
 import functools
 import itertools
-import fcntl
 
 import pyentropy as pe
 
 #from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
 #from .parameters import Param_space_point
 from pure import ParamSpacePoint
-from archival import SpikeArchive, ResultsArchive
+from archival import SpikesArchive, ResultsArchive
+from parameters import ParamSpace
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""
@@ -72,86 +72,20 @@ class AnalysisPoint(ParamSpacePoint):
                                             n_stim_patterns,
                                             n_trials)
         #--analysis-specific coordinates
-        self.training_size = training_size
+        self.training_size = int(round(training_size))
         self.multineuron_metric_mixing = multineuron_metric_mixing
-        self.linkage_method = int(linkage_method)
+        self.linkage_method = int(round(linkage_method))
         self.tau = tau
         self.dt = dt
         self.linkage_method_string = ['ward']
-        #--derived results
-        self.tr_direct_mi = None
-        self.ts_decoded_mi_plugin = None
-        self.ts_decoded_mi_qe = None
-        self.tr_tree = None
-        self.px_at_same_size_point = None
         #--archive objects
-        self.spikes_arch = SpikeArchive(self)
+        self.spikes_arch = SpikesArchive(self)
         self.results_arch = ResultsArchive(self)
     def __repr__(self):
         analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
         return super(AnalysisPoint, self).__repr__() + analysis_specific_repr
-    def get_mi_archive_path(self):
-        return "{0}/mi.hdf5".format(data_folder_path_ctor(self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma))
-    def get_spikes(self, cell_type):
-        archive_filename = self.get_data_archive_path()
-        archive = h5py.File(archive_filename) 
-        n_cells = archive['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
-        n_expected_obs = self.n_stim_patterns * self.n_trials
-        observation_list = [x[1]['{0}_spiketimes'.format(cell_type)] for s in archive.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
-        max_n_spikes = max([o.shape[0] for o in observation_list])
-        spikes = -1 * np.ones(shape=(n_expected_obs, n_cells, max_n_spikes))
-        for k, o in enumerate(observation_list):
-            spikes[k][:,0:o.shape[0]] = np.array(o).transpose()
-        archive.close()
-        return spikes
-    def open_mi_archive(self):
-        filename = self.get_mi_archive_path()
-        self._archive_lock = open(filename, 'a')
-        fcntl.lockf(self._archive_lock, fcntl.LOCK_EX)
-        self._mi_archive = h5py.File(filename)
-        nspg = self._mi_archive.require_group('sp%d' % self.n_stim_patterns)
-        ntrg = nspg.require_group('t%d' % self.n_trials)
-        mixg = ntrg.require_group('mix%.2f' % self.multineuron_metric_mixing)
-        trsg = mixg.require_group('train%d' % self.training_size)
-        target_group = trsg.require_group('method_%s' % self.linkage_method_string[self.linkage_method])
-        return target_group
-    def close_mi_archive(self):
-        self._mi_archive.close()
-        fcntl.lockf(self._archive_lock, fcntl.LOCK_UN)
-    def _are_results_loaded(self):
-        return all([self.tr_direct_mi!=None, self.ts_decoded_mi_plugin!=None, self.ts_decoded_mi_qe!=None, self.tr_tree!=None, self.px_at_same_size_point!=None])
-    def _is_archive_complete(self):
-        target_group = self.open_mi_archive()
-        answer = all([ds in target_group.keys() for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point']])
-        self.close_mi_archive()
-        return answer
-    def _load_results_from_archive(self):
-        if self._is_archive_complete():
-            # the analysis results we're looking for are in the corresponding hdf5 archive on disk
-            target_group = self.open_mi_archive()
-            self.decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
-            self.tr_direct_mi = np.array(target_group['tr_direct_mi'])
-            self.ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
-            self.ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
-            self.tr_tree = np.array(target_group['tr_linkage'])
-            self.px_at_same_size_point = np.array(target_group['px_at_same_size_point'])
-            self.close_mi_archive()
-            self.point_mi_plugin = self.ts_decoded_mi_plugin[self.n_stim_patterns]
-            self.point_mi_qe = self.ts_decoded_mi_qe[self.n_stim_patterns]
-            self.point_separation = 1./self.decoder_precision[self.n_stim_patterns]
-            return True
-        else:
-            # the hdf5 archive seems to be incomplete or missing
-            return False
-    def load_analysis_results(self):
-        if self._are_results_loaded():
-            # we have the results already
-            return True
-        else:
-            # we need to load them from the hdf5 archive, if it exists
-            return self._load_results_from_archive()
     def run_analysis(self):
-        if self.load_analysis_results():
+        if self.results_arch.load():
             # we have the results already (loaded in memory or on the disk)
             pass
         else:
@@ -159,7 +93,7 @@ class AnalysisPoint(ParamSpacePoint):
             print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
-            spikes = self.get_spikes(cell_type='grc')
+            spikes = self.spikes_arch.get_spikes(cell_type='grc')
             n_cells = spikes.shape[1]
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
@@ -193,7 +127,7 @@ class AnalysisPoint(ParamSpacePoint):
             decoder_precision = (1./tr_tree[:,2])[::-1]
             # compute mutual information by using direct clustering on training data
             # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
-            self.tr_direct_mi = np.zeros(n_tr_obs-1)
+            tr_direct_mi = np.zeros(n_tr_obs-1)
             Xn = 1 # the output is effectively one-dimensional
             Ym = self.n_stim_patterns
             Ny = np.array([n_tr_obs_per_sp for each in range(self.n_stim_patterns)])
@@ -255,27 +189,17 @@ class AnalysisPoint(ParamSpacePoint):
                 if n_clusts == self.n_stim_patterns:
                     px_at_same_size_point = s.PX
             # save analysis results in the archive
-            target_group = self.open_mi_archive()
-            datasets_to_be_deleted = [ds for ds in ['tr_indexes', 'tr_linkage', 'tr_direct_mi', 'ts_decoded_mi_plugin', 'ts_decoded_mi_qe', 'px_at_same_size_point'] if ds in target_group.keys()]
-            for ds in datasets_to_be_deleted:
-                del target_group[ds]
-            target_group.create_dataset('tr_indexes', data=np.array(train_idxs))
-            target_group.create_dataset('tr_linkage', data=tr_tree)
-            target_group.create_dataset('tr_direct_mi', data=tr_direct_mi)
-            target_group.create_dataset('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
-            target_group.create_dataset('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
-            target_group.create_dataset('px_at_same_size_point', data=px_at_same_size_point)
-            # close archive
-            self.close_mi_archive()
+            self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
+            self.results_arch.update_result('tr_linkage', data=tr_tree)
+            self.results_arch.update_result('tr_direct_mi', data=tr_direct_mi)
+            self.results_arch.update_result('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
+            self.results_arch.update_result('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
+            self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
             # update attributes
-            self.tr_direct_mi = tr_direct_mi
-            self.ts_decoded_mi_plugin = ts_decoded_mi_plugin
-            self.ts_decoded_mi_qe = ts_decoded_mi_qe
-            self.tr_tree = tr_tree
-            self.px_at_same_size_point = px_at_same_size_point
+            self.results_arch.load()
 
-# A numpy ndarray with object dtype, and composed of (AnalysisPp)s.
-AnalysisParamSpaceMesh = np.vectorize(AnalysisPp)
+# A numpy ndarray with object dtype, and composed of (AnalysisPoint)s.
+AnalysisParamSpaceMesh = np.vectorize(AnalysisPoint)
 
 class AnalysisPs(ParamSpace):
     def __new__(cls,
@@ -344,7 +268,7 @@ class AnalysisPs(ParamSpace):
         for p in self.flat:
             p.run_analysis()
     def load_analysis_results(self):
-        return [p.load_analysis_results() for p in self.flat]
+        return [p.results_arch.load() for p in self.flat]
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''

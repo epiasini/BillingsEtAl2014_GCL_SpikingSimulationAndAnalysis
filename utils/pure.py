@@ -17,9 +17,9 @@ class ParamSpacePoint(object):
                  n_trials):
         #--parameter space coordinates
         self.sim_duration = sim_duration
-        self.min_mf_number = min_mf_number
+        self.min_mf_number = int(round(min_mf_number))
         self.grc_mf_ratio = grc_mf_ratio
-        self.n_grc_dend = n_grc_dend
+        self.n_grc_dend = int(round(n_grc_dend))
         self.network_scale = network_scale
         self.active_mf_fraction = active_mf_fraction
         self.bias = bias
@@ -27,8 +27,8 @@ class ParamSpacePoint(object):
         self.stim_rate_sigma = stim_rate_sigma
         self.noise_rate_mu = noise_rate_mu
         self.noise_rate_sigma = noise_rate_sigma
-        self.n_stim_patterns = n_stim_patterns
-        self.n_trials = n_trials
+        self.n_stim_patterns = int(round(n_stim_patterns))
+        self.n_trials = int(round(n_trials))
         #--relevant filenames
         self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (BASE_DIR,
                                                                       self.grc_mf_ratio,

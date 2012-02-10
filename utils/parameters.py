@@ -1,7 +1,6 @@
 import numpy as np
 from matplotlib import pyplot as plt
-
-from analysis import AnalysisPoint
+from pure import ParamSpacePoint
 
 class PSlice(object):
     """Conceptually, a subclass of the builtin slice class. Defaults to a single-point slice when just one argument is given."""
@@ -13,8 +12,8 @@ class PSlice(object):
             self.stop = stop
         self.step = step
 
-# A numpy ndarray with object dtype, and composed of (AnalysisPoint)s.
-ParamSpaceMesh = np.vectorize(AnalysisPoint)
+# A numpy ndarray with object dtype, and composed of (ParamSpacePoint)s.
+ParamSpaceMesh = np.vectorize(ParamSpacePoint)
 
 class ParamSpace(np.ndarray):
     def __new__(cls,
@@ -148,7 +147,7 @@ class ParamSpace(np.ndarray):
         """
         temp = self._get_hyperplane(*parameter_value_pairs[0])
         for pair in parameter_value_pairs[1:]:
-            temp = temp.get_hyperplane(*pair)
+            temp = temp._get_hyperplane(*pair)
         return temp
     def get_nontrivial_subspace(self, *parameter_value_pairs):
         """
