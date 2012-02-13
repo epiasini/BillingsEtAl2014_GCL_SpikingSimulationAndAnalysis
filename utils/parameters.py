@@ -117,7 +117,13 @@ class ParamSpace(np.ndarray):
         # TODO: improving by vectorising getattr
         return np.unique(np.array([getattr(x, parameter, None) for x in self.flat]))
     def _get_attribute_array(self, attribute):
-        return np.array([getattr(x, attribute, None) for x in self.flat]).reshape(self.shape)
+        """
+        Return an array containing the value of the requested attribute for all the points in self.
+        The shape of the returned array is of course self.shape. Default to np.nan when a point doesn't
+        have the requested attribute: this is to increase robustness against missing datapoints
+        (typical situation: trying to plot a 2d heatmap where we lack one of the values).
+        """
+        return np.array([getattr(x, attribute, np.nan) for x in self.flat]).reshape(self.shape)
     # def get_attribute_array(self, attribute, **kwargs):
     #     attr_list = []
     #     for x in self.flat:
@@ -127,12 +133,18 @@ class ParamSpace(np.ndarray):
     #         attr_list.append(attr)
     #     return np.array(attr_list).reshape(self.shape)
     def _get_idx_from_value(self, parameter, value):
-        return np.searchsorted(self._get_range(parameter), value)
+        param_range = self._get_range(parameter)
+        if value not in param_range:
+            # Trying to find the index for a parameter (i.e., coordinate) value that's not on the mesh
+            #   raises an exception.
+            raise ValueError('Parameter value ({0}, {1}) not present on the mesh!'.format(value, parameter))
+        return np.searchsorted(param_range, value)
     def _remove_dimensional_index(self, parameter):
         del self.DIDXS[self._didx(parameter)]
     def _get_embedded_hyperplane(self, parameter, value):
         """
-        Return a new Parameter_space object made only of those points that satisfy the condition parameter==value. Don't change the dimensionality of the space (keep the hyperplane 'embedded' in the higher-dimensional space).
+        Return a new Parameter_space object made only of those points that satisfy the condition parameter==value.
+        Don't change the dimensionality of the space (keep the hyperplane 'embedded' in the higher-dimensional space).
         """
         idx = self._get_idx_from_value(parameter, value)
         return np.split(self, self.shape[self._didx(parameter)], self._didx(parameter))[idx]
@@ -143,7 +155,9 @@ class ParamSpace(np.ndarray):
         return hp
     def get_subspace(self, *parameter_value_pairs):
         """
-        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed by setting parameter==value for every parameter, value pair in the parameter_value_pairs iterable. Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed.
+        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed
+        by setting parameter==value for every parameter, value pair in the parameter_value_pairs iterable.
+        Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed.
         """
         temp = self._get_hyperplane(*parameter_value_pairs[0])
         for pair in parameter_value_pairs[1:]:
@@ -151,7 +165,11 @@ class ParamSpace(np.ndarray):
         return temp
     def get_nontrivial_subspace(self, *parameter_value_pairs):
         """
-        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed by setting parameter==value for every (parameter, value) pair that is given as an argument. Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed. Finally, reduce further the dimensionality by fogetting about the _trivial_ dimensions, i.e. the ones where our points don't have any variability.
+        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed
+        by setting parameter==value for every (parameter, value) pair that is given as an argument.
+        Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed.
+        Finally, reduce further the dimensionality by fogetting about the _trivial_ dimensions,
+        i.e. the ones where our points don't have any variability.
         """
         temp = self.get_subspace(*parameter_value_pairs)
         for parameter in [temp._param(k) for k,s in enumerate(temp.shape) if s==1]:

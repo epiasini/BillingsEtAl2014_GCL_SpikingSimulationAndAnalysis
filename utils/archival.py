@@ -44,7 +44,7 @@ class ResultsArchive(Archive):
         self._close()
         return answer
     def _has_been_loaded(self):
-        return all([getattr(self.point, ds, None)!=None for ds in self.datasets])
+        return all([hasattr(self.point, ds) for ds in self.datasets])
     def _open(self):
         # we need to create and remember a file handle and a file lock for the archive,
         #   to avoid concurrent writes by other analysis processes.
