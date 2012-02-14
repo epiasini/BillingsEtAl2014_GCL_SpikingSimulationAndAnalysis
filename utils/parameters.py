@@ -1,6 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
-from pure import ParamSpacePoint
+
+from pure import SimpleParameterSpacePoint
+from archival import SpikesArchive, ResultsArchive
 
 class PSlice(object):
     """Conceptually, a subclass of the builtin slice class. Defaults to a single-point slice when just one argument is given."""
@@ -12,10 +14,195 @@ class PSlice(object):
             self.stop = stop
         self.step = step
 
-# A numpy ndarray with object dtype, and composed of (ParamSpacePoint)s.
-ParamSpaceMesh = np.vectorize(ParamSpacePoint)
+class ParameterSpacePoint(SimpleParameterSpacePoint):
+    def __init__(self,
+                 sim_duration,
+                 min_mf_number,
+                 grc_mf_ratio,
+                 n_grc_dend,
+                 network_scale,
+                 active_mf_fraction,
+                 bias,
+                 stim_rate_mu,
+                 stim_rate_sigma,
+                 noise_rate_mu,
+                 noise_rate_sigma,
+                 n_stim_patterns,
+                 n_trials,
+                 training_size,
+                 multineuron_metric_mixing,
+                 linkage_method,
+                 tau,
+                 dt):
+        super(ParameterSpacePoint, self).__init__(sim_duration,
+                                                  min_mf_number,
+                                                  grc_mf_ratio,
+                                                  n_grc_dend,
+                                                  network_scale,
+                                                  active_mf_fraction,
+                                                  bias,
+                                                  stim_rate_mu,
+                                                  stim_rate_sigma,
+                                                  noise_rate_mu,
+                                                  noise_rate_sigma,
+                                                  n_stim_patterns,
+                                                  n_trials)        
+        #--analysis-specific coordinates
+        self.training_size = int(round(training_size))
+        self.multineuron_metric_mixing = multineuron_metric_mixing
+        self.linkage_method = int(round(linkage_method))
+        self.tau = tau
+        self.dt = dt
+        self.linkage_method_string = ['ward']
+        #--archive objects
+        self.spikes_arch = SpikesArchive(self)
+        self.results_arch = ResultsArchive(self)
+    def __str__(self):
+        analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
+        return super(ParameterSpacePoint, self).__str__() + analysis_specific_repr
+    def simple_representation(self):
+        # just in case I overload __repr__ for some reason. This function is needed to run simulations.
+        return super(ParameterSpacePoint, self).__repr__()
+    #-------------------
+    # Simulation methods
+    #-------------------
+#    def run_simulation(self):
+#        
+#    while process_manager.queue_is_not_empty():
+#        # check for jobs that may have stalled due to the dreaded ConcurrentModificationException by parsing the error log files, since I don't seem to be able to catch that exception at the jython level.
+#        process_manager.update_jobs_and_check_for_CME()
+#        process_manager.update_prequeue()
+#        print('{rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs), pqj=process_manager.get_prequeue_length()))
+#        time.sleep(60)
+#    print("Simulation stage complete.")
+    
+    #-------------------
+    # Compression methods
+    #-------------------
+    def run_compression(self):
+        pass
+    #-------------------
+    # Analysis methods
+    #-------------------
+    def run_analysis(self):
+        if self.results_arch.load():
+            # we have the results already (loaded in memory or on the disk)
+            pass
+        else:
+            # we actually need to calculate them
+            print("Analysing for: {0}".format(self))
+            n_obs = self.n_stim_patterns * self.n_trials
+            # load data
+            spikes = self.spikes_arch.get_spikes(cell_type='grc')
+            n_cells = spikes.shape[1]
+            # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
+            n_tr_obs_per_sp = self.training_size
+            n_ts_obs_per_sp = self.n_trials - n_tr_obs_per_sp
+            train_idxs = list(itertools.chain(*([x+self.n_trials*sp for x in random.sample(range(self.n_trials), n_tr_obs_per_sp)] for sp in range(self.n_stim_patterns))))
+            test_idxs = [x for x in range(n_obs) if x not in train_idxs]
+            n_tr_obs = len(train_idxs)
+            n_ts_obs = len(test_idxs)
+            tr_input_signals = [int(x/self.n_trials) for x in train_idxs]
+            tr_spikes = spikes[train_idxs]
+            ts_spikes = spikes[test_idxs]
+            # convolve spike train to generate vector fields
+            tr_fields = convolve(tr_spikes, self.sim_duration, self.tau, self.dt)
+            ts_fields = convolve(ts_spikes, self.sim_duration, self.tau, self.dt)
+            n_timepoints = tr_fields.shape[2]
+            # prepare multineuron distance function by partial application and calculate distances
+            print('computing distances between training observations')
+            if self.multineuron_metric_mixing!=0:
+                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((self.n_cells, self.n_cells)) - np.eye(self.n_cells)))
+                fixed_c_multineuron_distance = functools.partial(multineuron_distance, theta=theta)
+            else:
+                fixed_c_multineuron_distance = multineuron_distance_labeled_line
+            tr_distances = []
+            for h in range(n_tr_obs):
+                for k in range(h+1, n_tr_obs):
+                    tr_distances.append(fixed_c_multineuron_distance(tr_fields[h], tr_fields[k]))
+            # cluster training data
+            print('clustering training data')
+            tr_tree = linkage(tr_distances, method=self.linkage_method_string[self.linkage_method])
+            # create an array describing the precision of each clustering step
+            decoder_precision = (1./tr_tree[:,2])[::-1]
+            # compute mutual information by using direct clustering on training data
+            # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
+            tr_direct_mi = np.zeros(n_tr_obs-1)
+            Xn = 1 # the output is effectively one-dimensional
+            Ym = self.n_stim_patterns
+            Ny = np.array([n_tr_obs_per_sp for each in range(self.n_stim_patterns)])
+            for n_clusts in range(1,n_tr_obs):
+                Xm = n_clusts
+                X = fcluster(tr_tree, t=n_clusts, criterion='maxclust') - 1 # cluster number 0 is never present in fcluster's output, so the elements of X live in [1,n_clusts] 
+                X_dims = (Xn, Xm)
+                s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
+                tr_direct_mi[n_clusts-1] = s.I()
+            # train the decoder and use it to calculate mi on the testing dataset
+            print("training the decoder and using it to calculate mi on test data")
+            relevant_tr_clusts = np.zeros(n_tr_obs+n_tr_obs-1)
+            # --first step: prepare the 'square part' of the distance matrix. special case for n_clusts==n_tr_obs.
+            relevant_tr_clusts = range(n_tr_obs)
+            tr_clustering = fcluster(tr_tree, t=n_tr_obs, criterion='maxclust')
+            out_alphabet = np.zeros(shape=(n_tr_obs+n_tr_obs-1, n_cells, n_timepoints))
+            out_alphabet[0:n_tr_obs] = tr_fields
+            distances = np.zeros(shape=(n_ts_obs, n_tr_obs+n_tr_obs-1))
+            for n, observation in enumerate(ts_fields):
+                for m, symbol in enumerate(out_alphabet[relevant_tr_clusts]):
+                    distances[n,m] = fixed_c_multineuron_distance(observation, symbol)
+            # --now iterate over the number of clusters and, step by step, train the decoder and use it to calculate mi
+            ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
+            ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
+            Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
+            for n_clusts in range(n_tr_obs-1,0,-1):
+                clust_idx = n_tr_obs + n_tr_obs - n_clusts - 1 # n_tr_obs, n_tr_obs+1, ..., n_tr_obs+n_tr_obs-2
+                joined = tr_tree[clust_idx-n_tr_obs, 0:2]
+                [relevant_tr_clusts.remove(c) for c in joined] # from now on, ingore clusters that have just been merged..
+                relevant_tr_clusts.append(clust_idx) # ..but include the newly formed cluster in the next computations
+                tr_clustering[tr_clustering==joined[0]] = clust_idx # this is to avoid calling fcluster again
+                tr_clustering[tr_clustering==joined[1]] = clust_idx
+                # compute new symbol as the weighted average of the joined clusters' centroids (that is, the centroid of the new cluster)
+                # prepare weights for weighted average
+                if joined[0] <= n_tr_obs:
+                    left_weight = 1
+                else:
+                    left_weight = tr_tree[joined[0]-n_tr_obs][3]
+                if joined[1] <= n_tr_obs:
+                    right_weight = 1
+                else:
+                    right_weight = tr_tree[joined[1]-n_tr_obs][3]
+                out_alphabet[clust_idx] = (out_alphabet[joined[0]] *  left_weight+ out_alphabet[joined[1]] * right_weight)/(left_weight + right_weight)
+                # fill in the column in the distance matrix corresponding to the newly created symbol
+                for n, observation in enumerate(ts_fields):
+                    distances[n, clust_idx] = fixed_c_multineuron_distance(observation, out_alphabet[clust_idx])
+                # decode test data with the updated alphabet
+                decoded_output = distances[:, relevant_tr_clusts].argmin(axis=1)
+                # compute MI on the decoded data
+                Xm = n_clusts
+                X_dims = (Xn, Xm)
+                X = decoded_output
+                s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
+                ts_decoded_mi_plugin[n_clusts-1] = s.I()
+                s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
+                ts_decoded_mi_qe[n_clusts-1] = s.I()
+                if n_clusts == self.n_stim_patterns:
+                    px_at_same_size_point = s.PX
+            # save analysis results in the archive
+            self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
+            self.results_arch.update_result('tr_linkage', data=tr_tree)
+            self.results_arch.update_result('tr_direct_mi', data=tr_direct_mi)
+            self.results_arch.update_result('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
+            self.results_arch.update_result('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
+            self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
+            # update attributes
+            self.results_arch.load()
 
-class ParamSpace(np.ndarray):
+
+# A numpy ndarray with object dtype, and composed of (ParameterSpacePoint)s.
+ParameterSpaceMesh = np.vectorize(ParameterSpacePoint)
+
+class ParameterSpace(np.ndarray):
     def __new__(cls,
                 sim_duration_slice,
                 min_mf_number_slice,
@@ -57,7 +244,7 @@ class ParamSpace(np.ndarray):
                      linkage_method_slice,
                      tau_slice,
                      dt_slice]
-        obj = ParamSpaceMesh(*m).view(cls)
+        obj = ParameterSpaceMesh(*m).view(cls)
         # Dimensional InDeXS. Dictionary or list? I like the 'semantic' nature of a dictionary, but lists have a natural ordering and a natural way of updating when a dimension is added or removed.
         obj.DIDXS = [
             'sim_duration',
@@ -176,14 +363,22 @@ class ParamSpace(np.ndarray):
             temp = temp.squeeze(temp._didx(parameter))
             temp._remove_dimensional_index(parameter)
         return temp
-    #------------------
+    #-------------------
+    # Simulation methods
+    #-------------------
+
+    #-------------------
+    # Compression methods
+    #-------------------
+
+    #-------------------
     # Analysis methods
-    #------------------
+    #-------------------
     def run_analysis(self):
         for p in self.flat:
             p.run_analysis()
     def load_analysis_results(self):
-        return [p.load_analysis_results() for p in self.flat]
+        return [p.results_arch.load() for p in self.flat]
     #-------------------
     # Visualisation methods
     #-------------------

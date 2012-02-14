@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias stim_rate_mu stim_rate_sigma noise_rate_mu noise_rate_sigma n_stim_patterns n_trials size rank
+./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py SimpleParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200)
 """
 import random
 import time
@@ -23,22 +23,9 @@ from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, ICla
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils.simulation import SimulationPoint, plast_correction_factor
+from utils.pure import SimpleParameterSpacePoint, plast_correction_factor
 
-min_mf_number = int(sys.argv[1])
-grc_mf_ratio = float(sys.argv[2])
-n_grc_dend = int(sys.argv[3])
-network_scale = float(sys.argv[4])
-active_mf_fraction = float(sys.argv[5])
-bias = float(sys.argv[6])
-stim_rate_mu = float(sys.argv[7])
-stim_rate_sigma = float(sys.argv[8])
-noise_rate_mu = float(sys.argv[9])
-noise_rate_sigma = float(sys.argv[10])
-n_stim_patterns = int(sys.argv[11])
-n_trials = int(sys.argv[12])
-size = int(sys.argv[13])
-rank = int(sys.argv[14])
+point = eval(sys.argv[1])
 
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
@@ -46,29 +33,8 @@ sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
-stim_rate_mu = 120
-stim_rate_sigma = 30
-noise_rate_mu = 0
-noise_rate_sigma = 10
-
-sim_duration = 300.0
-
-point = SimulationPoint(sim_duration,
-                 min_mf_number,
-                 grc_mf_ratio,
-                 n_grc_dend,
-                 network_scale,
-                 active_mf_fraction,
-                 bias,
-                 stim_rate_mu,
-                 stim_rate_sigma,
-                 noise_rate_mu,
-                 noise_rate_sigma,
-                 n_stim_patterns,
-                 n_trials)
-
-mf_number = int(round(min_mf_number * network_scale))
-gr_number = int(round(mf_number * grc_mf_ratio))
+mf_number = int(round(point.min_mf_number * point.network_scale))
+gr_number = int(round(mf_number * point.grc_mf_ratio))
 
 temp_dir = tempfile.mkdtemp(dir=sim_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)

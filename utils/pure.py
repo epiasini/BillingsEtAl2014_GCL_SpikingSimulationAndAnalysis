@@ -1,6 +1,11 @@
 BASE_DIR = "/home/ucbtepi/code/network/data"
+SIZE_PER_SIMULATION = 20
 
-class ParamSpacePoint(object):
+class SimpleParameterSpacePoint(object):
+    """Used in the simulation script and as a base class for ParameterSpacePoint"""
+    #--class constants
+    BASE_DIR = BASE_DIR
+    SIZE_PER_SIMULATION = SIZE_PER_SIMULATION
     def __init__(self,
                  sim_duration,
                  min_mf_number,
@@ -30,7 +35,7 @@ class ParamSpacePoint(object):
         self.n_stim_patterns = int(round(n_stim_patterns))
         self.n_trials = int(round(n_trials))
         #--relevant filenames
-        self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (BASE_DIR,
+        self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (self.BASE_DIR,
                                                                       self.grc_mf_ratio,
                                                                       self.n_grc_dend,
                                                                       self.network_scale)
@@ -52,4 +57,13 @@ class ParamSpacePoint(object):
                                                                          self.noise_rate_mu,
                                                                          self.noise_rate_sigma)
     def __repr__(self):
-        return "sim_dur: {0} | min_mf_number: {1} | gmr: {2} | gd: {3} | s: {4} | mf: {5} | b: {6} | sr_mu: {7} | sr_s: {8} | nr_mu: {9} | nr_s: {10} | np: {11} | t: {12}".format(self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+        # MUST NOT HAVE SPACES (see how simulations are submitted)
+        return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+    def __str__(self):
+        return "sim_dur: %f | min_mf_number: %d | gmr: %f | gd: %d | s: %f | mf: %.01f | b: %f | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+
+def plast_correction_factor(f, syn_type):
+    if syn_type=='AMPA':
+        return 0.92 - 0.004*f + 1e-5 * f**2
+    elif syn_type=='NMDA':
+        return 0.94 - 0.0032*f + 8.5e-6 * f**2
