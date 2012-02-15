@@ -40,7 +40,7 @@ class Simulator(object):
         # submit simulations to the queue
         if not os.path.exists(self.point.spikes_arch.path):
             for rank in range(self.point.SIZE_PER_SIMULATION):
-                qsub_argument_list = ['simulate_jobscript.sh', self.point.simple_representation()]
+                qsub_argument_list = ['simulate_jobscript.sh', self.point.simple_representation(), str(rank)]
                 process_manager.submit_job(qsub_argument_list)
     def is_running(self):
         pass

@@ -10,20 +10,8 @@ import re
 import shutil
 import numpy as np
 
-from utils.paths import data_archive_path_ctor, data_folder_path_ctor, conn_pattern_filename, stim_pattern_filename, ref_ctor
+point = eval(sys.argv[1])
 
-min_mf_number = int(sys.argv[1])
-grc_mf_ratio = float(sys.argv[2])
-n_grc_dend = int(sys.argv[3])
-network_scale = float(sys.argv[4])
-active_mf_fraction = float(sys.argv[5])
-bias = float(sys.argv[6])
-stim_rate_mu = float(sys.argv[7])
-stim_rate_sigma = float(sys.argv[8])
-noise_rate_mu = float(sys.argv[9])
-noise_rate_sigma = float(sys.argv[10])
-n_stim_patterns = int(sys.argv[11])
-n_trials = int(sys.argv[12])
 try:
     clean_up = bool(int(sys.argv[13]))
 except IndexError:

@@ -5,7 +5,10 @@ from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
 
 class PSlice(object):
-    """Conceptually, a subclass of the builtin slice class. Defaults to a single-point slice when just one argument is given."""
+    """
+    TO BE USED ONLY AS AN 'ASCENDING' SLICE
+    Conceptually, a subclass of the builtin slice class. Defaults to a single-point slice when just one argument is given.
+    """
     def __init__(self, start, stop=None, step=1):
         self.start = start
         if stop==None:
@@ -13,6 +16,7 @@ class PSlice(object):
         else:
             self.stop = stop
         self.step = step
+        self.realstop = self.stop - self.step
 
 class ParameterSpacePoint(SimpleParameterSpacePoint):
     def __init__(self,
@@ -66,15 +70,6 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
     #-------------------
     # Simulation methods
     #-------------------
-#    def run_simulation(self):
-#        
-#    while process_manager.queue_is_not_empty():
-#        # check for jobs that may have stalled due to the dreaded ConcurrentModificationException by parsing the error log files, since I don't seem to be able to catch that exception at the jython level.
-#        process_manager.update_jobs_and_check_for_CME()
-#        process_manager.update_prequeue()
-#        print('{rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(process_manager.running_jobs), wj=len(process_manager.waiting_jobs), oj=len(process_manager.other_jobs), pqj=process_manager.get_prequeue_length()))
-#        time.sleep(60)
-#    print("Simulation stage complete.")
     
     #-------------------
     # Compression methods
