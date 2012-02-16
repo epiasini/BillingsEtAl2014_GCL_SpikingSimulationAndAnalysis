@@ -71,14 +71,6 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
     def simple_representation(self):
         """Describe the point as if it were a SimpleParameterSpacePoint."""
         return super(ParameterSpacePoint, self).__repr__()
-    def get_simulation_reference(self, stimulus_pattern_index, trial):
-        """
-        Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.
-        """
-        return 'sp{0}_t{1}_spn{2}_tn{3}'.format(self.n_stim_patterns,
-                                                self.n_trials,
-                                                self.stimulus_pattern_index,
-                                                self.trial)
     #-------------------
     # Simulation methods
     #-------------------

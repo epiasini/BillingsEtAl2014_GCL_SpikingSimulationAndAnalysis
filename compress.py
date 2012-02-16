@@ -10,6 +10,8 @@ import re
 import shutil
 import numpy as np
 
+from utils.parameters import ParameterSpacePoint
+
 point = eval(sys.argv[1])
 
 try:
@@ -28,7 +30,7 @@ archive = point.spikes_arch.open_hdf5_handle()
 # load connection pattern from txt file and save it in the hdf5 file
 conn_pattern = np.loadtxt(point.conn_pattern_filename, dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
-archive.create_dataset("bias", data=bias)
+archive.create_dataset("bias", data=point.bias)
 
 # load the file containing the stimulation patterns
 spf = open(point.stim_pattern_filename, "r")
@@ -46,7 +48,7 @@ for spn, sp in enumerate(stim_patterns):
     stim = np.array(sp, dtype=np.int)
     archive["%03d" % spn].create_dataset("stim_pattern", data=stim)
 
-    for trial in range(n_trials):
+    for trial in range(point.n_trials):
         print (spn, trial)
         sim_ref = point.get_simulation_reference(spn, trial)
         single_trial_path = point.data_folder_path + "/" + sim_ref

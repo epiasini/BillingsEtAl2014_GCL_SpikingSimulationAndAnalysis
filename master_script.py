@@ -1,9 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import os
 import time
-import random
-import itertools
 from math import factorial
 
 from utils.queue import BatchManager
@@ -30,16 +27,16 @@ sim_duration = psl(300.0)
 min_mf_number = psl(6)
 grc_mf_ratio = psl(2.)
 n_grc_dend = psl(4)
-network_scale = psl(5)
+network_scale = psl(5.)
 active_mf_fraction = psl(.5)
-bias = psl(-25.)
+bias = psl(0.)
 stim_rate_mu = psl(120)
 stim_rate_sigma = psl(30)
-noise_rate_mu = psl(0)
+noise_rate_mu = psl(20)
 noise_rate_sigma = psl(10)
-n_stim_patterns = psl(20)
-n_trials = psl(200)
-training_size = psl(40) # must be < min(n_trials)
+n_stim_patterns = psl(6) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_trials = psl(5)
+training_size = psl(4) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(0)
 tau = psl(5)
@@ -47,8 +44,8 @@ dt = psl(2)
 
 #----parameter consistency check
 min_nmf = round((network_scale.start)*(min_mf_number.start))
-min_active_mf = round(min_nmf*(active_mf_fraction_range.start))
-max_active_mf = round(min_nmf*(active_mf_fraction_range.realstop))
+min_active_mf = round(min_nmf*(active_mf_fraction.start))
+max_active_mf = round(min_nmf*(active_mf_fraction.realstop))
 min_coding_inputs = min(min_active_mf, min_nmf - max_active_mf)
 max_patterns_encoded = float(factorial(min_nmf))/(factorial(min_coding_inputs)*factorial(min_nmf - min_coding_inputs))
 if n_stim_patterns.realstop > max_patterns_encoded:
@@ -69,7 +66,7 @@ parameter_space = ParameterSpace(sim_duration,
                                  noise_rate_sigma,
                                  n_stim_patterns,
                                  n_trials,
-                                 trainig_size,
+                                 training_size,
                                  multineuron_metric_mixing,
                                  linkage_method,
                                  tau,

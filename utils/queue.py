@@ -1,6 +1,7 @@
 import itertools
 import collections
 import os
+import random
 from subprocess import Popen, PIPE, call
 
 class QueueError(Exception):
@@ -98,7 +99,8 @@ class BatchManager(object):
         if not os.path.exists(point.stim_pattern_filename):
             active_mf_number = int(round(n_mf*point.active_mf_fraction))
             stim_patterns = []
-            stim_pattern_file = open(stim_pattern_filename, "w")
+            print('queue: {0}'.format(point.stim_pattern_filename))
+            stim_pattern_file = open(point.stim_pattern_filename, "w")
             for spn in range(point.n_stim_patterns):
                 while True:
                     sp = sorted(random.sample(range(n_mf), active_mf_number))
@@ -118,7 +120,7 @@ class BatchManager(object):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point)
     def start_compression(self):
-        for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]
+        for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]:
             qsub_argument_list = ['compress_jobscript.sh', repr(point)]
             self.compression.submit_job(qsub_argument_list)
     def start_analysis(self):
@@ -126,16 +128,16 @@ class BatchManager(object):
             qsub_argument_list = ['analyse_jobscript.sh', repr(point)]
             self.analysis.submit_job(qsub_argument_list)
     def update_status(self):
-        if simulation.queue_is_not_empty():
-            simulation.update_jobs_and_check_for_CME()
-            simulation.update_prequeue
-            print('SIM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(simulation.running_jobs), wj=len(simulation.waiting_jobs), oj=len(simulation.other_jobs), pqj=simulation.get_prequeue_length()))
-        if compression.queue_is_not_empty():
-            compression.update_job_sets()
-            compression.update_prequeue()
-            print('COM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(compression.running_jobs), wj=len(compression.waiting_jobs), oj=len(compression.other_jobs), pqj=compression.get_prequeue_length()))
-        if analysis.queue_is_not_empty():
-            analysis.update_job_sets()
-            analysis.update_prequeue()
-            print('COM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(analysis.running_jobs), wj=len(analysis.waiting_jobs), oj=len(analysis.other_jobs), pqj=analysis.get_prequeue_length()))
+        if self.simulation.queue_is_not_empty():
+            self.simulation.update_jobs_and_check_for_CME()
+            self.simulation.update_prequeue
+            print('SIM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.simulation.running_jobs), wj=len(self.simulation.waiting_jobs), oj=len(self.simulation.other_jobs), pqj=self.simulation.get_prequeue_length()))
+        if self.compression.queue_is_not_empty():
+            self.compression.update_job_sets()
+            self.compression.update_prequeue()
+            print('COM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.compression.running_jobs), wj=len(self.compression.waiting_jobs), oj=len(self.compression.other_jobs), pqj=self.compression.get_prequeue_length()))
+        if self.analysis.queue_is_not_empty():
+            self.analysis.update_job_sets()
+            self.analysis.update_prequeue()
+            print('COM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.analysis.running_jobs), wj=len(self.analysis.waiting_jobs), oj=len(self.analysis.other_jobs), pqj=self.analysis.get_prequeue_length()))
         

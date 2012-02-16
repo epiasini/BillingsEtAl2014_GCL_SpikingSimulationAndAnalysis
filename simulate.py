@@ -73,7 +73,7 @@ while True:
 
 # load existing simulation configurations and set sim duration and a couple of neuron options
 sim_config = project.simConfigInfo.getSimConfig(sim_config_name)
-sim_config.setSimDuration(sim_duration)
+sim_config.setSimDuration(point.sim_duration)
 project.neuronSettings.setNoConsole()
 project.neuronSettings.setCopySimFiles(1)
 
@@ -90,6 +90,7 @@ conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readli
 cpf.close()
 
 # load stimulation patterns
+print(point.stim_pattern_filename)
 spf = open(point.stim_pattern_filename, "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
@@ -107,6 +108,7 @@ print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
 
+print stim_patterns
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
     for trial in range(point.n_trials):
@@ -126,8 +128,8 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         project.simulationParameters.setReference(sim_ref)
 
         #Set the thresholding current
-        bias_in_nA = 0.001 * bias
-        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, sim_duration, bias_in_nA, False)
+        bias_in_nA = 0.001 * point.bias
+        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, point.sim_duration, bias_in_nA, False)
         project.elecInputInfo.addStim(bias_input)
         sim_config.addInput(bias_input.getReference())
 

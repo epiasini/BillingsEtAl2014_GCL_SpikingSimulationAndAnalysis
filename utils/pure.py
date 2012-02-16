@@ -1,5 +1,5 @@
 BASE_DIR = "/home/ucbtepi/code/network/data"
-SIZE_PER_SIMULATION = 20
+SIZE_PER_SIMULATION = 3
 
 class SimpleParameterSpacePoint(object):
     """Used in the simulation script and as a base class for ParameterSpacePoint"""
@@ -61,6 +61,12 @@ class SimpleParameterSpacePoint(object):
         return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
     def __str__(self):
         return "sim_dur: %f | min_mf_number: %d | gmr: %f | gd: %d | s: %f | mf: %.01f | b: %f | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+    def get_simulation_reference(self, stimulus_pattern_index, trial):
+        """
+        Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.
+        """
+        return "sp%d_t%d_spn%d_tn%d" % (self.n_stim_patterns, self.n_trials, stimulus_pattern_index, trial)
+
 
 def plast_correction_factor(f, syn_type):
     if syn_type=='AMPA':
