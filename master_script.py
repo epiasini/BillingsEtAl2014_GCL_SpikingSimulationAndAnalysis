@@ -96,8 +96,8 @@ print("Compression stage complete. Entering analysis stage.")
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################
-batch_manager.start_analysis()
-while batch_manager.analysis.queue_is_not_empty():
-    time.sleep(60)
-    batch_manager.update_status()
+# batch_manager.start_analysis()
+# while batch_manager.analysis.queue_is_not_empty():
+#     time.sleep(60)
+#     batch_manager.update_status()
 print("Analysis stage complete. Master script execution terminated.")

@@ -1,6 +1,6 @@
 import unittest
 
-from parameters import PSlice, ParameterSpace
+from parameters import PSlice, ParameterSpace, ParameterSpacePoint
 from visualisation import MIDetailPlotter
 from pure import SimpleParameterSpacePoint
 
@@ -23,10 +23,22 @@ class TestVisualisation(unittest.TestCase):
 
 class TestTextualPointRepresentations(unittest.TestCase):
     def setUp(self):
+        # max length for diffs printed to stdout
+        self.maxDiff = None
         self.p = SimpleParameterSpacePoint(300, 6, 2.00, 4, 5.00, .5, -20, 120, 30, 30, 10, 20, 200)
+        self.q = ParameterSpacePoint(300, 6, 2.00, 4, 5.00, .5, -20, 120, 30, 30, 10, 20, 200, 40, 0., 0, 5, 2)
     def test_simple_point(self):
         self.assertEqual(self.p.__dict__, eval(repr(self.p)).__dict__)
-        
+    def test_full_point(self):
+        dict_q = self.q.__dict__
+        dict_repr_q = eval(repr(self.q)).__dict__
+        # archive memory addresses in dicts _should_ be different.
+        self.assertNotEqual(dict_q, dict_repr_q)
+        del dict_q['spikes_arch'], dict_q['results_arch']
+        del dict_repr_q['spikes_arch'], dict_repr_q['results_arch']
+        self.assertEqual(dict_q, dict_repr_q)
+    def test_point_simplification(self):
+        self.assertEqual(self.p.__dict__, eval(self.q.simple_representation()).__dict__)
     
 if __name__ == '__main__':
     unittest.main()

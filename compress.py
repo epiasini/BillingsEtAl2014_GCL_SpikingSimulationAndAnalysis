@@ -13,31 +13,29 @@ import numpy as np
 point = eval(sys.argv[1])
 
 try:
-    clean_up = bool(int(sys.argv[13]))
+    clean_up = bool(int(sys.argv[2]))
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 
 sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 
-n_mf = int(round(min_mf_number * network_scale))
-n_gr = int(round(n_mf * grc_mf_ratio))
+n_mf = int(round(point.min_mf_number * point.network_scale))
+n_gr = int(round(n_mf * point.grc_mf_ratio))
 
 # open the hdf5 file
-archive = h5py.File(data_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials))
+archive = point.spikes_arch.open_hdf5_handle()
 
 # load connection pattern from txt file and save it in the hdf5 file
-conn_pattern = np.loadtxt(conn_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale), dtype=np.int)
+conn_pattern = np.loadtxt(point.conn_pattern_filename, dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
 archive.create_dataset("bias", data=bias)
 
 # load the file containing the stimulation patterns
-spf = open(stim_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, n_stim_patterns), "r")
+spf = open(point.stim_pattern_filename, "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
 
-# construct data folder path
-data_folder_path = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma)
-
+# initialise sets for missing data
 missing_mf_datasets = set()
 missing_gr_datasets = set()
 missing_directories = set()
@@ -50,8 +48,8 @@ for spn, sp in enumerate(stim_patterns):
 
     for trial in range(n_trials):
         print (spn, trial)
-        sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
-        single_trial_path = data_folder_path + "/" + sim_ref
+        sim_ref = point.get_simulation_reference(spn, trial)
+        single_trial_path = point.data_folder_path + "/" + sim_ref
         archive["%03d" % spn].create_group("%02d" % trial)
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 

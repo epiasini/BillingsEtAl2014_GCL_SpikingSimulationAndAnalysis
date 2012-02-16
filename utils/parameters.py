@@ -61,12 +61,24 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         #--archive objects
         self.spikes_arch = SpikesArchive(self)
         self.results_arch = ResultsArchive(self)
+    def __repr__(self):
+        simple = self.simple_representation()
+        simple_args = simple.split('(')[1].split(')')[0]
+        return('ParameterSpacePoint({0},{1},{2},{3},{4},{5})'.format(simple_args, self.training_size, self.multineuron_metric_mixing, self.linkage_method, self.tau, self.dt))
     def __str__(self):
         analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
         return super(ParameterSpacePoint, self).__str__() + analysis_specific_repr
     def simple_representation(self):
-        # just in case I overload __repr__ for some reason. This function is needed to run simulations.
+        """Describe the point as if it were a SimpleParameterSpacePoint."""
         return super(ParameterSpacePoint, self).__repr__()
+    def get_simulation_reference(self, stimulus_pattern_index, trial):
+        """
+        Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.
+        """
+        return 'sp{0}_t{1}_spn{2}_tn{3}'.format(self.n_stim_patterns,
+                                                self.n_trials,
+                                                self.stimulus_pattern_index,
+                                                self.trial)
     #-------------------
     # Simulation methods
     #-------------------

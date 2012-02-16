@@ -121,7 +121,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
-        sim_ref = point.get_ref(spn, trial)
+        sim_ref = point.get_simulation_reference(spn, trial)
         refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
