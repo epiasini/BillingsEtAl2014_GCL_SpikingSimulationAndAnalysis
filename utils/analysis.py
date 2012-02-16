@@ -4,15 +4,6 @@ import random
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist, squareform
 import functools
-import itertools
-
-import pyentropy as pe
-
-#from .paths import data_archive_path_ctor, mi_archive_path_ctor, stim_pattern_filename
-#from .parameters import Param_space_point
-from pure import ParamSpacePoint
-from archival import SpikesArchive, ResultsArchive
-from parameters import ParamSpace
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""

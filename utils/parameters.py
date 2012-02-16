@@ -1,8 +1,13 @@
 import numpy as np
+import itertools
+import random
 from matplotlib import pyplot as plt
+from scipy.cluster.hierarchy import linkage, fcluster
+import pyentropy as pe
 
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
+from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line
 
 class PSlice(object):
     """

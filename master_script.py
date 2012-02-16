@@ -35,8 +35,8 @@ stim_rate_sigma = psl(30)
 noise_rate_mu = psl(20)
 noise_rate_sigma = psl(10)
 n_stim_patterns = psl(6) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
-n_trials = psl(5)
-training_size = psl(4) # must be < min(n_trials)
+n_trials = psl(50)
+training_size = psl(8) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(0)
 tau = psl(5)
@@ -77,6 +77,7 @@ batch_manager = BatchManager(parameter_space)
 ############################
 ##====SIMULATION STAGE====##
 ############################
+print("Entering simulation stage.")
 batch_manager.start_simulation()
 while batch_manager.simulation.queue_is_not_empty():
     time.sleep(60)    
@@ -93,8 +94,8 @@ print("Compression stage complete. Entering analysis stage.")
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################
-# batch_manager.start_analysis()
-# while batch_manager.analysis.queue_is_not_empty():
-#     time.sleep(60)
-#     batch_manager.update_status()
+batch_manager.start_analysis()
+while batch_manager.analysis.queue_is_not_empty():
+    time.sleep(60)
+    batch_manager.update_status()
 print("Analysis stage complete. Master script execution terminated.")
