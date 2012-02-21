@@ -35,12 +35,12 @@ sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
 n_trials = 200
 min_mf_number = 6
-grc_mf_ratio = 2.
+grc_mf_ratio = 2.0
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5]
 active_mf_fraction_range = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
-bias_range = [0., -5., -10., -15., -20., -25., -30., -35., -40., -45.]
+bias_range = [0., -5., -10., -15., -20, -25., -30.]
 #++++++++++++++++++++++++++
 ###analysis
 an_tau = 5

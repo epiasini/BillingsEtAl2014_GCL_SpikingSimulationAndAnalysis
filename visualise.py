@@ -18,7 +18,7 @@ np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 class TrainingSetSizeError(Exception):
     pass
 
-plot_mi_detail = False
+plot_mi_detail = True
 plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
@@ -29,22 +29,22 @@ plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
 plot_distance_matrix = False
-plot_mi_vs_activity = True
+plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++fixed parameters+++++++
 sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 6
+n_stim_patterns = 20
 min_mf_number = 6
 grc_mf_ratio = 2.
 tau = 5.
 dt = 2.
-plotting_mode = 'precision'
+plotting_mode = 'alphabet_size'
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
-network_scale_range = [1.]
-active_mf_fraction_range = list(np.arange(.1, 1, .1))
-bias_range = list(np.arange(0., -50., -5.))
+network_scale_range = [5.]
+active_mf_fraction_range = list(np.arange(.5, .6, .1))
+bias_range = list(np.arange(-25., -30., -5.))
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -109,9 +109,9 @@ for k,par_combination in enumerate(parameter_space):
     multineuron_metric_mixing = par_combination[6]
     linkage_method = par_combination[7]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_bootstrap, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
     if plot_mutual_information:
-        info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_qe[n_stim_patterns]
+        info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_pt[n_stim_patterns]
         #print 'OS: ',output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if plot_kl_divergence:
         kl_div_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = kl_divergence_from_flat_p(q=px_at_same_size_point)
@@ -120,13 +120,22 @@ for k,par_combination in enumerate(parameter_space):
     # plot
     color = colors[k%len(colors)]
     if plot_mi_detail and plotting_mode == 'precision':
-        mi_det_ax.semilogx(decoder_precision, tr_direct_mi, linestyle='-.', color=color)
-        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_qe, label=r'mf act. prob: %.1f' % (active_mf_fraction), color=color)
+        #mi_det_ax.semilogx(decoder_precision, tr_direct_mi, linestyle='-.', color=color)
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_plugin, label=r'plugin' % (active_mf_fraction))
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_bootstrap, label=r'bootstrap' % (active_mf_fraction))        
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_qe, label=r'qe' % (active_mf_fraction))
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_pt, label=r'pt' % (active_mf_fraction))
+        #mi_det_ax.semilogx(decoder_precision, (ts_decoded_mi_plugin-ts_decoded_mi_qe)/ts_decoded_mi_qe, label=r'plugin-qe' % (active_mf_fraction), color=color)
         mi_det_ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], mi_det_ax.get_ylim(), linestyle='--', color=color)
         #mi_det_ax2.semilogy(tr_direct_mi/np.log2(n_stim_patterns), decoder_precision, linestyle='', marker='+')
     elif plotting_mode == 'alphabet_size':
-        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), tr_direct_mi, label=r'$\vartheta = %.2f^{\circ}$, direct' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), linestyle='-.', color=color)
-        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'$\vartheta = %.2f^{\circ}$, decoded' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), color=color)
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_plugin, label=r'plugin' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'qe' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_bootstrap, label=r'bootstrap' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_pt, label=r'pt' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_nsb, label=r'nsb' % (active_mf_fraction))
+        #mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), tr_direct_mi, label=r'$\vartheta = %.2f^{\circ}$, direct' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), linestyle='-.', color=color)
+        #mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'$\vartheta = %.2f^{\circ}$, decoded' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), color=color)
         if k==len(parameter_space)-1:
             mi_det_ax.plot([n_stim_patterns, n_stim_patterns], mi_det_ax.get_ylim(), linestyle='--', color='k')
     if plot_dendrograms:
@@ -260,10 +269,11 @@ if plot_noise_entropy:
     
 
 if plot_mi_detail:
-    mi_det_ax.legend(loc='upper left')
     if plotting_mode == 'precision':
+        mi_det_ax.legend(loc='upper left')
         mi_det_ax.set_xlabel('decoder precision (1/cluster separation)')
     elif plotting_mode == 'alphabet_size':
+        mi_det_ax.legend(loc='best')
         mi_det_ax.set_xlabel('alphabet size (clusters in the decoder)')
     mi_det_ax.set_ylabel('MI (bits)')
 
