@@ -47,11 +47,6 @@ sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
-stim_rate_mu = 120
-stim_rate_sigma = 30
-noise_rate_mu = 0
-noise_rate_sigma = 10
-
 sim_duration = 300.0
 
 mf_number = int(round(min_mf_number * network_scale))

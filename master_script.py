@@ -39,11 +39,11 @@ grc_mf_ratio = 2.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5]
-active_mf_fraction_range = [.5]
-bias_range = [-25.]
+active_mf_fraction_range = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
+bias_range = [0., -5., -10., -15., -20., -25., -30.]
 stim_rate_mu_range = [120]
 stim_rate_sigma_range = [30]
-noise_rate_mu_range = [0]
+noise_rate_mu_range = [40, 60, 70]
 noise_rate_sigma_range = [10]
 #++++++++++++++++++++++++++
 ###analysis
