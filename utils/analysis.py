@@ -80,7 +80,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
         decoder_precision = (1./np.array(target_group['tr_linkage'])[:,2])[::-1]
         tr_direct_mi = np.array(target_group['tr_direct_mi'])
         ts_decoded_mi_plugin = np.array(target_group['ts_decoded_mi_plugin'])
-        ts_decoded_mi_bootstrap = np.array(target_group['ts_decoded_mi_bootstrap')]
+        ts_decoded_mi_bootstrap = np.array(target_group['ts_decoded_mi_bootstrap'])
         ts_decoded_mi_qe = np.array(target_group['ts_decoded_mi_qe'])
         ts_decoded_mi_pt = np.array(target_group['ts_decoded_mi_pt'])
         ts_decoded_mi_nsb = np.array(target_group['ts_decoded_mi_nsb'])
@@ -193,7 +193,7 @@ def analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, networ
             X = decoded_output
             s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
             # "bootstrap" shuffle estimate of bias.
-            bootstrap_n = 10
+            bootstrap_n = 100
             bootstrap_bias_estimate = 0
             for nb in range(bootstrap_n):
                 shX = np.random.permutation(X)
