@@ -114,18 +114,18 @@ class BatchManager(object):
         # submit simulations to the queue
         if not os.path.exists(point.spikes_arch.path):
             for rank in range(point.SIZE_PER_SIMULATION):
-                qsub_argument_list = ['simulate_jobscript.sh', point.simple_representation(), str(rank)]
+                qsub_argument_list = ['jobscripts/simulate_jobscript.sh', point.simple_representation(), str(rank)]
                 self.simulation.submit_job(qsub_argument_list)
     def start_simulation(self):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point)
     def start_compression(self):
         for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]:
-            qsub_argument_list = ['compress_jobscript.sh', repr(point)]
+            qsub_argument_list = ['jobscripts/compress_jobscript.sh', repr(point)]
             self.compression.submit_job(qsub_argument_list)
     def start_analysis(self):
         for point in self.parameter_space.flat:
-            qsub_argument_list = ['analyse_jobscript.sh', repr(point)]
+            qsub_argument_list = ['jobscripts/analyse_jobscript.sh', repr(point)]
             self.analysis.submit_job(qsub_argument_list)
     def update_status(self):
         if self.simulation.queue_is_not_empty():
