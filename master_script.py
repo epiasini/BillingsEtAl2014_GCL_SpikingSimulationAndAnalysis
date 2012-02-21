@@ -35,12 +35,16 @@ sim_duration = 300.0 # hardcoded in simulate.py
 n_stim_patterns = 20
 n_trials = 200
 min_mf_number = 6
-grc_mf_ratio = 2.0
+grc_mf_ratio = 2.
 #+++++parameter ranges+++++++++++++
 n_grc_dend_range = [4]
 network_scale_range = [5]
 active_mf_fraction_range = [.1, .2, .3, .4, .5, .6, .7, .8, .9]
-bias_range = [0., -5., -10., -15., -20, -25., -30.]
+bias_range = [0., -5., -10., -15., -20., -25., -30.]
+stim_rate_mu_range = [120]
+stim_rate_sigma_range = [30]
+noise_rate_mu_range = [40, 60, 70]
+noise_rate_sigma_range = [10]
 #++++++++++++++++++++++++++
 ###analysis
 an_tau = 5
@@ -51,7 +55,7 @@ linkage_methods_range = ['ward']
 
 
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range]
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range]
 parameter_space = itertools.product(*ranges)
 
 #----parallel settings----
@@ -77,9 +81,13 @@ if simulate:
         scale = sim_dict['params'][1]
         active_mf_fraction = sim_dict['params'][2]
         bias = sim_dict['params'][3]
+        stim_rate_mu = sim_dict['params'][4]
+        stim_rate_sigma = sim_dict['params'][5]
+        noise_rate_mu = sim_dict['params'][6]
+        noise_rate_sigma = sim_dict['params'][7]
         # prepare directory tree
         try:
-            os.makedirs(data_folder_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias))
+            os.makedirs(data_folder_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma))
         except OSError:
             # this means that the directory is already there
             pass
@@ -115,7 +123,7 @@ if simulate:
             stim_pattern_file.close()
 
         # submit simulations to the queue
-        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         if not os.path.exists(data_archive_path):
             for rank in range(size_per_simulation):
                 qsub_argument_list = itertools.chain(['simulate_jobscript.sh', str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials), str(size_per_simulation), str(rank)])
@@ -142,7 +150,7 @@ if compress:
         scale = sim_dict['params'][1]
         active_mf_fraction = sim_dict['params'][2]
         bias = sim_dict['params'][3]
-        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        data_archive_path = data_archive_path_ctor(grc_mf_ratio, n_grc_dend, scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         if not os.path.exists(data_archive_path):
             qsub_argument_list = itertools.chain(['compress_jobscript.sh', str(min_mf_number), str(grc_mf_ratio)], [str(x) for x in sim_dict['params']], [str(n_stim_patterns), str(n_trials), str(int(clean_up_after_compress))])
             process_manager.submit_job(qsub_argument_list)            
@@ -163,7 +171,7 @@ if analyse:
     if any([s >= n_trials for s in training_size_range]):
         raise TrainingSetSizeError()
     
-    an_ranges = [[min_mf_number], [grc_mf_ratio], n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, [n_stim_patterns], [n_trials], [sim_duration], [an_tau], [an_dt], multineuron_metric_mixing_range, training_size_range, linkage_methods_range]
+    an_ranges = [[min_mf_number], [grc_mf_ratio], n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range, [n_stim_patterns], [n_trials], [sim_duration], [an_tau], [an_dt], multineuron_metric_mixing_range, training_size_range, linkage_methods_range]
     an_parameter_space = [[str(value) for value in combination] for combination in itertools.product(*an_ranges)]
 
     for k,par_combination in enumerate(an_parameter_space):

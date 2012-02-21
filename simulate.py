@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/data/eugenio/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias n_stim_patterns n_trials size rank
+./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias stim_rate_mu stim_rate_sigma noise_rate_mu noise_rate_sigma n_stim_patterns n_trials size rank
 """
 import random
 import time
@@ -11,15 +11,20 @@ import tempfile
 import shutil
 import os.path
 
-from java.lang import System
+from java.lang import System, Float
 from java.io import File
+from java.util import Vector, ArrayList
 
-from ucl.physiol.neuroconstruct.project import ProjectManager, CellGroupsInfo
+from ucl.physiol.neuroconstruct.project import ProjectManager, CellGroupsInfo, SingleElectricalInput, SearchPattern, MaxMinLength, SynapticProperties, ConnectivityConditions
+from ucl.physiol.neuroconstruct.project.stimulation import RandomSpikeTrainInstanceProps
+from ucl.physiol.neuroconstruct.project.cellchoice import FixedNumberCells, AllCells
 from ucl.physiol.neuroconstruct.utils import NumberGenerator
+from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, IClampSettings
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils.paths import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
+from utils.simulation import plast_correction_factor
 
 min_mf_number = int(sys.argv[1])
 grc_mf_ratio = float(sys.argv[2])
@@ -27,10 +32,14 @@ n_grc_dend = int(sys.argv[3])
 network_scale = float(sys.argv[4])
 active_mf_fraction = float(sys.argv[5])
 bias = float(sys.argv[6])
-n_stim_patterns = int(sys.argv[7])
-n_trials = int(sys.argv[8])
-size = int(sys.argv[9])
-rank = int(sys.argv[10])
+stim_rate_mu = float(sys.argv[7])
+stim_rate_sigma = float(sys.argv[8])
+noise_rate_mu = float(sys.argv[9])
+noise_rate_sigma = float(sys.argv[10])
+n_stim_patterns = int(sys.argv[11])
+n_trials = int(sys.argv[12])
+size = int(sys.argv[13])
+rank = int(sys.argv[14])
 
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
@@ -113,15 +122,18 @@ print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
 
-# delete all existing connections
-project.generatedNetworkConnections.reset()
-
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
-    # delete all existing stimuli
-    project.generatedElecInputs.reset()
-
     for trial in range(n_trials):
+        # delete all existing connections
+        project.generatedNetworkConnections.reset()
+        project.morphNetworkConnectionsInfo.deleteAllNetConns()
+        sim_config.setNetConns(ArrayList())        
+        # delete all existing stimuli
+        project.generatedElecInputs.reset()
+        project.elecInputInfo.deleteAllStims()
+        sim_config.setInputs(ArrayList())
+
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
         sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
@@ -130,12 +142,12 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 
         #Set the thresholding current
         bias_in_nA = 0.001 * bias
-        bias_input = project.elecInputInfo.getStim("bias")
-        bias_input.setAmp(NumberGenerator(bias_in_nA))
-        bias_input.setDur(NumberGenerator(sim_duration))
-        project.elecInputInfo.updateStim(bias_input)
+        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, sim_duration, bias_in_nA, False)
+        project.elecInputInfo.addStim(bias_input)
+        sim_config.addInput(bias_input.getReference())
 
         # regenerate network
+        i = 0
         while True:
             try:
                 pm.doGenerate(sim_config_name, nC_seed)
@@ -148,17 +160,39 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 print "ConcurrentModificationException raised by nC; retrying network generation."
                 if i>5:
                     raise java.util.ConcurrentModificationException
-                
+        
+        for mf in range(mf_number):
+            if mf in sp:
+                # create random spiking stimuli on active MFs, following the current stimulus pattern
+                rate = max(0.1, random.gauss(stim_rate_mu, stim_rate_sigma))
+            else:
+                rate = max(0.1, random.gauss(noise_rate_mu, noise_rate_sigma))
+            rate_in_khz = rate/1000.
+            stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
+            project.elecInputInfo.addStim(stim)
+            sim_config.addInput(stim.getReference())
+            project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
+            # netconn set-up (remember that all the connections originating from the same MF are identical)
+            syn_props_list = Vector([SynapticProperties('NMDA'), SynapticProperties('AMPA_direct'), SynapticProperties('AMPA_spillover')])
+            for synp in syn_props_list:
+                synp.setFixedDelay(0)
+                synp.setThreshold(0)
+            syn_props_list[0].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'NMDA')))
+            syn_props_list[1].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'AMPA')))
+            syn_props_list[2].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'AMPA')))
+            conn_conditions = ConnectivityConditions()
+            conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
+            project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf), 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
+
         for gr in range(n_gr):
             # set up thresholding current
             project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
             for mf in conn_pattern[gr]:
                 # create connections, following the current connection pattern
-                project.generatedNetworkConnections.addSynapticConnection('NetConn_MFs_GrCs', mf, gr)
+                conn_name = 'conn_'+str(mf)
+                sim_config.addNetConn(conn_name)
+                project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
 
-        for mf in sp:
-            # create random spiking stimuli on active MFs, following the current stimulus pattern
-            project.generatedElecInputs.addSingleInput("MF_stim",'RandomSpikeTrain','MFs',mf,0,0,None)
 
         # generate and compile neuron files
         print "Generating NEURON scripts..."
@@ -180,7 +214,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             time.sleep(1)
         
         # copy results to main data folder and delete useless nC files
-        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias) + '/' + sim_ref
+        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma) + '/' + sim_ref
         if os.path.isdir(destination):
             shutil.rmtree(destination)
         os.mkdir(destination)

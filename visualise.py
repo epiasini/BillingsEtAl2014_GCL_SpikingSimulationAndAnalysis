@@ -20,7 +20,7 @@ class TrainingSetSizeError(Exception):
 
 plot_mi_detail = True
 plot_dendrograms = False
-plot_mutual_information = False
+plot_mutual_information = True
 plot_kl_divergence = False
 plot_barcodes = False
 plot_activity_levels = False
@@ -45,6 +45,10 @@ n_grc_dend_range = [4]
 network_scale_range = [5.]
 active_mf_fraction_range = list(np.arange(.5, .6, .1))
 bias_range = list(np.arange(-25., -30., -5.))
+stim_rate_mu_range = [120]
+stim_rate_sigma_range = [30]
+noise_rate_mu_range = [0.]
+noise_rate_sigma_range = [10.]
 n_trials_range = [200]
 training_size_range = [40]
 multineuron_metric_mixing_range = [0.]
@@ -55,7 +59,7 @@ linkage_methods_range = ['ward']
 if any([s >= min(n_trials_range) for s in training_size_range]):
     raise TrainingSetSizeError()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
+ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
 parameter_space = list(itertools.product(*ranges))
 
 
@@ -104,12 +108,16 @@ for k,par_combination in enumerate(parameter_space):
     network_scale = par_combination[1]
     active_mf_fraction = par_combination[2]
     bias = par_combination[3]
-    n_trials = par_combination[4]
-    training_size = par_combination[5]
-    multineuron_metric_mixing = par_combination[6]
-    linkage_method = par_combination[7]
+    stim_rate_mu = par_combination[4]
+    stim_rate_sigma = par_combination[5]
+    noise_rate_mu = par_combination[6]
+    noise_rate_sigma = par_combination[7]
+    n_trials = par_combination[8]
+    training_size = par_combination[9]
+    multineuron_metric_mixing = par_combination[10]
+    linkage_method = par_combination[11]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_bootstrap, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_bootstrap, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
     if plot_mutual_information:
         info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_pt[n_stim_patterns]
         #print 'OS: ',output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
@@ -152,7 +160,7 @@ for k,par_combination in enumerate(parameter_space):
         d_ax.set_yticks([])
     if plot_barcodes:
         # build and plot a representation of the "typical" centroids at the |A_in|=|A_out| point.
-        clust_idxs, centroids, clust_sizes = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
+        clust_idxs, centroids, clust_sizes = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
         centroid_sparsities = [(centroid.max(axis=1)>0).sum()/float(centroids.shape[1]) for centroid in centroids]
         centroid_sets.append(centroids)
         centroids_fig = plt.figure()
@@ -172,7 +180,7 @@ for k,par_combination in enumerate(parameter_space):
         m = bias_range.index(bias)
         idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
         print n,m,idx
-        ola = output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        ola = output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         al_ax = al_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
         al_ax.hist(ola.flatten(), bins=5)
         al_ax.set_xticks([])
@@ -182,7 +190,7 @@ for k,par_combination in enumerate(parameter_space):
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
     if plot_synchrony:
-        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
+        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt)
     if plot_distance_matrix:
         n = active_mf_fraction_range.index(active_mf_fraction)
         m = bias_range.index(bias)

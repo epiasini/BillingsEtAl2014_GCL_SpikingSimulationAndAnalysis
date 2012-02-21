@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage: compress.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias n_stim_patterns n_trials [clean_up={0|1}]"""
+"""Usage: compress.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias stim_rate_mu stim_rate_sigma noise_rate_mu noise_rate_sigma n_stim_patterns n_trials [clean_up={0|1}]"""
 import itertools
 import sys
 import os
@@ -18,10 +18,14 @@ n_grc_dend = int(sys.argv[3])
 network_scale = float(sys.argv[4])
 active_mf_fraction = float(sys.argv[5])
 bias = float(sys.argv[6])
-n_stim_patterns = int(sys.argv[7])
-n_trials = int(sys.argv[8])
+stim_rate_mu = float(sys.argv[7])
+stim_rate_sigma = float(sys.argv[8])
+noise_rate_mu = float(sys.argv[9])
+noise_rate_sigma = float(sys.argv[10])
+n_stim_patterns = int(sys.argv[11])
+n_trials = int(sys.argv[12])
 try:
-    clean_up = bool(int(sys.argv[9]))
+    clean_up = bool(int(sys.argv[13]))
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 
@@ -31,7 +35,7 @@ n_mf = int(round(min_mf_number * network_scale))
 n_gr = int(round(n_mf * grc_mf_ratio))
 
 # open the hdf5 file
-archive = h5py.File(data_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials))
+archive = h5py.File(data_archive_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials))
 
 # load connection pattern from txt file and save it in the hdf5 file
 conn_pattern = np.loadtxt(conn_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale), dtype=np.int)
@@ -44,7 +48,7 @@ stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readl
 spf.close()
 
 # construct data folder path
-data_folder_path = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias)
+data_folder_path = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma)
 
 missing_mf_datasets = set()
 missing_gr_datasets = set()
