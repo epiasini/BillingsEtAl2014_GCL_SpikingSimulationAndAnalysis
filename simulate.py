@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py min_mf_number grc_mf_ratio n_grc_dend network_scale active_mf_fraction bias stim_rate_mu stim_rate_sigma noise_rate_mu noise_rate_sigma n_stim_patterns n_trials size rank
+./nC.sh -python ~/home/ucbtepi/code/network/trunk/simulate.py SimpleParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200) 9
 """
 import random
 import time
@@ -23,23 +23,10 @@ from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, ICla
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils.paths import ref_ctor, conn_pattern_filename, stim_pattern_filename, data_folder_path_ctor
-from utils.simulation import plast_correction_factor
+from utils.pure import SimpleParameterSpacePoint, plast_correction_factor
 
-min_mf_number = int(sys.argv[1])
-grc_mf_ratio = float(sys.argv[2])
-n_grc_dend = int(sys.argv[3])
-network_scale = float(sys.argv[4])
-active_mf_fraction = float(sys.argv[5])
-bias = float(sys.argv[6])
-stim_rate_mu = float(sys.argv[7])
-stim_rate_sigma = float(sys.argv[8])
-noise_rate_mu = float(sys.argv[9])
-noise_rate_sigma = float(sys.argv[10])
-n_stim_patterns = int(sys.argv[11])
-n_trials = int(sys.argv[12])
-size = int(sys.argv[13])
-rank = int(sys.argv[14])
+point = eval(sys.argv[1])
+rank = int(sys.argv[2])
 
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
@@ -47,10 +34,8 @@ sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
-sim_duration = 300.0
-
-mf_number = int(round(min_mf_number * network_scale))
-gr_number = int(round(mf_number * grc_mf_ratio))
+mf_number = int(round(point.min_mf_number * point.network_scale))
+gr_number = int(round(mf_number * point.grc_mf_ratio))
 
 temp_dir = tempfile.mkdtemp(dir=sim_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
@@ -88,7 +73,7 @@ while True:
 
 # load existing simulation configurations and set sim duration and a couple of neuron options
 sim_config = project.simConfigInfo.getSimConfig(sim_config_name)
-sim_config.setSimDuration(sim_duration)
+sim_config.setSimDuration(point.sim_duration)
 project.neuronSettings.setNoConsole()
 project.neuronSettings.setCopySimFiles(1)
 
@@ -99,32 +84,34 @@ n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
 print "Number of cells generated: " + str(n_generated_cells)
 
 # load connection pattern
-cpf = open(conn_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale), "r")
+cpf = open(point.conn_pattern_filename, "r")
 print(cpf)
 conn_pattern = [[int(mf) for mf in line.split(' ')[0:-1]] for line in cpf.readlines()]
 cpf.close()
 
 # load stimulation patterns
-spf = open(stim_pattern_filename(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, n_stim_patterns), "r")
+print(point.stim_pattern_filename)
+spf = open(point.stim_pattern_filename, "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
 
 # calculate which patterns are mine to simulate
-patterns_per_chunk = n_stim_patterns/size
+patterns_per_chunk = point.n_stim_patterns/point.SIZE_PER_SIMULATION
 my_stim_lower_bound = rank*patterns_per_chunk
-if rank != size-1:
+if rank != point.SIZE_PER_SIMULATION-1:
     my_stim_upper_bound = (rank + 1) * patterns_per_chunk
 else:
-    my_stim_upper_bound = n_stim_patterns
+    my_stim_upper_bound = point.n_stim_patterns
 
-print (n_stim_patterns, patterns_per_chunk)
+print (point.n_stim_patterns, patterns_per_chunk)
 print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
 
+print stim_patterns
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
-    for trial in range(n_trials):
+    for trial in range(point.n_trials):
         # delete all existing connections
         project.generatedNetworkConnections.reset()
         project.morphNetworkConnectionsInfo.deleteAllNetConns()
@@ -136,13 +123,13 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 
         simulator_seed = random.getrandbits(32)
         # innermost loop: determine the simulation reference name
-        sim_ref = ref_ctor(n_stim_patterns, n_trials, spn, trial)
+        sim_ref = point.get_simulation_reference(spn, trial)
         refs_list.append(sim_ref)
         project.simulationParameters.setReference(sim_ref)
 
         #Set the thresholding current
-        bias_in_nA = 0.001 * bias
-        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, sim_duration, bias_in_nA, False)
+        bias_in_nA = 0.001 * point.bias
+        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, point.sim_duration, bias_in_nA, False)
         project.elecInputInfo.addStim(bias_input)
         sim_config.addInput(bias_input.getReference())
 
@@ -164,9 +151,9 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         for mf in range(mf_number):
             if mf in sp:
                 # create random spiking stimuli on active MFs, following the current stimulus pattern
-                rate = max(0.1, random.gauss(stim_rate_mu, stim_rate_sigma))
+                rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
             else:
-                rate = max(0.1, random.gauss(noise_rate_mu, noise_rate_sigma))
+                rate = max(0.1, random.gauss(point.noise_rate_mu, point.noise_rate_sigma))
             rate_in_khz = rate/1000.
             stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
             project.elecInputInfo.addStim(stim)
@@ -214,7 +201,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             time.sleep(1)
         
         # copy results to main data folder and delete useless nC files
-        destination = data_folder_path_ctor(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma) + '/' + sim_ref
+        destination = point.data_folder_path + '/' + sim_ref
         if os.path.isdir(destination):
             shutil.rmtree(destination)
         os.mkdir(destination)
@@ -223,5 +210,5 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             shutil.move(source, destination)
         shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
 
-shutil.rmtree(temp_dir)
+shutil.rmtree(temp_dir) # this sometimes fails and raises an OSError ('couldn't delete directory...'). Doesn't do any harm, for the time being.
 System.exit(0)

@@ -12,6 +12,8 @@
 
 # "jobscripts" are things that should be passed to qsub.
 
+nC_dir=/home/ucbtepi/src/neuroConstruct
+
 args_list=$@
 startdir=`pwd`
 
@@ -23,7 +25,7 @@ export LD_LIBRARY_PATH=$PYTHONPATH/tables:$HDF5_DIR/lib
 
 hostname
 date
-cd /home/ucbtepi/src/neuroConstruct
+cd $nC_dir
 /usr/bin/time ./nC.sh -python $startdir/simulate.py $args_list
 
 
