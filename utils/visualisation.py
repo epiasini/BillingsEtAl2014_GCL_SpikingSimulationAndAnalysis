@@ -139,7 +139,7 @@ class PointGraphics(object):
         self.fig.savefig(file_name)
 
 class MIDetailPlotter(PointGraphics):
-    def __init__(self, point, corrections=('plugin', 'qe'), **kwargs):
+    def __init__(self, point, corrections=('plugin', 'bootstrap', 'qe', 'pt', 'nsb'), **kwargs):
         super(MIDetailPlotter, self).__init__(point, **kwargs)
         # undersampling bias correction
         self.corrections = corrections
@@ -210,5 +210,17 @@ class RectangularHeatmapPlotter(object):
                 file_name = '/'.join([base_dir, file_name])
         self.fig.savefig(file_name)
             
-
-            
+class InteractiveHeatmap(RectangularHeatmapPlotter):
+    def __init__(self, space):
+        super(InteractiveHeatmap, self).__init__(space)
+        self.cid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
+        self.detailed_point_plots = []
+    def onclick(self, event):
+        print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(event.button, event.x, event.y, event.xdata, event.ydata)
+        print int(round(event.ydata))-1, int(round(event.xdata))-1
+        point = self.space[int(round(event.ydata)), int(round(event.xdata))]
+        print(point)
+        midp = MIDetailPlotter(point)
+        self.detailed_point_plots.append(midp)
+        midp.plot()
+        
