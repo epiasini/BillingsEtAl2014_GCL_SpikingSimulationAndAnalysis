@@ -77,7 +77,7 @@ class BatchManager(object):
         self.simulation = ProcessManager(job_limit=150)
         self.compression = ProcessManager(job_limit=150)
         self.analysis = ProcessManager(job_limit=150)
-    def _start_point_simulation(self, point):
+    def _start_point_simulation(self, point, force):
         # prepare directory tree
         try:
             os.makedirs(point.data_folder_path)
@@ -111,14 +111,17 @@ class BatchManager(object):
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
+        # delete all data and results if force is true
+        if force:
+            shutil.rmtree(point.data_folder_path, ignore_errors=True)
         # submit simulations to the queue
         if not os.path.exists(point.spikes_arch.path):
             for rank in range(point.SIZE_PER_SIMULATION):
                 qsub_argument_list = ['jobscripts/simulate_jobscript.sh', point.simple_representation(), str(rank)]
                 self.simulation.submit_job(qsub_argument_list)
-    def start_simulation(self):
+    def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
-            self._start_point_simulation(point)
+            self._start_point_simulation(point, force)
     def start_compression(self):
         for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]:
             qsub_argument_list = ['jobscripts/compress_jobscript.sh', repr(point)]
