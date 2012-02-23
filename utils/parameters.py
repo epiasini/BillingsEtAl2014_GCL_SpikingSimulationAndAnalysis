@@ -156,7 +156,10 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     distances[n,m] = fixed_c_multineuron_distance(observation, symbol)
             # --now iterate over the number of clusters and, step by step, train the decoder and use it to calculate mi
             ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
+            ts_decoded_mi_bootstrap = np.zeros(n_tr_obs-1)
             ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
+            ts_decoded_mi_pt = np.zeros(n_tr_obs-1)
+            ts_decoded_mi_nsb = np.zeros(n_tr_obs-1)
             Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
             for n_clusts in range(n_tr_obs-1,0,-1):
                 clust_idx = n_tr_obs + n_tr_obs - n_clusts - 1 # n_tr_obs, n_tr_obs+1, ..., n_tr_obs+n_tr_obs-2
@@ -186,10 +189,23 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 X_dims = (Xn, Xm)
                 X = decoded_output
                 s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                # "bootstrap" shuffle estimate of bias.
+                bootstrap_n = 100
+                bootstrap_bias_estimate = 0
+                for nb in range(bootstrap_n):
+                    shX = np.random.permutation(X)
+                    shs = pe.SortedDiscreteSystem(shX, X_dims, Ym, Ny)
+                    shs.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
+                    bootstrap_bias_estimate += shs.I()/bootstrap_n
                 s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
                 ts_decoded_mi_plugin[n_clusts-1] = s.I()
+                ts_decoded_mi_bootstrap[n_clusts-1] = s.I() - bootstrap_bias_estimate
                 s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
                 ts_decoded_mi_qe[n_clusts-1] = s.I()
+                s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
+                ts_decoded_mi_pt[n_clusts-1] = s.I()
+                s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
+                ts_decoded_mi_nsb[n_clusts-1] = s.I()            
                 if n_clusts == self.n_stim_patterns:
                     px_at_same_size_point = s.PX
             # save analysis results in the archive
@@ -197,7 +213,10 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('tr_linkage', data=tr_tree)
             self.results_arch.update_result('tr_direct_mi', data=tr_direct_mi)
             self.results_arch.update_result('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
+            self.results_arch.update_result('ts_decoded_mi_bootstrap', data=ts_decoded_mi_bootstrap)
             self.results_arch.update_result('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
+            self.results_arch.update_result('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
+            self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
             self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
             # update attributes
             self.results_arch.load()

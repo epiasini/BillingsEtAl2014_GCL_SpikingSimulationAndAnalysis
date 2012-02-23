@@ -38,7 +38,10 @@ class ResultsArchive(Archive):
                          'tr_linkage',
                          'tr_direct_mi',
                          'ts_decoded_mi_plugin',
+                         'ts_decoded_mi_bootstrap',
                          'ts_decoded_mi_qe',
+                         'ts_decoded_mi_pt',
+                         'ts_decoded_mi_nsb',
                          'px_at_same_size_point']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
