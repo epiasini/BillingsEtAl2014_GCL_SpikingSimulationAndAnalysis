@@ -1,24 +1,23 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
-import h5py
-import itertools
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import dendrogram
+plt.ion()
 
-from utils.graphic import plot_data_vector, plot_2d_heatmap
-from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, analyse_synchrony, distance_matrix
+from utils.parameters import ParameterSpace
+from utils.parameters import PSlice as psl
+from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter
 
 #+++++debugging stuff+++++
-import pdb
+#import pdb
 #np.seterr(all='raise') # to convert warnings to exceptions (this allow to track the offending line)
-np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
+#np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 
-#+++++Exceptions+++++
-class TrainingSetSizeError(Exception):
-    pass
 
-plot_mi_detail = False
+
+plot_mi_detail = True
+plot_mi_heatmap = True
+
 plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
@@ -32,36 +31,46 @@ plot_distance_matrix = False
 plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
-#+++++fixed parameters+++++++
-sim_duration = 300.0 # hardcoded in simulate.py
-min_mf_number = 6
-grc_mf_ratio = 2.
-tau = 5.
-dt = 2.
-plotting_mode = 'alphabet_size'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [4]
-network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.5, .6, .1))
-bias_range = list(np.arange(-25., -30., -5.))
-stim_rate_mu_range = [120]
-stim_rate_sigma_range = [30]
-noise_rate_mu_range = [0.]
-noise_rate_sigma_range = [10.]
-n_stim_patterns_range = [20]
-n_trials_range = [200]
-training_size_range = [40]
-multineuron_metric_mixing_range = [0.]
-linkage_methods_range = ['ward']
-#++++++++++++++++++++++++++
+sim_duration = psl(300.0)
+min_mf_number = psl(6)
+grc_mf_ratio = psl(2.)
+n_grc_dend = psl(4)
+network_scale = psl(5.)
+active_mf_fraction = psl(.1, 1., .1)
+bias = psl(-30., 5., 5.)
+stim_rate_mu = psl(120)
+stim_rate_sigma = psl(30)
+noise_rate_mu = psl(10, 70, 10)
+noise_rate_sigma = psl(10)
+n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_trials = psl(200)
+training_size = psl(40) # must be < min(n_trials)
+multineuron_metric_mixing = psl(0.)
+linkage_method = psl(0)
+tau = psl(5)
+dt = psl(2)
 
-#----parameter consistency control
-if any([s >= min(n_trials_range) for s in training_size_range]):
-    raise TrainingSetSizeError()
+space = ParameterSpace(sim_duration,min_mf_number,grc_mf_ratio,n_grc_dend,network_scale,active_mf_fraction,bias,stim_rate_mu,stim_rate_sigma,noise_rate_mu,noise_rate_sigma,n_stim_patterns,n_trials,training_size,multineuron_metric_mixing,linkage_method,tau,dt)
+space.load_analysis_results()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, stim_rate_mu_range, stim_rate_sigma_range, noise_rate_mu_range, noise_rate_sigma_range, n_stim_patterns_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
-param_coords = []
-parameter_space = list(itertools.product(*ranges))
+if plot_mi_heatmap:
+    for noise in space.get_range('noise_rate_mu'):
+        subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
+        rhm = RectangularHeatmapPlotter(subspace)
+        rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/data/figures')
+        plt.close(rhm.fig)
+
+if plot_mi_detail:
+    for p in space.flat:
+        print p
+        midp = MIDetailPlotter(p)
+        midp.plot()
+        midp.save()
+        plt.close(midp.fig)
+
+exit()
+
 
 colors = 'bgrcmyk'
 if plot_mi_detail:

@@ -60,7 +60,7 @@ class SimpleParameterSpacePoint(object):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
         return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
     def __str__(self):
-        return "sim_dur: %f | min_mf_number: %d | gmr: %f | gd: %d | s: %f | mf: %.01f | b: %f | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+        return "sim_dur: %d | min_mf_n: %d | gmr: %.1f | gd: %d | scale: %.1f | mf: %.1f | bias: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
     def get_simulation_reference(self, stimulus_pattern_index, trial):
         """
         Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.

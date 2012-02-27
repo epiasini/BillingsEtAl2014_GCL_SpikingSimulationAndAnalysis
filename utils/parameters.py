@@ -226,6 +226,25 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
 ParameterSpaceMesh = np.vectorize(ParameterSpacePoint)
 
 class ParameterSpace(np.ndarray):
+    ABSOLUTE_DIDXS = [
+            'sim_duration',
+            'min_mf_number',
+            'grc_mf_ratio',
+            'n_grc_dend',
+            'network_scale',
+            'active_mf_fraction',
+            'bias',
+            'stim_rate_mu',
+            'stim_rate_sigma',
+            'noise_rate_mu',
+            'noise_rate_sigma',
+            'n_stim_patterns',
+            'n_trials',
+            'training_size',
+            'multineuron_metric_mixing',
+            'linkage_method',
+            'tau',
+            'dt']
     def __new__(cls,
                 sim_duration_slice,
                 min_mf_number_slice,
@@ -269,25 +288,20 @@ class ParameterSpace(np.ndarray):
                      dt_slice]
         obj = ParameterSpaceMesh(*m).view(cls)
         # Dimensional InDeXS. Dictionary or list? I like the 'semantic' nature of a dictionary, but lists have a natural ordering and a natural way of updating when a dimension is added or removed.
-        obj.DIDXS = [
-            'sim_duration',
-            'min_mf_number',
-            'grc_mf_ratio',
-            'n_grc_dend',
-            'network_scale',
-            'active_mf_fraction',
-            'bias',
-            'stim_rate_mu',
-            'stim_rate_sigma',
-            'noise_rate_mu',
-            'noise_rate_sigma',
-            'n_stim_patterns',
-            'n_trials',
-            'training_size',
-            'mutineuron_metric_mixing',
-            'linkage_method',
-            'tau',
-            'dt']
+        obj.DIDXS = list(ParameterSpace.ABSOLUTE_DIDXS)
+        obj.ABBREVIATIONS = {
+            'grc_mf_ratio': 'gmr',
+            'n_grc_dend': 'gd',
+            'network_scale': 's',
+            'active_mf_fraction': 'mf',
+            'bias': 'b',
+            'stim_rate_mu': 'sm',
+            'stim_rate_sigma': 'ss',
+            'noise_rate_mu': 'nm',
+            'noise_rate_sigma': 'ns',
+            'n_stim_patterns': 'sp',
+            'n_trials': 't',
+            'training_size': 'tr'}
         # Finally, we must return the newly created object:
         return obj
     def __array_finalize__(self, obj):
@@ -314,7 +328,10 @@ class ParameterSpace(np.ndarray):
         # method sees all creation of default objects - with the
         # ParamSpace.__new__ constructor, but also with
         # arr.view(ParamSpace).
-        self.DIDXS = getattr(obj, 'DIDXS', [])[:]
+        self.DIDXS = list(getattr(obj, 'DIDXS', []))
+        self.ABBREVIATIONS = dict(getattr(obj, 'ABBREVIATIONS', {}))
+        self.fixed_parameters = dict(getattr(obj, 'fixed_parameters', {}))
+        self.fixed_parameters_short = dict(getattr(obj, 'fixed_parameters_short', {}))
         # We do not need to return anything
     #-----------------------------------------------
     # Basic space and coordinate manipulation methods
@@ -323,7 +340,12 @@ class ParameterSpace(np.ndarray):
         return self.DIDXS.index(parameter)
     def _param(self, didx):
         return self.DIDXS[didx]
-    def _get_range(self, parameter):
+    def absolute_didx(self, parameter):
+        return ParameterSpace.ABSOLUTE_DIDXS.index(parameter)
+    def get_sorted_fixed_params(self):
+        sorted_fixed_params = sorted(self.fixed_parameters, key=self.absolute_didx)
+        return 
+    def get_range(self, parameter):
         # TODO: improving by vectorising getattr
         return np.unique(np.array([getattr(x, parameter, None) for x in self.flat]))
     def _get_attribute_array(self, attribute):
@@ -343,14 +365,19 @@ class ParameterSpace(np.ndarray):
     #         attr_list.append(attr)
     #     return np.array(attr_list).reshape(self.shape)
     def _get_idx_from_value(self, parameter, value):
-        param_range = self._get_range(parameter)
+        param_range = self.get_range(parameter)
         if value not in param_range:
             # Trying to find the index for a parameter (i.e., coordinate) value that's not on the mesh
             #   raises an exception.
             raise ValueError('Parameter value ({0}, {1}) not present on the mesh!'.format(value, parameter))
         return np.searchsorted(param_range, value)
-    def _remove_dimensional_index(self, parameter):
+    def _fix_dimension(self, parameter, value):
+        self.fixed_parameters[parameter] = value
         del self.DIDXS[self._didx(parameter)]
+        try:
+            self.fixed_parameters_short[self.ABBREVIATIONS[parameter]] = value
+        except KeyError:
+            pass
     def _get_embedded_hyperplane(self, parameter, value):
         """
         Return a new Parameter_space object made only of those points that satisfy the condition parameter==value.
@@ -361,7 +388,7 @@ class ParameterSpace(np.ndarray):
     def _get_hyperplane(self, parameter, value):
         hp = self._get_embedded_hyperplane(parameter, value)
         hp = hp.squeeze(hp._didx(parameter))
-        hp._remove_dimensional_index(parameter)
+        hp._fix_dimension(parameter, value)
         return hp
     def get_subspace(self, *parameter_value_pairs):
         """
@@ -383,8 +410,9 @@ class ParameterSpace(np.ndarray):
         """
         temp = self.get_subspace(*parameter_value_pairs)
         for parameter in [temp._param(k) for k,s in enumerate(temp.shape) if s==1]:
+            value = temp.get_range(parameter)[0]
             temp = temp.squeeze(temp._didx(parameter))
-            temp._remove_dimensional_index(parameter)
+            temp._fix_dimension(parameter, value)
         return temp
     #-------------------
     # Simulation methods
@@ -416,10 +444,10 @@ class ParameterSpace(np.ndarray):
         cbar = fig.colorbar(plot, use_gridspec=True)
         cbar.set_label(heat_dim)
         ax.set_xticks(np.arange(self.shape[1]))
-        ax.set_xticklabels([str(x) for x in self._get_range(x_param)])
+        ax.set_xticklabels([str(x) for x in self.get_range(x_param)])
         ax.set_xlabel(x_param)
         ax.set_yticks(np.arange(self.shape[0]))
-        ax.set_yticklabels([str(y) for y in self._get_range(y_param)])
+        ax.set_yticklabels([str(y) for y in self.get_range(y_param)])
         ax.set_ylabel(y_param)
         ax.set_title(fig_title)
         return fig, ax

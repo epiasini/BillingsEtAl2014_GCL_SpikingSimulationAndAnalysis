@@ -38,7 +38,7 @@ n_stim_patterns = psl(6) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
 n_trials = psl(50)
 training_size = psl(8) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
-linkage_method = psl(0)
+linkage_method = psl(0) # 0: ward
 tau = psl(5)
 dt = psl(2)
 
