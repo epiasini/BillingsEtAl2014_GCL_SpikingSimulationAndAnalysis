@@ -1,5 +1,5 @@
 BASE_DIR = "/home/ucbtepi/code/network/data"
-SIZE_PER_SIMULATION = 6
+SIZE_PER_SIMULATION = 20
 
 class SimpleParameterSpacePoint(object):
     """Used in the simulation script and as a base class for ParameterSpacePoint"""
