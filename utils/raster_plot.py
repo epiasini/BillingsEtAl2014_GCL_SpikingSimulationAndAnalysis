@@ -1,5 +1,5 @@
 import numpy as np
-from utils import analysis, graphic
+import analysis, visualisation
 from matplotlib import pyplot as plt
 
 # parameters
@@ -16,7 +16,7 @@ time_points = np.arange(0, sim_duration, spike_resolution_dt)
 # plot the result of the convolution
 conv_fig = plt.figure()
 conv_ax = conv_fig.add_subplot(111)
-conv_plot = graphic.plot_data_vector(conv_ax, grcc[0])
+conv_plot = visualisation.plot_data_vector(conv_ax, grcc[0])
 conv_cbar = conv_fig.colorbar(conv_plot)
 conv_cbar.set_label('Intensity (a.u.)')
 

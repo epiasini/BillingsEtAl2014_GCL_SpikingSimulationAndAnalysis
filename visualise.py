@@ -1,24 +1,23 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
-import h5py
-import itertools
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import dendrogram
+plt.ion()
 
-from utils.graphic import plot_data_vector, plot_2d_heatmap
-from utils.analysis import analyse_single_configuration, cluster_centroids, kl_divergence_from_flat_p, output_sparsity, output_level_array, entropy, analyse_synchrony, distance_matrix
+from utils.parameters import ParameterSpace
+from utils.parameters import PSlice as psl
+from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter
 
 #+++++debugging stuff+++++
-import pdb
+#import pdb
 #np.seterr(all='raise') # to convert warnings to exceptions (this allow to track the offending line)
-np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
+#np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 
-#+++++Exceptions+++++
-class TrainingSetSizeError(Exception):
-    pass
 
-plot_mi_detail = False
+
+plot_mi_detail = True
+plot_mi_heatmap = True
+
 plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
@@ -29,36 +28,48 @@ plot_noise_entropy = False
 plot_separation = False
 plot_synchrony = False
 plot_distance_matrix = False
-plot_mi_vs_activity = True
+plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
-#+++++fixed parameters+++++++
-sim_duration = 300.0 # hardcoded in simulate.py
-n_stim_patterns = 20
-min_mf_number = 6
-grc_mf_ratio = 2.
-tau = 5.
-dt = 2.
-plotting_mode = 'precision'
 #+++++parameter ranges+++++++++++++
-n_grc_dend_range = [3,4,5]
-network_scale_range = [5.]
-active_mf_fraction_range = list(np.arange(.1, 1, .1))
-bias_range = list(np.arange(0., -50., -5.))
-n_trials_range = [200]
-training_size_range = [40]
-multineuron_metric_mixing_range = [0.]
-linkage_methods_range = ['ward']
-#++++++++++++++++++++++++++
+sim_duration = psl(300.0)
+min_mf_number = psl(6)
+grc_mf_ratio = psl(2.)
+n_grc_dend = psl(4)
+network_scale = psl(5.)
+active_mf_fraction = psl(.1, 1., .1)
+bias = psl(-30., 5., 5.)
+stim_rate_mu = psl(120)
+stim_rate_sigma = psl(30)
+noise_rate_mu = psl(10, 70, 10)
+noise_rate_sigma = psl(10)
+n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_trials = psl(200)
+training_size = psl(40) # must be < min(n_trials)
+multineuron_metric_mixing = psl(0.)
+linkage_method = psl(0)
+tau = psl(5)
+dt = psl(2)
 
-#----parameter consistency control
-if any([s >= min(n_trials_range) for s in training_size_range]):
-    raise TrainingSetSizeError()
+space = ParameterSpace(sim_duration,min_mf_number,grc_mf_ratio,n_grc_dend,network_scale,active_mf_fraction,bias,stim_rate_mu,stim_rate_sigma,noise_rate_mu,noise_rate_sigma,n_stim_patterns,n_trials,training_size,multineuron_metric_mixing,linkage_method,tau,dt)
+space.load_analysis_results()
 
-ranges = [n_grc_dend_range, network_scale_range, active_mf_fraction_range, bias_range, n_trials_range, training_size_range, multineuron_metric_mixing_range, linkage_methods_range]
-parameter_space = list(itertools.product(*ranges))
+if plot_mi_heatmap:
+    for noise in space.get_range('noise_rate_mu'):
+        subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
+        rhm = RectangularHeatmapPlotter(subspace)
+        rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/data/figures')
+        plt.close(rhm.fig)
 
+if plot_mi_detail:
+    for p in space.flat:
+        print p
+        midp = MIDetailPlotter(p)
+        midp.plot()
+        midp.save()
+        plt.close(midp.fig)
 
+exit()
 
 
 colors = 'bgrcmyk'
@@ -98,20 +109,13 @@ if plot_mi_vs_activity:
 if plot_mi_vs_dn_and_sparsity:
     info_vs_dn_and_sparsity = [[None for each in n_grc_dend_range] for each in active_mf_fraction_range]
 
-for k,par_combination in enumerate(parameter_space):
-    # load parameter combination
-    n_grc_dend = par_combination[0]
-    network_scale = par_combination[1]
-    active_mf_fraction = par_combination[2]
-    bias = par_combination[3]
-    n_trials = par_combination[4]
-    training_size = par_combination[5]
-    multineuron_metric_mixing = par_combination[6]
-    linkage_method = par_combination[7]
+for k,pp in enumerate(parameter_space):
+    parameter_space[k] = Analysis_pp(sim_duration=sim_duration, min_mf_number=min_mf_number, grc_mf_ratio=grc_mf_ratio, n_grc_dend=pp[0], network_scale=pp[1], active_mf_fraction=pp[2], bias=pp[3], stim_rate_mu=pp[4], stim_rate_sigma=pp[5], noise_rate_mu=pp[6], noise_rate_sigma=pp[7], n_stim_patterns_range=pp[8], n_trials=pp[9], training_size=pp[10], multineuron_metric_mipping=pp[11], linkage_method=pp[12], tau=tau, dt=dt)
+    pp = parameter_space[k]
     # analyse data
-    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_qe, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
+    tr_direct_mi, ts_decoded_mi_plugin, ts_decoded_mi_bootstrap, ts_decoded_mi_qe, ts_decoded_mi_pt, ts_decoded_mi_nsb, decoder_precision, tr_tree, px_at_same_size_point = analyse_single_configuration(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method)
     if plot_mutual_information:
-        info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_qe[n_stim_patterns]
+        info_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = ts_decoded_mi_pt[n_stim_patterns]
         #print 'OS: ',output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
     if plot_kl_divergence:
         kl_div_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = kl_divergence_from_flat_p(q=px_at_same_size_point)
@@ -120,13 +124,22 @@ for k,par_combination in enumerate(parameter_space):
     # plot
     color = colors[k%len(colors)]
     if plot_mi_detail and plotting_mode == 'precision':
-        mi_det_ax.semilogx(decoder_precision, tr_direct_mi, linestyle='-.', color=color)
-        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_qe, label=r'mf act. prob: %.1f' % (active_mf_fraction), color=color)
+        #mi_det_ax.semilogx(decoder_precision, tr_direct_mi, linestyle='-.', color=color)
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_plugin, label=r'plugin' % (active_mf_fraction))
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_bootstrap, label=r'bootstrap' % (active_mf_fraction))        
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_qe, label=r'qe' % (active_mf_fraction))
+        mi_det_ax.semilogx(decoder_precision, ts_decoded_mi_pt, label=r'pt' % (active_mf_fraction))
+        #mi_det_ax.semilogx(decoder_precision, (ts_decoded_mi_plugin-ts_decoded_mi_qe)/ts_decoded_mi_qe, label=r'plugin-qe' % (active_mf_fraction), color=color)
         mi_det_ax.plot([decoder_precision[n_stim_patterns], decoder_precision[n_stim_patterns]], mi_det_ax.get_ylim(), linestyle='--', color=color)
         #mi_det_ax2.semilogy(tr_direct_mi/np.log2(n_stim_patterns), decoder_precision, linestyle='', marker='+')
     elif plotting_mode == 'alphabet_size':
-        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), tr_direct_mi, label=r'$\vartheta = %.2f^{\circ}$, direct' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), linestyle='-.', color=color)
-        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'$\vartheta = %.2f^{\circ}$, decoded' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), color=color)
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_plugin, label=r'plugin' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'qe' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_bootstrap, label=r'bootstrap' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_pt, label=r'pt' % (active_mf_fraction))
+        mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_nsb, label=r'nsb' % (active_mf_fraction))
+        #mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), tr_direct_mi, label=r'$\vartheta = %.2f^{\circ}$, direct' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), linestyle='-.', color=color)
+        #mi_det_ax.plot(np.arange(1, n_stim_patterns*training_size), ts_decoded_mi_qe, label=r'$\vartheta = %.2f^{\circ}$, decoded' % (np.arccos(multineuron_metric_mixing)/np.pi*180.), color=color)
         if k==len(parameter_space)-1:
             mi_det_ax.plot([n_stim_patterns, n_stim_patterns], mi_det_ax.get_ylim(), linestyle='--', color='k')
     if plot_dendrograms:
@@ -143,7 +156,7 @@ for k,par_combination in enumerate(parameter_space):
         d_ax.set_yticks([])
     if plot_barcodes:
         # build and plot a representation of the "typical" centroids at the |A_in|=|A_out| point.
-        clust_idxs, centroids, clust_sizes = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
+        clust_idxs, centroids, clust_sizes = cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts=n_stim_patterns)
         centroid_sparsities = [(centroid.max(axis=1)>0).sum()/float(centroids.shape[1]) for centroid in centroids]
         centroid_sets.append(centroids)
         centroids_fig = plt.figure()
@@ -163,7 +176,7 @@ for k,par_combination in enumerate(parameter_space):
         m = bias_range.index(bias)
         idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
         print n,m,idx
-        ola = output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials)
+        ola = output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials)
         al_ax = al_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
         al_ax.hist(ola.flatten(), bins=5)
         al_ax.set_xticks([])
@@ -173,7 +186,7 @@ for k,par_combination in enumerate(parameter_space):
     if plot_separation:
         separation_at_npatterns[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = 1./decoder_precision[n_stim_patterns]
     if plot_synchrony:
-        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt)
+        sync_mean_values[active_mf_fraction_range.index(active_mf_fraction)][bias_range.index(bias)] = analyse_synchrony(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt)
     if plot_distance_matrix:
         n = active_mf_fraction_range.index(active_mf_fraction)
         m = bias_range.index(bias)
@@ -260,10 +273,11 @@ if plot_noise_entropy:
     
 
 if plot_mi_detail:
-    mi_det_ax.legend(loc='upper left')
     if plotting_mode == 'precision':
+        mi_det_ax.legend(loc='upper left')
         mi_det_ax.set_xlabel('decoder precision (1/cluster separation)')
     elif plotting_mode == 'alphabet_size':
+        mi_det_ax.legend(loc='best')
         mi_det_ax.set_xlabel('alphabet size (clusters in the decoder)')
     mi_det_ax.set_ylabel('MI (bits)')
 
@@ -275,7 +289,7 @@ if plot_dendrograms:
 if plot_mi_vs_activity:
     miva_fig = plt.figure()
     miva_ax = miva_fig.add_subplot(111)
-    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
+    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
     miva_ax.set_xlabel('average number of spikes')
     miva_ax.set_ylabel('spatial saturation')
     miva_cbar = miva_fig.colorbar(miva_points, use_gridspec=True)
@@ -283,8 +297,7 @@ if plot_mi_vs_activity:
     miva_fig.savefig('mi_vs_activity.png')
 
     mi_b_ns_fig, mi_b_ns_ax = plt.subplots()
-    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
-    mi_b_ns_ax.set_xlim(mi_b_ns_ax.get_xlim()[::-1])
+    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap='coolwarm')
     mi_b_ns_ax.set_xlabel('Threshold current (pA)')
     mi_b_ns_ax.set_ylabel('average number of spikes')
     mi_b_ns_cbar = mi_b_ns_fig.colorbar(mi_b_ns_points, use_gridspec=True)
@@ -292,8 +305,7 @@ if plot_mi_vs_activity:
     mi_b_ns_fig.savefig('mi_vs_bias_and_nspikes.png')
 
     mi_b_sat_fig, mi_b_sat_ax = plt.subplots()
-    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm', edgecolors='none')
-    mi_b_sat_ax.set_xlim(mi_b_sat_ax.get_xlim()[::-1])
+    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
     mi_b_sat_ax.set_xlabel('Threshold current (pA)')
     mi_b_sat_ax.set_ylabel('output spatial saturation')
     mi_b_sat_cbar = mi_b_sat_fig.colorbar(mi_b_sat_points, use_gridspec=True)
