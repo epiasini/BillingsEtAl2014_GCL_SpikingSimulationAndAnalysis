@@ -29,6 +29,12 @@ def multineuron_distance_labeled_line(p,q):
     delta = p-q
     return np.sqrt(np.einsum('nt,nt', delta, delta))
 
+def output_level(spike_array):
+    """if spike_array is a n_spiketrains*n_cells*max_spikes array, return the number of spikes per trial per cell."""
+    o_level_array = (spike_array>0).sum(axis=2)
+    o_level_hist = np.histogram(o_level_array, bins=10)
+    return o_level_array, o_level_hist
+
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
     mi_archive, target_group, archive_lock = open_mi_archive(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, multineuron_metric_mixing, training_size, linkage_method)
@@ -55,7 +61,7 @@ def output_sparsity(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction,
     out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, cell_type='grc')
     grc_act_prob = np.mean([(ob[:,0]>-1).sum()/float(ob.shape[0]) for ob in out_spike_array])
     return grc_act_prob
-    
+
 def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials):
     out_spike_array = loadspikes(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, cell_type='grc')
     # TODO: need convolution?

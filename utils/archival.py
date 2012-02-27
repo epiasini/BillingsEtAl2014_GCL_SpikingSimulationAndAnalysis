@@ -42,7 +42,9 @@ class ResultsArchive(Archive):
                          'ts_decoded_mi_qe',
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
-                         'px_at_same_size_point']
+                         'px_at_same_size_point',
+                         'o_level_array',
+                         'o_level_hist']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])
