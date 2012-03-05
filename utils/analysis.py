@@ -32,8 +32,8 @@ def multineuron_distance_labeled_line(p,q):
 def output_level(spike_array):
     """if spike_array is a n_spiketrains*n_cells*max_spikes array, return the number of spikes per trial per cell."""
     o_level_array = (spike_array>0).sum(axis=2)
-    o_level_hist = np.histogram(o_level_array, bins=10)
-    return o_level_array, o_level_hist
+    o_level_hist_values, o_level_hist_edges = np.histogram(o_level_array, bins=10)
+    return o_level_array, o_level_hist_values, o_level_hist_edges
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''

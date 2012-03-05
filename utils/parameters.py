@@ -210,7 +210,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     px_at_same_size_point = s.PX
             # compute number of spikes fired by output cells
             print("Calculating output levels")
-            o_level_array, o_level_hist  = output_level(spikes)
+            o_level_array, o_level_hist_values, o_level_hist_edges  = output_level(spikes)
             # save analysis results in the archive
             self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
             self.results_arch.update_result('tr_linkage', data=tr_tree)
@@ -222,7 +222,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
             self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
             self.results_arch.update_result('o_level_array', data=o_level_array)
-            self.results_arch.update_result('o_level_hist', data=o_level_hist)
+            self.results_arch.update_result('o_level_hist_values', data=o_level_hist_values)
+            self.results_arch.update_result('o_level_hist_edges', data=o_level_hist_edges)
             # update attributes
             self.results_arch.load()
 
