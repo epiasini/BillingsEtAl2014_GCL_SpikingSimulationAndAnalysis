@@ -159,8 +159,8 @@ class MIDetailPlotter(PointGraphics):
                     color = self.ax.plot(np.arange(1, self.point.n_stim_patterns*self.point.training_size), values, label=label)[0].get_color()
                     self.ax.plot(self.point.n_stim_patterns, getattr(self.point, 'point_mi_{0}'.format(correction)), marker='o', color=color)
                     self.ax.set_xlabel('number of clusters')
-            except AttributeError:
-                print('Warning: missing values.')
+            except AttributeError as e:
+                print('Warning: missing values: {0}'.format(e))
         self.ax.set_ylabel('MI (bits)')
         self.ax.legend(loc='best')
         self.fig.canvas.draw()

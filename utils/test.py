@@ -13,11 +13,11 @@ class TestVisualisation(unittest.TestCase):
         fig, ax = self.space.get_nontrivial_subspace(('noise_rate_mu', 50)).plot_2d_heatmap('point_mi_qe')
         self.assertEqual(len(ax.get_images()), 1)
     def test_mi_detail_precision(self):
-        midp = MIDetailPlotter(self.p, fig_title='test', label_prefix='nm50_b-20')
+        midp = MIDetailPlotter(point=self.p, corrections=('plugin', 'qe'), fig_title='test', label_prefix='nm50_b-20')
         fig, ax = midp.plot()
         self.assertEqual(len(ax.get_lines()), 4)
     def test_mi_detail_size(self):
-        midp = MIDetailPlotter(self.p, fig_title='test', label_prefix='nm50_b-20')
+        midp = MIDetailPlotter(point=self.p, corrections=('plugin', 'qe'), fig_title='test', label_prefix='nm50_b-20')
         fig, ax = midp.plot(mode='alphabet_size')
         self.assertEqual(len(ax.get_lines()), 4)
 
