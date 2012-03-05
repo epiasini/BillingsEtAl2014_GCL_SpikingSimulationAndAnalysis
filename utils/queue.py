@@ -133,7 +133,7 @@ class BatchManager(object):
     def update_status(self):
         if self.simulation.queue_is_not_empty():
             self.simulation.update_jobs_and_check_for_CME()
-            self.simulation.update_prequeue
+            self.simulation.update_prequeue()
             print('SIM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.simulation.running_jobs), wj=len(self.simulation.waiting_jobs), oj=len(self.simulation.other_jobs), pqj=self.simulation.get_prequeue_length()))
         if self.compression.queue_is_not_empty():
             self.compression.update_job_sets()
