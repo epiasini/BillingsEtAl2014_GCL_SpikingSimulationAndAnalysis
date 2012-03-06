@@ -89,7 +89,7 @@ class BatchManager(object):
         n_gr = int(round(n_mf * point.grc_mf_ratio))
         if not os.path.exists(point.conn_pattern_filename):
             conn_pattern = [random.sample(range(n_mf), point.n_grc_dend) for each in range(n_gr)]
-            conn_pattern_file = open(conn_pattern_filename, "w")
+            conn_pattern_file = open(point.conn_pattern_filename, "w")
             for gr in range(n_gr):
                 for mf in conn_pattern[gr]:
                     conn_pattern_file.write(str(mf) + " ")

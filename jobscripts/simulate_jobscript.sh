@@ -19,6 +19,10 @@ startdir=`pwd`
 
 echo $args_list
 
+export PYTHONPATH=/share/apps/neuro/python/build/lib64/python
+export HDF5_DIR=/share/apps/neuro/python/build/hdf5
+export LD_LIBRARY_PATH=$PYTHONPATH/tables:$HDF5_DIR/lib
+
 hostname
 date
 cd $nC_dir
