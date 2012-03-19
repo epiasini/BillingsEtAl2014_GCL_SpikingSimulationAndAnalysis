@@ -173,12 +173,13 @@ class MIDetailPlotter(PointGraphics):
 
         
 class RectangularHeatmapPlotter(object):
-    def __init__(self, space):
+    def __init__(self, space, alpha=0.):
         if len(space.shape) > 2:
             raise ValueError('Attempt to plot an heatmap for a space with more than 2 dimensions.')
         self.space = space
         self.gs = GridSpec(1,1)
         self.fig = plt.figure()
+        self.fig.patch.set_alpha(alpha)
         self.ax = self.fig.add_subplot(self.gs[0])
         self.fig.canvas.mpl_connect('draw_event', on_draw)
     def plot(self, heat_dim):
@@ -211,8 +212,8 @@ class RectangularHeatmapPlotter(object):
         self.fig.savefig(file_name)
             
 class InteractiveHeatmap(RectangularHeatmapPlotter):
-    def __init__(self, space):
-        super(InteractiveHeatmap, self).__init__(space)
+    def __init__(self, space, alpha=0.):
+        super(InteractiveHeatmap, self).__init__(space, alpha)
         self.cid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.detailed_point_plots = []
     def onclick(self, event):

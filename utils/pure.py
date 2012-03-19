@@ -34,6 +34,9 @@ class SimpleParameterSpacePoint(object):
         self.noise_rate_sigma = noise_rate_sigma
         self.n_stim_patterns = int(round(n_stim_patterns))
         self.n_trials = int(round(n_trials))
+        #--useful quantities
+        self.n_mf = int(round(self.min_mf_number * self.network_scale))
+        self.n_grc = int(round(self.n_mf * self.grc_mf_ratio))
         #--relevant filenames
         self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (self.BASE_DIR,
                                                                       self.grc_mf_ratio,
