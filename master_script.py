@@ -32,7 +32,7 @@ active_mf_fraction = psl(.1, 1., .1)
 bias = psl(-30., 5., 5.)
 stim_rate_mu = psl(120)
 stim_rate_sigma = psl(30)
-noise_rate_mu = psl(10,70,10)
+noise_rate_mu = psl(10,80,10)
 noise_rate_sigma = psl(10)
 n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
 n_trials = psl(200)
@@ -78,7 +78,7 @@ batch_manager = BatchManager(parameter_space)
 ##====SIMULATION STAGE====##
 ############################
 print("Entering simulation stage.")
-batch_manager.start_simulation()
+batch_manager.start_simulation(force=False)
 while batch_manager.simulation.queue_is_not_empty():
     time.sleep(60)    
     batch_manager.update_status()

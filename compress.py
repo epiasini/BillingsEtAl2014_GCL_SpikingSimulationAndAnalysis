@@ -89,7 +89,7 @@ for spn, sp in enumerate(stim_patterns):
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
 defective_datasets = list(missing_directories.union(missing_mf_datasets))
 if defective_datasets:
-    print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), n_stim_patterns))
+    print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), point.n_stim_patterns))
     for spn in defective_datasets:
         del archive["%03d" % spn]
 else:
