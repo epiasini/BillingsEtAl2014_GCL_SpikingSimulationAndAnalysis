@@ -51,7 +51,7 @@ group_info = project.cellGroupsInfo
 mf_pack_adapter = group_info.getCellPackingAdapter('MFs')
 gr_pack_adapter = group_info.getCellPackingAdapter('GrCs')
 mf_pack_adapter.setMaxNumberCells(point.n_mf)
-gr_pack_adapter.setMaxNumberCells(point.n_gr)
+gr_pack_adapter.setMaxNumberCells(point.n_grc)
 
 # generate network
 i = 0

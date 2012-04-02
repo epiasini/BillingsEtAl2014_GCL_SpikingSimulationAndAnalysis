@@ -2,6 +2,7 @@ import itertools
 import collections
 import os
 import random
+import shutil
 from subprocess import Popen, PIPE, call
 
 class QueueError(Exception):
@@ -78,6 +79,9 @@ class BatchManager(object):
         self.compression = ProcessManager(job_limit=150)
         self.analysis = ProcessManager(job_limit=150)
     def _start_point_simulation(self, point, force):
+        # delete all data and results if force is true
+        if force:
+            shutil.rmtree(point.data_folder_path, ignore_errors=True)
         # prepare directory tree
         try:
             os.makedirs(point.data_folder_path)
@@ -111,9 +115,6 @@ class BatchManager(object):
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
-        # delete all data and results if force is true
-        if force:
-            shutil.rmtree(point.data_folder_path, ignore_errors=True)
         # submit simulations to the queue
         if not os.path.exists(point.spikes_arch.path):
             for rank in range(point.SIZE_PER_SIMULATION):
