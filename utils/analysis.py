@@ -77,6 +77,7 @@ def output_level_array(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fracti
     return activity_level_out_array
     
 def synchrony(p):
+    """Population-wide average of Schreiber's (2003) bivariate correlation-based measure of spike-timing reliability. Meant to be used with already-filtered spike trains, so in this context they are probably going to be exponential- and not gaussian-filtered."""
     n = p.shape[0]
     sync = 0
     for i, cell1 in enumerate(p):
