@@ -37,10 +37,10 @@ def output_level(spike_array):
 
 def population_sparseness(level_array):
     """if level_array is a n_responses*n_cells array of spike numbers/firing rates, return the Treves-Rolls population sparseness measure."""
-    square_of_average_by_response = np.square(np.mean(level_array, axis=1)) # n_responses * 1
-    average_of_square_by_response = np.mean(np.square(level_array), axis=1)
-    # now we average across all responses to get the average population sparseness for the dataset
-    return 1 - np.mean(square_of_average_by_response/average_of_square_by_response)
+    square_of_average_by_stimulus = np.square(np.mean(level_array, axis=1)) # n_responses * 1
+    average_of_square_by_stimulus = np.mean(np.square(level_array), axis=1)
+    # now we average across all stimuli to get the average population sparseness for the dataset. Note that if the sparseness is not well defined if, for at least one stimulus, the average number of spikes is 0 across all neurons.
+    return 1 - np.mean(square_of_average_by_stimulus/average_of_square_by_stimulus)
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
