@@ -47,7 +47,8 @@ class ResultsArchive(Archive):
                          'px_at_same_size_point',
                          'o_level_array',
                          'o_level_hist_values',
-                         'o_level_hist_edges']
+                         'o_level_hist_edges',
+                         'o_synchrony']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])
