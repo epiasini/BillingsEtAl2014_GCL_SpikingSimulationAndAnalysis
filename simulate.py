@@ -205,7 +205,10 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         print "Moving "+ temp_dir+"/simulations/"+sim_ref + " to " + destination
         for source in glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5'):
             shutil.move(source, destination)
-        shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+        try:
+            shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+        except OSError:
+            print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 shutil.rmtree(temp_dir) # this sometimes fails and raises an OSError ('couldn't delete directory...'). Doesn't do any harm, for the time being.
 System.exit(0)
