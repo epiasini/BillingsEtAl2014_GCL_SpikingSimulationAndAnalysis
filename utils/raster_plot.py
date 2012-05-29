@@ -1,40 +1,27 @@
-import numpy as np
-import analysis, visualisation
+#! /usr/bin/env python
+# -*- coding: utf-8 -*-
 from matplotlib import pyplot as plt
 
-# parameters
-sim_duration = 300.
-convolve_tau = 5.
-convolve_dt = 2.
-spike_resolution_dt = 0.1
+from parameters import PSlice, ParameterSpace
+from visualisation import raster_plot
 
-# load data (a single trial) and prepare spiketimes array, convolved array and timepoints array
-grct = analysis.loadspikes(3, 4, 2.00, 0.5, 0, 20, 200, 'grc')
-grcc = analysis.convolve(grct[2].reshape(1, grct.shape[1], grct.shape[2]), sim_duration, convolve_tau, convolve_dt)
-time_points = np.arange(0, sim_duration, spike_resolution_dt)
+space = ParameterSpace(PSlice(300), PSlice(6), PSlice(2.),
+                       PSlice(4), PSlice(5.), PSlice(.5),
+                       PSlice(-10.), PSlice(120), PSlice(30),
+                       PSlice(10), PSlice(10), PSlice(20),
+                       PSlice(200), PSlice(40), PSlice(0.), PSlice(0),
+                       PSlice(5.), PSlice(2.))
 
-# plot the result of the convolution
-conv_fig = plt.figure()
-conv_ax = conv_fig.add_subplot(111)
-conv_plot = visualisation.plot_data_vector(conv_ax, grcc[0])
-conv_cbar = conv_fig.colorbar(conv_plot)
-conv_cbar.set_label('Intensity (a.u.)')
+point = space.flat[0]
 
-# prepare for the raster: for each cell, count spikes occurring in each bin of width spike_resolution_dt
-grc_aoh = np.zeros(shape=(grct.shape[1], sim_duration/spike_resolution_dt))
-for k, c in enumerate(grct[0]):
-    grc_aoh[k] = np.histogram(c[c>0], bins=np.arange(0., sim_duration+spike_resolution_dt, spike_resolution_dt))[0]
+grc_rp = raster_plot(point, 'grc', 0, 0, alpha=1)
+grc_rp.plot()
 
-# plot the raster
-raster_fig = plt.figure()
-raster_ax = raster_fig.add_subplot(111)
-for k, h in enumerate(grc_aoh):
-    selected_idxs = h>0
-    if any(selected_idxs):
-        h[selected_idxs] = k
-        raster_ax.scatter(time_points[selected_idxs], h[selected_idxs], c='r', marker='o')
-# harmonise axes with the conv figure
-raster_ax.set_xlabel('Time (ms)')
-raster_ax.set_ylabel('Cell index')
-raster_ax.set_xlim([convolve_dt*x for x in conv_ax.get_xlim()])
-raster_ax.set_ylim(conv_ax.get_ylim())
+# ihm.plot('o_synchrony', invert_axes=False)
+
+# ihm.ax.set_xlabel('inhibitory current (pA)', fontsize=16)
+# #ihm.ax.set_xlabel('number of granule cell dendrites', fontsize=16)
+# ihm.ax.set_ylabel('"on" mossy terminals fraction', fontsize=16)
+# ihm.cbar.set_label('output layer synchrony', fontsize=16)
+
+# plt.show()

@@ -87,8 +87,9 @@ class ResultsArchive(Archive):
             for p in range(self.point.n_stim_patterns):
                 self.point.o_level_average_spiken[p,:] = np.mean(self.point.o_level_array[p*self.point.n_trials:(p+1)*self.point.n_trials], axis=0)
             self.point.o_population_sparseness = population_sparseness(self.point.o_level_average_spiken)
-            self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
-            self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
+            #self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
+            #self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
+            self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]
             return True
         else:
             # the hdf5 archive seems to be incomplete or missing
