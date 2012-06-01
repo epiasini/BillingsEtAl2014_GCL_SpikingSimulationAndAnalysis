@@ -4,21 +4,26 @@ import random
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist, squareform
 import functools
+from math import floor
 
 def convolve(obs_array, sim_length, tau, dt):
     """Convolve with exponential kernel."""
     dt = float(dt)
     n_obs, n_cells, max_n_spikes = obs_array.shape
     kernel = np.exp(-np.arange(0, 10*tau, dt)/tau)
-    kernel_length = 10*tau/dt
-    n_bins = sim_length/dt
-    conv = np.zeros(shape=(n_obs, n_cells, n_bins+kernel_length))
+    kernel_length = len(kernel)#10*tau/dt
+    n_bins = int(round(1.1*sim_length/dt))
+    conv = np.zeros(shape=(n_obs, n_cells, n_bins))
 
     for o, obs in enumerate(obs_array):
         for c, cell in enumerate(obs):
-            for spike_index in [spike_time/dt for spike_time in cell[cell > 0]]:
+            for spike_index in [int(floor(spike_time/dt)) for spike_time in cell[cell > 0]]:
                 # here we could optimise this by writing it as a list comprehension, by using the .__add__ method
-                conv[o, c, spike_index:spike_index+kernel_length] += kernel
+                available_bins = n_bins - spike_index
+                if available_bins > kernel_length:
+                    conv[o, c, spike_index:spike_index+kernel_length] += kernel
+                else:
+                    conv[o, c, spike_index:] += kernel[:available_bins]
     return conv
 
 def multineuron_distance(p,q, theta):

@@ -66,7 +66,8 @@ class ResultsArchive(Archive):
         ntrg = nspg.require_group('t%d' % self.point.n_trials)
         mixg = ntrg.require_group('mix%.2f' % self.point.multineuron_metric_mixing)
         trsg = mixg.require_group('train%d' % self.point.training_size)
-        target_group = trsg.require_group('method_%s' % self.point.linkage_method_string[self.point.linkage_method])
+        clmg = trsg.require_group('method_%s' % self.point.linkage_method_string[self.point.linkage_method])
+        target_group = clmg.require_group('tau%d' % self.point.tau)
         return target_group
     def _close(self):
         self._hdf5_handle.close()

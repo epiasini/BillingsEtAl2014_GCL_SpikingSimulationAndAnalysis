@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import functools
 import random
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
@@ -116,7 +117,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # prepare multineuron distance function by partial application and calculate distances
             print('computing distances between training observations')
             if self.multineuron_metric_mixing!=0:
-                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((self.n_cells, self.n_cells)) - np.eye(self.n_cells)))
+                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((n_cells, n_cells)) - np.eye(n_cells)))
                 fixed_c_multineuron_distance = functools.partial(multineuron_distance, theta=theta)
             else:
                 fixed_c_multineuron_distance = multineuron_distance_labeled_line
