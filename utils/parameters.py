@@ -1,5 +1,6 @@
 import numpy as np
 import itertools
+import functools
 import random
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
@@ -7,7 +8,7 @@ import pyentropy as pe
 
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
-from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line
+from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, output_level, synchrony
 
 class PSlice(object):
     """
@@ -116,7 +117,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # prepare multineuron distance function by partial application and calculate distances
             print('computing distances between training observations')
             if self.multineuron_metric_mixing!=0:
-                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((self.n_cells, self.n_cells)) - np.eye(self.n_cells)))
+                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((n_cells, n_cells)) - np.eye(n_cells)))
                 fixed_c_multineuron_distance = functools.partial(multineuron_distance, theta=theta)
             else:
                 fixed_c_multineuron_distance = multineuron_distance_labeled_line
@@ -208,6 +209,13 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 ts_decoded_mi_nsb[n_clusts-1] = s.I()            
                 if n_clusts == self.n_stim_patterns:
                     px_at_same_size_point = s.PX
+            # compute number of spikes fired by output cells
+            print("Calculating output levels")
+            o_level_array, o_level_hist_values, o_level_hist_edges  = output_level(spikes)
+            # compute output layer synchronisation (pairwise average of Schreiber's reliability measure)
+            random_observations_subset = spikes[random.sample(range(spikes.shape[0]), 1000)]
+            random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
+            o_synchrony = np.mean([synchrony(p) for p in random_fields_subset])
             # save analysis results in the archive
             self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
             self.results_arch.update_result('tr_linkage', data=tr_tree)
@@ -218,6 +226,10 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
             self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
             self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
+            self.results_arch.update_result('o_level_array', data=o_level_array)
+            self.results_arch.update_result('o_level_hist_values', data=o_level_hist_values)
+            self.results_arch.update_result('o_level_hist_edges', data=o_level_hist_edges)
+            self.results_arch.update_result('o_synchrony', data=o_synchrony)
             # update attributes
             self.results_arch.load()
 

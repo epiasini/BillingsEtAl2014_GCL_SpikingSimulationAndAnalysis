@@ -2,6 +2,7 @@ import itertools
 import collections
 import os
 import random
+import shutil
 from subprocess import Popen, PIPE, call
 
 class QueueError(Exception):
@@ -78,6 +79,9 @@ class BatchManager(object):
         self.compression = ProcessManager(job_limit=150)
         self.analysis = ProcessManager(job_limit=150)
     def _start_point_simulation(self, point, force):
+        # delete all data and results if force is true
+        if force:
+            shutil.rmtree(point.data_folder_path, ignore_errors=True)
         # prepare directory tree
         try:
             os.makedirs(point.data_folder_path)
@@ -89,7 +93,7 @@ class BatchManager(object):
         n_gr = int(round(n_mf * point.grc_mf_ratio))
         if not os.path.exists(point.conn_pattern_filename):
             conn_pattern = [random.sample(range(n_mf), point.n_grc_dend) for each in range(n_gr)]
-            conn_pattern_file = open(conn_pattern_filename, "w")
+            conn_pattern_file = open(point.conn_pattern_filename, "w")
             for gr in range(n_gr):
                 for mf in conn_pattern[gr]:
                     conn_pattern_file.write(str(mf) + " ")
@@ -111,9 +115,6 @@ class BatchManager(object):
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
-        # delete all data and results if force is true
-        if force:
-            shutil.rmtree(point.data_folder_path, ignore_errors=True)
         # submit simulations to the queue
         if not os.path.exists(point.spikes_arch.path):
             for rank in range(point.SIZE_PER_SIMULATION):
@@ -133,7 +134,7 @@ class BatchManager(object):
     def update_status(self):
         if self.simulation.queue_is_not_empty():
             self.simulation.update_jobs_and_check_for_CME()
-            self.simulation.update_prequeue
+            self.simulation.update_prequeue()
             print('SIM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.simulation.running_jobs), wj=len(self.simulation.waiting_jobs), oj=len(self.simulation.other_jobs), pqj=self.simulation.get_prequeue_length()))
         if self.compression.queue_is_not_empty():
             self.compression.update_job_sets()

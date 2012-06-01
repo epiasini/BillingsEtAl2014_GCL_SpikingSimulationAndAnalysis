@@ -2,6 +2,8 @@ import numpy as np
 import h5py
 import fcntl
 
+from analysis import entropy, population_sparseness
+
 class Archive(object):
     def __init__(self, point):
         self.point = point
@@ -42,7 +44,11 @@ class ResultsArchive(Archive):
                          'ts_decoded_mi_qe',
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
-                         'px_at_same_size_point']
+                         'px_at_same_size_point',
+                         'o_level_array',
+                         'o_level_hist_values',
+                         'o_level_hist_edges',
+                         'o_synchrony']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])
@@ -60,7 +66,8 @@ class ResultsArchive(Archive):
         ntrg = nspg.require_group('t%d' % self.point.n_trials)
         mixg = ntrg.require_group('mix%.2f' % self.point.multineuron_metric_mixing)
         trsg = mixg.require_group('train%d' % self.point.training_size)
-        target_group = trsg.require_group('method_%s' % self.point.linkage_method_string[self.point.linkage_method])
+        clmg = trsg.require_group('method_%s' % self.point.linkage_method_string[self.point.linkage_method])
+        target_group = clmg.require_group('tau%d' % self.point.tau)
         return target_group
     def _close(self):
         self._hdf5_handle.close()
@@ -76,6 +83,14 @@ class ResultsArchive(Archive):
             self.point.point_mi_plugin = self.point.ts_decoded_mi_plugin[self.point.n_stim_patterns]
             self.point.point_mi_qe = self.point.ts_decoded_mi_qe[self.point.n_stim_patterns]
             self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns]
+            self.point.o_level_entropy = entropy(self.point.o_level_hist_values/float(self.point.o_level_hist_values.sum()))
+            self.point.o_level_average_spiken = np.zeros(shape=(self.point.n_stim_patterns, self.point.n_grc))
+            for p in range(self.point.n_stim_patterns):
+                self.point.o_level_average_spiken[p,:] = np.mean(self.point.o_level_array[p*self.point.n_trials:(p+1)*self.point.n_trials], axis=0)
+            self.point.o_population_sparseness = population_sparseness(self.point.o_level_average_spiken)
+            #self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
+            #self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
+            self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]
             return True
         else:
             # the hdf5 archive seems to be incomplete or missing

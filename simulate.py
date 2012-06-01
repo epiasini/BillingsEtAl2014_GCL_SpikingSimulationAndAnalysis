@@ -34,9 +34,6 @@ sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
-mf_number = int(round(point.min_mf_number * point.network_scale))
-gr_number = int(round(mf_number * point.grc_mf_ratio))
-
 temp_dir = tempfile.mkdtemp(dir=sim_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
 shutil.copytree(project_path+"morphologies", temp_dir+"/morphologies")
@@ -53,8 +50,8 @@ print 'Loaded project: ' + project.getProjectName()
 group_info = project.cellGroupsInfo
 mf_pack_adapter = group_info.getCellPackingAdapter('MFs')
 gr_pack_adapter = group_info.getCellPackingAdapter('GrCs')
-mf_pack_adapter.setMaxNumberCells(mf_number)
-gr_pack_adapter.setMaxNumberCells(gr_number)
+mf_pack_adapter.setMaxNumberCells(point.n_mf)
+gr_pack_adapter.setMaxNumberCells(point.n_grc)
 
 # generate network
 i = 0
@@ -148,7 +145,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 if i>5:
                     raise java.util.ConcurrentModificationException
         
-        for mf in range(mf_number):
+        for mf in range(point.n_mf):
             if mf in sp:
                 # create random spiking stimuli on active MFs, following the current stimulus pattern
                 rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
@@ -208,7 +205,10 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         print "Moving "+ temp_dir+"/simulations/"+sim_ref + " to " + destination
         for source in glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5'):
             shutil.move(source, destination)
-        shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+        try:
+            shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+        except OSError:
+            print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 shutil.rmtree(temp_dir) # this sometimes fails and raises an OSError ('couldn't delete directory...'). Doesn't do any harm, for the time being.
 System.exit(0)

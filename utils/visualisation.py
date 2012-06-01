@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from matplotlib.text import Text
 import textwrap
+import analysis
 
 def on_draw(event):
     """Auto-wraps all text objects in a figure at draw-time"""
@@ -36,7 +37,7 @@ def autowrap_text(textobj, renderer):
     # Set the text to rotate about the left edge (doesn't make sense otherwise)
     textobj.set_rotation_mode('anchor')
 
-    # Get the amount of space in the direction of rotation to the left and 
+    # Get the amount of space in the direction of rotation to the left and
     # right of x0, y0 (left and right are relative to the rotation, as well)
     rotation = textobj.get_rotation()
     right_space = min_dist_inside((x0, y0), rotation, clip)
@@ -45,14 +46,14 @@ def autowrap_text(textobj, renderer):
     # Use either the left or right distance depending on the horiz alignment.
     alignment = textobj.get_horizontalalignment()
     if alignment is 'left':
-        new_width = right_space 
+        new_width = right_space
     elif alignment is 'right':
         new_width = left_space
     else:
         new_width = 2 * min(left_space, right_space)
 
     # Estimate the width of the new size in characters...
-    aspect_ratio = 0.5 # This varies with the font!! 
+    aspect_ratio = 0.5 # This varies with the font!!
     fontsize = textobj.get_size()
     pixels_per_char = aspect_ratio * renderer.points_to_pixels(fontsize)
 
@@ -73,17 +74,17 @@ def min_dist_inside(point, rotation, box):
     x0, y0 = point
     rotation = radians(rotation)
     distances = []
-    threshold = 0.0001 
-    if cos(rotation) > threshold: 
+    threshold = 0.0001
+    if cos(rotation) > threshold:
         # Intersects the right axis
         distances.append((box.x1 - x0) / cos(rotation))
-    if cos(rotation) < -threshold: 
+    if cos(rotation) < -threshold:
         # Intersects the left axis
         distances.append((box.x0 - x0) / cos(rotation))
-    if sin(rotation) > threshold: 
+    if sin(rotation) > threshold:
         # Intersects the top axis
         distances.append((box.y1 - y0) / sin(rotation))
-    if sin(rotation) < -threshold: 
+    if sin(rotation) < -threshold:
         # Intersects the bottom axis
         distances.append((box.y0 - y0) / sin(rotation))
     return min(distances)
@@ -146,21 +147,23 @@ class MIDetailPlotter(PointGraphics):
         self.natural_save_path =  "{0}/mi_detail.png".format(self.point.data_folder_path)
     def plot(self, mode='precision'):
         for correction in self.corrections:
+            linestyle = {'plugin':'solid', 'qe':'dashed', 'bootstrap':'-.', 'pt':'dotted', 'nsb':'dotted'}[correction]
             try:
                 values = getattr(self.point, 'ts_decoded_mi_{0}'.format(correction))
                 label = '_'.join([x for x in [self.label_prefix, correction] if x!=None])
                 if mode=='precision':
+                    print linestyle
                     # this could be done by always using the plot() function, and subsequently changing the x axis scale
                     #   and x tick labels for the precision mode case.
-                    color = self.ax.semilogx(self.point.decoder_precision, values, label=label)[0].get_color()
+                    color = self.ax.semilogx(self.point.decoder_precision, values, label=label, linestyle=linestyle)[0].get_color()
                     self.ax.semilogx(1./self.point.point_separation, getattr(self.point, 'point_mi_{0}'.format(correction)), marker='o', color=color)
                     self.ax.set_xlabel('decoder precision (1/cluster separation)')
                 elif mode=='alphabet_size':
-                    color = self.ax.plot(np.arange(1, self.point.n_stim_patterns*self.point.training_size), values, label=label)[0].get_color()
+                    color = self.ax.plot(np.arange(1, self.point.n_stim_patterns*self.point.training_size), values, label=label, linestyle=linestyle)[0].get_color()
                     self.ax.plot(self.point.n_stim_patterns, getattr(self.point, 'point_mi_{0}'.format(correction)), marker='o', color=color)
                     self.ax.set_xlabel('number of clusters')
-            except AttributeError:
-                print('Warning: missing values.')
+            except AttributeError as e:
+                print('Warning: missing values: {0}'.format(e))
         self.ax.set_ylabel('MI (bits)')
         self.ax.legend(loc='best')
         self.fig.canvas.draw()
@@ -171,32 +174,53 @@ class MIDetailPlotter(PointGraphics):
             file_name = self.natural_save_path
         super(MIDetailPlotter, self).save(file_name)
 
-        
+class PointDetailColormap(MIDetailPlotter):
+    def plot(self):
+        try:
+            values = np.vstack([getattr(self.point, 'ts_decoded_mi_{0}'.format(correction)) for correction in self.corrections])
+            labels = ['_'.join([x for x in [self.label_prefix, correction] if x!=None]) for correction in self.corrections]
+            self.plot = self.ax.imshow(values, aspect='auto', interpolation='none', cmap='coolwarm', origin='lower')
+            self.cbar = self.fig.colorbar(self.plot)
+            self.ax.set_yticks(range(values.shape[0]))
+            self.ax.set_yticklabels(labels)
+            self.ax.set_xticks(self.ax.get_xticks() + [20])
+            self.ax.set_xlim((0,values.shape[1]))
+        except AttributeError as e:
+            print('Warning: missing values: {0}'.format(e))
+
 class RectangularHeatmapPlotter(object):
-    def __init__(self, space):
+    def __init__(self, space, alpha=0.):
         if len(space.shape) > 2:
             raise ValueError('Attempt to plot an heatmap for a space with more than 2 dimensions.')
         self.space = space
         self.gs = GridSpec(1,1)
         self.fig = plt.figure()
+        self.fig.patch.set_alpha(alpha)
         self.ax = self.fig.add_subplot(self.gs[0])
         self.fig.canvas.mpl_connect('draw_event', on_draw)
-    def plot(self, heat_dim):
-        """Plot a bidimensional heatmap for the heat_dim quantity"""        
-        x_param = self.space._param(1)
-        y_param = self.space._param(0)
-        plot = self.ax.imshow(self.space._get_attribute_array(heat_dim), interpolation='none', cmap='coolwarm', origin='lower')
-        cbar = self.fig.colorbar(plot, use_gridspec=True)
-        cbar.set_label(heat_dim)
-        self.ax.set_xticks(np.arange(self.space.shape[1]))
+    def plot(self, heat_dim, invert_axes=False):
+        """Plot a bidimensional heatmap for the heat_dim quantity"""
+        if not invert_axes:
+            plot = self.ax.imshow(self.space._get_attribute_array(heat_dim), interpolation='none', cmap='coolwarm', origin='lower')
+            x_param = self.space._param(1)
+            y_param = self.space._param(0)
+            self.ax.set_xticks(np.arange(self.space.shape[1]))
+            self.ax.set_yticks(np.arange(self.space.shape[0]))
+        else:
+            plot = self.ax.imshow(self.space._get_attribute_array(heat_dim).transpose(), interpolation='none', cmap='coolwarm', origin='lower')
+            x_param = self.space._param(0)
+            y_param = self.space._param(1)
+            self.ax.set_xticks(np.arange(self.space.shape[0]))
+            self.ax.set_yticks(np.arange(self.space.shape[1]))
+        self.cbar = self.fig.colorbar(plot, use_gridspec=True)
+        self.cbar.set_label(heat_dim)
         self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)])
         self.ax.set_xlabel(x_param)
-        self.ax.set_yticks(np.arange(self.space.shape[0]))
         self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)])
         self.ax.set_ylabel(y_param)
-        
+
         sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
-        fig_title = ' '.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
+        fig_title = 'param. coordinates: '+' '.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
         self.ax.set_title(fig_title)
         self.fig.canvas.draw()
         return self.fig, self.ax
@@ -209,18 +233,86 @@ class RectangularHeatmapPlotter(object):
             if base_dir:
                 file_name = '/'.join([base_dir, file_name])
         self.fig.savefig(file_name)
-            
+
 class InteractiveHeatmap(RectangularHeatmapPlotter):
-    def __init__(self, space):
-        super(InteractiveHeatmap, self).__init__(space)
+    def __init__(self, space, alpha=0., hold=False, detail_corrections=('plugin', 'bootstrap', 'qe', 'pt', 'nsb')):
+        super(InteractiveHeatmap, self).__init__(space, alpha)
         self.cid = self.fig.canvas.mpl_connect('button_press_event', self.onclick)
         self.detailed_point_plots = []
+        self.hold = hold
+        self.detail_ax = None
+        self.detail_fig = None
+        self.detail_corrections = detail_corrections
     def onclick(self, event):
         print 'button=%d, x=%d, y=%d, xdata=%f, ydata=%f'%(event.button, event.x, event.y, event.xdata, event.ydata)
         print int(round(event.ydata))-1, int(round(event.xdata))-1
         point = self.space[int(round(event.ydata)), int(round(event.xdata))]
         print(point)
-        midp = MIDetailPlotter(point)
+        if not self.hold:
+            #midp = MIDetailPlotter(point, corrections=self.detail_corrections)
+            midp = PointDetailColormap(point, corrections=self.detail_corrections)
+        else:
+            if not self.detail_fig:
+                midp = MIDetailPlotter(point, corrections=self.detail_corrections)
+                self.detail_ax = midp.ax
+                self.detail_fig = midp.fig
+            else:
+                midp = MIDetailPlotter(point, corrections=self.detail_corrections, fig=self.detail_fig, ax=self.detail_ax)
         self.detailed_point_plots.append(midp)
         midp.plot()
-        
+
+class raster_plot(object):
+    def __init__(self, point, cell_type, stim, trial, alpha=1):
+        self.spike_resolution_dt = 0.01
+        self.point = point
+        self.alpha = alpha
+        self.spikes = self.point.spikes_arch.get_spikes(cell_type=cell_type)[(stim*point.n_trials)+trial]
+        self.conv = analysis.convolve(self.spikes.reshape(1,
+                                                          self.spikes.shape[0],
+                                                          self.spikes.shape[1]),
+                                      self.point.sim_duration,
+                                      self.point.tau,
+                                      self.point.dt)[0]
+        self.time_points = np.arange(0, self.point.sim_duration, self.spike_resolution_dt)
+        self.n_cells = self.spikes.shape[0]
+        if cell_type == 'grc':
+            self.raster_color = 'yellow'
+        elif cell_type == 'mf':
+            self.raster_color = 'red'
+        # prepare for the raster: for each cell, count spikes
+        # occurring in each bin of width spike_resolution_dt
+        self.aoh = np.zeros(shape=(self.n_cells, self.point.sim_duration/self.spike_resolution_dt))
+        for k, c in enumerate(self.spikes):
+            self.aoh[k] = np.histogram(c[c>0], bins=np.arange(0., self.point.sim_duration+self.spike_resolution_dt, self.spike_resolution_dt))[0]
+    def time_convolution_formatter(self,x,pos):
+        return '{0}'.format(self.point.dt*x)
+    def plot_convolution(self):
+        self.conv_fig, self.conv_ax = plt.subplots()
+        self.conv_fig.patch.set_alpha(self.alpha)
+        self.conv_plot =  self.conv_ax.imshow(self.conv, interpolation='none', cmap='coolwarm', origin='lower')
+        self.conv_cbar = self.conv_fig.colorbar(self.conv_plot, orientation='vertical')
+        self.conv_cbar.set_label('field component (a.u.)', fontsize=14)
+        self.conv_ax.xaxis.set_major_formatter(FuncFormatter(self.time_convolution_formatter))
+        self.conv_ax.set_xlabel('time (ms)', fontsize=16)
+        self.conv_ax.set_ylabel('cell index', fontsize=16)
+    def plot_raster(self):
+        self.raster_fig, self.raster_ax = plt.subplots()
+        self.raster_fig.patch.set_alpha(self.alpha)
+        for k, h in enumerate(self.aoh):
+            selected_idxs = h>0
+            if any(selected_idxs):
+                h[selected_idxs] = k
+                self.raster_ax.scatter(self.time_points[selected_idxs],
+                                       h[selected_idxs],
+                                       c=self.raster_color,
+                                       marker='o')
+        self.raster_ax.set_xlabel('time (ms)', fontsize=16)
+        self.raster_ax.set_ylabel('cell index', fontsize=16)
+        self.raster_ax.set_ylim([-1, self.n_cells+1])
+        if self.conv_ax:
+            # if a convolution plot exists, use its same time limits
+            self.raster_ax.set_xlim([self.point.dt*lim for lim in self.conv_ax.get_xlim()])
+    def plot(self):
+        self.plot_convolution()
+        self.plot_raster()
+

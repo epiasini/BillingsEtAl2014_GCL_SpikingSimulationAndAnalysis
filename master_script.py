@@ -78,9 +78,9 @@ batch_manager = BatchManager(parameter_space)
 ##====SIMULATION STAGE====##
 ############################
 print("Entering simulation stage.")
-batch_manager.start_simulation()
+batch_manager.start_simulation(force=False)
 while batch_manager.simulation.queue_is_not_empty():
-    time.sleep(60)    
+    time.sleep(60)
     batch_manager.update_status()
 print("Simulation stage complete. Entering compression stage.")
 #############################
@@ -88,7 +88,7 @@ print("Simulation stage complete. Entering compression stage.")
 #############################
 batch_manager.start_compression()
 while batch_manager.compression.queue_is_not_empty():
-    time.sleep(60)    
+    time.sleep(60)
     batch_manager.update_status()
 print("Compression stage complete. Entering analysis stage.")
 ##########################
