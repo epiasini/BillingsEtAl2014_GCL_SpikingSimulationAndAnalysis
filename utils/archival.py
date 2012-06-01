@@ -47,7 +47,8 @@ class ResultsArchive(Archive):
                          'px_at_same_size_point',
                          'o_level_array',
                          'o_level_hist_values',
-                         'o_level_hist_edges']
+                         'o_level_hist_edges',
+                         'o_synchrony']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])
@@ -105,4 +106,56 @@ class ResultsArchive(Archive):
         if result_name in target_group.keys():
             del target_group[result_name]
         target_group.create_dataset(result_name, data=data)
+        self._close()
+
+    def _write_from_memory(self):
+        """Overwrite archive on disk with data in memory (useful for format conversion)."""
+        for ds in self.datasets:
+            if hasattr(self.point, ds):
+                self.update_result(ds, data=getattr(self.point, ds))
+            else:
+                print("{0} doesn't have {1}".format(self.point, ds))
+
+    def _old_open(self):
+        self._lock = open(self.path, 'a')
+        fcntl.lockf(self._lock, fcntl.LOCK_EX)
+        self._hdf5_handle = h5py.File(self.path)
+        nspg = self._hdf5_handle.require_group('sp%d' % self.point.n_stim_patterns)
+        ntrg = nspg.require_group('t%d' % self.point.n_trials)
+        mixg = ntrg.require_group('mix%.2f' % self.point.multineuron_metric_mixing)
+        trsg = mixg.require_group('train%d' % self.point.training_size)
+        target_group = trsg.require_group('method_%s' % self.point.linkage_method_string[self.point.linkage_method])
+        return target_group
+    def _old_is_archive_on_disk_complete(self):
+        target_group = self._old_open()
+        answer = all([ds in target_group.keys() for ds in self.datasets])
+        self._close()
+        return answer
+    def _old_archive_only_lacks_synchrony(self):
+        target_group = self._old_open()
+        answer = all([ds in target_group.keys() for ds in self.datasets if ds!='o_synchrony'])
+        self._close()
+        return answer
+    def _old_load_from_disk(self):
+        if self._old_is_archive_on_disk_complete():
+            # the analysis results we're looking for are in the corresponding hdf5 archive on disk
+            target_group = self._old_open()
+            for ds in self.datasets:
+                setattr(self.point, ds, np.array(target_group[ds]))
+            self._close()
+            return True
+        elif self._old_archive_only_lacks_synchrony():
+            self.datasets = [ds for ds in self.datasets if ds!='o_synchrony']
+            target_group = self._old_open()
+            for ds in self.datasets:
+                setattr(self.point, ds, np.array(target_group[ds]))
+            self._close()
+            return True
+        else:
+            # the hdf5 archive seems to be incomplete or missing
+            return False
+    def _delete_old_datasets(self):
+        target_group = self._old_open()
+        for ds in [name for name in self.datasets if name in target_group.keys()]:
+            del target_group[ds]
         self._close()
