@@ -24,13 +24,14 @@ from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils.pure import SimpleParameterSpacePoint, plast_correction_factor
+from utils import golgi
 
 point = eval(sys.argv[1])
 rank = int(sys.argv[2])
 
-project_path = '/home/ucbtepi/nC_projects/if_gl/'
+project_path = '/home/ucbtepi/nC_projects/if_gl_add_golgi/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
-sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
+sim_path = '/home/ucbtepi/nC_projects/if_gl_add_golgi/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
@@ -47,18 +48,22 @@ project = pm.loadProject(project_file)
 print 'Loaded project: ' + project.getProjectName()
 
 # set network size
+n_goc = 37 # FIXME FIXME FIXME
 group_info = project.cellGroupsInfo
 mf_pack_adapter = group_info.getCellPackingAdapter('MFs')
 gr_pack_adapter = group_info.getCellPackingAdapter('GrCs')
 mf_pack_adapter.setMaxNumberCells(point.n_mf)
 gr_pack_adapter.setMaxNumberCells(point.n_grc)
 
+# create Golgi cell groups
+golgi.add_golgi(project, sim_config_name, n_goc)
+
 # generate network
 i = 0
 while True:
     try:
         pm.doGenerate(sim_config_name, nC_seed)
-        while pm.isGenerating():        
+        while pm.isGenerating():
             print 'Waiting for the project to be generated...'
             time.sleep(2)
         break
@@ -79,6 +84,19 @@ n_mf=project.generatedCellPositions.getNumberInCellGroup('MFs')
 n_gr=project.generatedCellPositions.getNumberInCellGroup('GrCs')
 n_generated_cells = project.generatedCellPositions.getNumberInAllCellGroups()
 print "Number of cells generated: " + str(n_generated_cells)
+
+# load golgi network structure
+gnf = open(point.golgi_network_filename, "r")
+print(gnf)
+# i j source_seg dest_seg synaptic_weight
+golgi_network = [[int(x[0]), int(x[1]), int(x[2]), int(x[3]), float(x[4])] for x in [line.split(' ') for line in gnf.readlines()]]
+gnf.close()
+
+# load Goc->grc connection pattern
+ggpf = open(point.goc_grc_conn_filename, "r")
+print(ggpf)
+goc_grc_conn_pattern = [[int(goc) for goc in line.split(' ')[0:-1]] for line in ggpf.readlines()]
+ggpf.close()
 
 # load connection pattern
 cpf = open(point.conn_pattern_filename, "r")
@@ -112,7 +130,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         # delete all existing connections
         project.generatedNetworkConnections.reset()
         project.morphNetworkConnectionsInfo.deleteAllNetConns()
-        sim_config.setNetConns(ArrayList())        
+        sim_config.setNetConns(ArrayList())
         # delete all existing stimuli
         project.generatedElecInputs.reset()
         project.elecInputInfo.deleteAllStims()
@@ -128,14 +146,14 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         bias_in_nA = 0.001 * point.bias
         bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, point.sim_duration, bias_in_nA, False)
         project.elecInputInfo.addStim(bias_input)
-        sim_config.addInput(bias_input.getReference())
+        #sim_config.addInput(bias_input.getReference())
 
         # regenerate network
         i = 0
         while True:
             try:
                 pm.doGenerate(sim_config_name, nC_seed)
-                while pm.isGenerating():        
+                while pm.isGenerating():
                     print 'Waiting for the project to be regenerated...'
                     time.sleep(1)
                 break
@@ -144,7 +162,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 print "ConcurrentModificationException raised by nC; retrying network generation."
                 if i>5:
                     raise java.util.ConcurrentModificationException
-        
+
         for mf in range(point.n_mf):
             if mf in sp:
                 # create random spiking stimuli on active MFs, following the current stimulus pattern
@@ -156,7 +174,9 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             project.elecInputInfo.addStim(stim)
             sim_config.addInput(stim.getReference())
             project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
-            # netconn set-up (remember that all the connections originating from the same MF are identical)
+	    ## == netconn set-up (remember that all the connections
+            # originating from the same MF or from the same GoC are
+            # identical)
             syn_props_list = Vector([SynapticProperties('NMDA'), SynapticProperties('AMPA_direct'), SynapticProperties('AMPA_spillover')])
             for synp in syn_props_list:
                 synp.setFixedDelay(0)
@@ -167,10 +187,33 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             conn_conditions = ConnectivityConditions()
             conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
             project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf), 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
+	# create Golgi gap junction network
+	golgi.generate_golgi_network(project, sim_config, golgi_network)
 
+	for goc in range(point.n_goc)
+	    # create GoC -> grc netconn objects
+	    syn_props = SynapticProperties('GABA_phasic_average')
+	    syn_props.setFixedDelay(0)
+	    syn_props.setThreshold(-20)
+            conn_conditions = ConnectivityConditions()
+            conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
+            project.morphNetworkConnectionsInfo.addRow(golgi.golgi_grc_conn_name(goc),
+						       golgi.golgi_group_name(goc),
+						       'GrCs',
+						       Vector([syn_props]),
+						       SearchPattern.getRandomSearchPattern(),
+						       MaxMinLength(Float.MAX_VALUE, 0, 'r', 100),
+						       conn_conditions,
+						       Float.MAX_VALUE)
         for gr in range(n_gr):
             # set up thresholding current
-            project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
+            #project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
+	    # connect golgi to granule cells
+	    for goc in goc_grc_conn_pattern[gr]:
+		conn_name = golgi.golgi_grc_conn_name(goc)
+		sim_config.addNetConn(conn_name)
+		project.generatedNetworkConnections.addSynapticConnection(conn_name, 0, grc)
+	    # connect mossy fibre terminals to granule cells
             for mf in conn_pattern[gr]:
                 # create connections, following the current connection pattern
                 conn_name = 'conn_'+str(mf)
@@ -196,7 +239,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
         while len(glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5')) < 2:
             print ("Waiting for NEURON to finish writing to disk...")
             time.sleep(1)
-        
+
         # copy results to main data folder and delete useless nC files
         destination = point.data_folder_path + '/' + sim_ref
         if os.path.isdir(destination):

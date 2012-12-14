@@ -37,6 +37,7 @@ class SimpleParameterSpacePoint(object):
         #--useful quantities
         self.n_mf = int(round(self.min_mf_number * self.network_scale))
         self.n_grc = int(round(self.n_mf * self.grc_mf_ratio))
+	self.n_goc = 37 # TEMPORARILY STATIC VALUE FOR 80 UM BALL FIXME FIXME
         #--relevant filenames
         self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (self.BASE_DIR,
                                                                       self.grc_mf_ratio,
@@ -52,6 +53,8 @@ class SimpleParameterSpacePoint(object):
                                                                                        self.n_grc_dend,
                                                                                        self.network_scale,
                                                                                        self.n_stim_patterns)
+	self.golgi_network_filename = "%s/golgi_network.txt" % (self.net_structure_folder_path)
+	self.goc_grc_conn_filename = "%s/goc_grc_conn_filename.txt" % (self.net_structure_folder_path)
         self.data_folder_path = "%s/f%.02f/b%02d/sm%d/ss%d/nm%d/ns%d" % (self.net_structure_folder_path,
                                                                          self.active_mf_fraction,
                                                                          self.bias,

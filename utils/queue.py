@@ -3,6 +3,7 @@ import collections
 import os
 import random
 import shutil
+import networkx as nx
 from subprocess import Popen, PIPE, call
 
 class QueueError(Exception):
@@ -65,7 +66,7 @@ class ProcessManager(object):
                 print('Error log file for simulation job {jid} not found.'.format(jid=jid))
     def update_prequeue(self):
         while (self.get_total_jobs_number() < self.job_limit) and self._prequeue:
-            self.submit_job(self._prequeue.popleft())  
+            self.submit_job(self._prequeue.popleft())
 
 class BatchManager(object):
     # TODO: once this works, it would be nice to remove the 'barriers' between the three stages,
@@ -88,6 +89,57 @@ class BatchManager(object):
         except OSError:
             # this means that the directory is already there
             pass
+	## =create golgi network connection pattern and save it to a text file=
+	# generate a degree sequence from the appropriate distribution
+	deg_seq = []
+	deg_mean = 7.
+	deg_sigma = 3.2
+	is_good_sequence = False
+	while not is_good_sequence:
+	    deg_seq = [int(fabs(round(random.gauss(mu=deg_mean,sigma=deg_sigma)))) for each in range(45)]
+	    is_good_sequence = nx.is_valid_degree_sequence(deg_seq)
+	# create gap junction graph object
+	gj_graph = nx.configuration_model(deg_seq)
+	# remove self edges
+	gj_graph.remove_edges_from(gj_graph.selfloop_edges())
+	# select source and destination segments
+	groups_with_gjs = ['GCL', 'ML1', 'ML2', 'ML3']
+	group_prob = (11./36, 16./36, 7./36, 2./36)
+	segments_with_gjs = ((3,4,9,10), (5,7), (6,8), (6,8))
+	if not os.path.exists(point.golgi_network_filename):
+	    golgi_network_file = open(point.golgi_network_filename, 'w')
+	    for i,j in gj_graph.edges():
+		# select random source and destination segments according to spatial distr of gjs
+		source_rand = random.random()
+		source_segment_group = [k for k, p in enumerate(cum_group_prob) if source_rand>=p][-1]
+		source_segment = random.choice(segments_with_gjs[source_segment_group])
+		dest_rand = random.random()
+		dest_segment_group = [k for k, p in enumerate(cum_group_prob) if dest_rand>=p][-1]
+		dest_segment = random.choice(segments_with_gjs[dest_segment_group])
+		mean_gj_number = int(round(35./7))
+		synaptic_weight = random.randrange(3, 7, 1)
+		golgi_network_file.write(' '.join((str(i),
+						   str(j),
+						   str(source_segment),
+						   str(dest_segment),
+						   str(synaptic_weight),
+						   '\n')))
+	    golgi_network_file.close()
+	## =create Goc->grc connection pattern and save it to a text file=
+	if not os.path.exists(point.goc_grc_conn_filename):
+	    conn_pattern = [random.sample(range(n_goc), point.n_grc_dend) for each in range(point.n_grc)]
+	    conn_pattern_file = open(point.goc_grc_conn_filename, 'w')
+	    for gr in range(point.n_grc):
+		for goc in conn_pattern[gr]:
+		    conn_pattern_file.write(str(goc) + " ")
+		conn_pattern_file.write("\n")
+	    conn_pattern_file.close()
+
+	## =TODO: divide golgi cells between local and global
+	## ones. Save a txt file with a list of the local ones, so
+	## that they can be connected to the appropriate mossy fibers
+	## during network generation.=
+
         # create connection pattern and save it in a text file
         n_mf = int(round(point.min_mf_number * point.network_scale))
         n_gr = int(round(n_mf * point.grc_mf_ratio))
@@ -144,4 +196,4 @@ class BatchManager(object):
             self.analysis.update_job_sets()
             self.analysis.update_prequeue()
             print('ANA: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.analysis.running_jobs), wj=len(self.analysis.waiting_jobs), oj=len(self.analysis.other_jobs), pqj=self.analysis.get_prequeue_length()))
-        
+
