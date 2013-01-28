@@ -30,4 +30,5 @@ def test(n=5):
     # vector -> matrix -> vector
     for t in range(n*(n-1)/2):
 	r, c = index_2d(n, t)
-	print '{} -> {} -> {}'.format(t, (r, c), index_1d(n,r,c))
+	print '{} -> {} -> {}'.format(t, (r, c), index_1d(n, r, c))
+	assert t == index_1d(n, r, c)
