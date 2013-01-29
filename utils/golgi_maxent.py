@@ -43,17 +43,28 @@ def vector_form(a):
 
 def gamma(n, v):
     '''Variance of the degree distribution of the network.'''
-    a = matrix_form(n, v)
-    return np.square(a.sum(axis=0)).sum()/n - np.square(a.sum()/n)
+    return matrix_form(n, v).sum(axis=0).var()
 
-
+def pdf(n, v, lamb, mu, nu):
+    # mu*v + nu*(1-v) = f_t(v_t) (remember that v is binary)
+    # mu and nu are n(n-1)/2 dimensional parameter vectors. lambda is scalar.
+    return (mu*v + nu*(1-v)).prod() * np.exp(lamb*gamma(n, v))
 
 if __name__ == "__main__":
     n = 5
     marginal_v = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74])
+    # our initial guess for the solution is just a product of marginals
+    initial_lamb = 0
+    initial_mu = marginal_v
+    initial_nu = 1 - initial_mu
+    # v = np.random.randint(low=0, high=2, size=n*(n-1)/2)
+    v1 = np.array([1, 1, 0, 0, 0, 1, 1, 0, 0, 0])
+    v2 = np.array([1, 0, 0, 0, 0, 1, 1, 0, 1, 1])
     print matrix_form(n, marginal_v)
-    print gamma(n, marginal_v)
-
+    for v in [v1, v2]:
+	print v
+	print gamma(n, v)
+	print pdf(n, v, initial_lamb, initial_mu, initial_nu)
 
 
 def test_index(n=5):
