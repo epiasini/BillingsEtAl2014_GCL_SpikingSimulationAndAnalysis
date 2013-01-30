@@ -57,50 +57,25 @@ def pdf(n, v, lamb, mu, nu):
     # mu and nu are n(n-1)/2 dimensional parameter vectors. lambda is scalar.
     return (mu*(1-v) + nu*v).prod() * np.exp(lamb*gamma(n, v))
 
-def margins(n, lamb, mu, nu):
+def constraint_expression(n, lamb, mu, nu, required_marginals, required_gamma):
     assert mu.shape[0] == nu.shape[0]
     assert mu.shape[0] == n*(n-1)/2
     # each 'adjacency vector' (vector form of an adjacency matrix)
     # corresponds to the binary representation of a number between 0
     # and 2**(n*(n-1)/2)
     full_space = np.arange(2**(n*(n-1)/2))
-    # print [np.binary_repr(v, width=n*(n-1)/2) for v in full_space]
     probabilities = np.array([pdf(n,vector_from_int(n, m),lamb,mu,nu) for m in full_space]).reshape([2 for each in range(n*(n-1)/2)])
+    # for c in zip([np.binary_repr(m) for m in full_space], probabilities.flat):
+    # 	print c
 
-    # probabilities = np.array([pdf(n,vector_from_int(n, m),lamb,mu,nu) for m in full_space])
-    # margin_table = np.zeros(shape=(n*(n-1)/2, 2))
-    # for t in range(n*(n-1)/2):
-    # 	# t is a big endian index if the binary vector v is viewed as a
-    # 	# number, but below we need the little endian version
-    # 	k = n*(n-1)/2 - 1 - t
-    # 	# the marginal is defined over {0,1}, so it can be represented with a vector of size two.
-    # 	marginal = np.zeros(2)
-    # 	# divide the full space of all possible adjacency matrices into
-    # 	# according to the presence of the egde number t ('tth' edge).
-    # 	idxs_where_tth_0 = (1 - np.bitwise_and(full_space, (2**k))/(2**k)).nonzero()
-    # 	idxs_where_tth_1 = (np.bitwise_and(full_space, (2**k))/(2**k)).nonzero()
-    # 	print idxs_where_tth_0
-    # 	print idxs_where_tth_1
-    # 	marginal[False] = probabilities[idxs_where_tth_0].sum()
-    # 	marginal[True] = probabilities[idxs_where_tth_1].sum()
-    # 	margin_table[t] = marginal
+    # evaluate marginals
+    marginals = np.array([np.squeeze(p) for p in st.contingency.margins(probabilities)])
 
-    return np.array([np.squeeze(p) for p in st.contingency.margins(probabilities)])
+    # evaluate expectation value of gamma
+    e_gamma = (probabilities * np.array([gamma(n, vector_from_int(n, m)) for m in full_space]).reshape([2 for each in range(n*(n-1)/2)])).sum().reshape(1,)
 
-    # print probabilities
-    # print probabilities.sum()
-    # print probabilities.max(), probabilities.min()
-    # print probabilities[0,1,0,0,0,1]
-    # print probabilities[1,0,1,1,1,0]
-    # print probabilities[0,0,1,1,1,0]
-    #return value_in_one
-
-def marginal_contraint_exact(required_marginal_v):
-    pass
-
-def constraint_expression(x, n, required_marginal_v, required_gamma):
-    lamb, mu, nu = x
-    pass
+    # return flattened array of functions that we want to find the root of
+    return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
 
 if __name__ == "__main__":
     n = 5
@@ -159,3 +134,13 @@ def test_transformation(n=5):
     print matrix_from_vector(n, v)
     print vector_from_matrix(matrix_from_vector(n, v))
     assert (v == vector_from_matrix(matrix_from_vector(n, v))).all()
+
+def test_constraint_expression():
+    goodness = constraint_expression(n=3,
+				     lamb=0,
+				     mu=np.array([0.4, 0.3, 0.8]),
+				     nu=np.array([0.6, 0.7, 0.2]),
+				     required_marginals=np.array([[0.4,0.6], [0.3,0.7], [0.8,0.2]]),
+				     required_gamma=0.18222222222222223)
+    print goodness
+    assert np.square(goodness).sum() < 1.e-30
