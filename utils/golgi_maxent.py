@@ -83,10 +83,11 @@ def constraint_expression(x, n, required_gamma, required_marginals):
     return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
 
 if __name__ == "__main__":
-    n = 5
-    required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74])
-
+    n = 6
+    required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
+    # check compatibility of input data
     max_edges = n*(n-1)/2
+    assert len(required_marginals) == max_edges
     complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges,1),
 					     required_marginals.reshape(max_edges,1)))
     # our initial guess for the solution is just a product of marginals
