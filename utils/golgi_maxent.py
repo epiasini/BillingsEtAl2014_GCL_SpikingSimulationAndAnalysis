@@ -28,13 +28,13 @@ def index_2d(n,t):
     col = (row + 1) + t - (tot - entries)
     return row,col
 
-def matrix_form(n, v):
+def matrix_from_vector(n, v):
     a = np.zeros((n,n), dtype=np.bool)
     for (r,c) in [(r,c) for r in range(n) for c in range(n) if r!=c]:
 	a[r,c] = v[index_1d(n,r,c)]
     return a
 
-def vector_form(a):
+def vector_from_matrix(a):
     n = a.shape[0]
     v = np.zeros(n*(n-1)/2, dtype=np.bool)
     for t in range(v.shape[0]):
@@ -49,7 +49,7 @@ def vector_from_int(n, k):
 
 def gamma(n, v):
     '''Variance of the degree distribution of the network.'''
-    return matrix_form(n, v).sum(axis=0).var()
+    return matrix_from_vector(n, v).sum(axis=0).var()
 
 def pdf(n, v, lamb, mu, nu):
     # mu*v + nu*(1-v) = f_t(v_t) (remember that v is binary)
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     # v = np.random.randint(low=0, high=2, size=n*(n-1)/2)
     v1 = np.array([1, 1, 0, 0, 0, 1, 1, 0, 0, 0])
     v2 = np.array([1, 0, 0, 0, 0, 1, 1, 0, 1, 1])
-    print matrix_form(n, marginal_v)
+    print matrix_from_vector(n, marginal_v)
     for v in [v1, v2]:
 	print v
 	print gamma(n, v)
@@ -115,16 +115,19 @@ def test_index(n=5):
 
 def test_transformation(n=5):
     # matrix -> vector -> matrix
-    a = np.random.random(size=(n,n), dtype=np.bool)
-    a = np.abs((a - np.transpose(a))/2) # symmetrise
+    a = np.asarray(np.random.randint(low=0, high=2, size=(n,n)), dtype=np.bool)
+    for r in range(n):
+	for c in range(0,r):
+	    a[r,c] = a[c,r]
+	a[r,r] = False
     print a
-    print vector_form(a)
-    print matrix_form(n, vector_form(a))
-    assert (a == matrix_form(n, vector_form(a))).all()
+    print vector_from_matrix(a)
+    print matrix_from_vector(n, vector_from_matrix(a))
+    assert (a == matrix_from_vector(n, vector_from_matrix(a))).all()
 
     # vector -> matrix -> vector
-    v = np.random.random(size=n*(n-1)/2, dtype=np.bool)
+    v = np.asarray(np.random.randint(low=0, high=2, size=n*(n-1)/2), dtype=np.bool)
     print v
-    print matrix_form(n, v)
-    print vector_form(matrix_form(n, v))
-    assert (v == vector_form(matrix_form(n, v))).all()
+    print matrix_from_vector(n, v)
+    print vector_from_matrix(matrix_from_vector(n, v))
+    assert (v == vector_from_matrix(matrix_from_vector(n, v))).all()
