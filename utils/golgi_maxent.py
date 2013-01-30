@@ -84,25 +84,47 @@ def constraint_expression(x, n, required_gamma, required_marginals):
 
 if __name__ == "__main__":
     n = 5
-    max_edges = n*(n-1)/2
-
     required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74])
+
+    max_edges = n*(n-1)/2
     complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges,1),
 					     required_marginals.reshape(max_edges,1)))
     # our initial guess for the solution is just a product of marginals
     initial_lamb = np.array([0.])
     initial_nu = required_marginals
     initial_mu = 1 - initial_nu
-    # v = np.random.randint(low=0, high=2, size=n*(n-1)/2)
 
-    for required_gamma in np.arange(.61,.79,.01):
-	tup = so.fsolve(func=constraint_expression,
-			x0=np.concatenate((initial_lamb, initial_mu, initial_nu)),
-			args=(n, required_gamma, complete_required_marginals),
-			full_output=True)
-	sol, infodict, ier, mesg = tup
-	if ier:
-	    print required_gamma, sol, mesg
+    # calculate expected value of gamma for initial guess, as a comparison
+    temp = constraint_expression(np.concatenate((initial_lamb, initial_mu, initial_nu)),
+				 n, 0, 0)
+
+    initial_e_gamma = temp[0]
+    initial_marginals = temp[1:].reshape(max_edges, 2)
+    np.testing.assert_allclose(initial_marginals[:,1], required_marginals)
+    np.testing.assert_allclose(initial_marginals[:,0], (1 - required_marginals))
+    print("Expected value of gamma for initial guess is {0}".format(initial_e_gamma))
+
+    # attempt to create models over a 10% interval of variation for E[gamma]
+    for required_gamma in np.arange(initial_e_gamma - initial_e_gamma*0.05,
+				    initial_e_gamma + initial_e_gamma*0.05,
+				    initial_e_gamma*0.01):#np.arange(.61,.79,.01):
+	print('------computing-------')
+	temp = so.fsolve(func=constraint_expression,
+			 x0=np.concatenate((initial_lamb, initial_mu, initial_nu)),
+			 args=(n, required_gamma, complete_required_marginals),
+			 full_output=True)
+	sol, infodict, ier, mesg = temp
+	if ier == 1:
+	    lamb = sol[0]
+	    mu = sol[1:max_edges+1]
+	    nu = sol[max_edges+1:]
+	    print("Required gamma={} ".format(required_gamma))
+	    print(" lambda={}".format(lamb))
+	    print(" mu, nu:\n {}".format(np.hstack((mu.reshape(max_edges,1),
+						 nu.reshape(max_edges,1)))))
+	else:
+	    print("Required gamma={}: did not converge.".format(required_gamma))
+	print(" badness={}".format(infodict['fvec']))
 
 
 
