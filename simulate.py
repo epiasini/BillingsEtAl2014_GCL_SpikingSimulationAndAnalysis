@@ -190,7 +190,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
 	# create Golgi gap junction network
 	golgi.generate_golgi_network(project, sim_config, golgi_network)
 
-	for goc in range(point.n_goc)
+	for goc in range(point.n_goc):
 	    # create GoC -> grc netconn objects
 	    syn_props = SynapticProperties('GABA_phasic_average')
 	    syn_props.setFixedDelay(0)

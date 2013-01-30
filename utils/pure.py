@@ -54,7 +54,7 @@ class SimpleParameterSpacePoint(object):
                                                                                        self.network_scale,
                                                                                        self.n_stim_patterns)
 	self.golgi_network_filename = "%s/golgi_network.txt" % (self.net_structure_folder_path)
-	self.goc_grc_conn_filename = "%s/goc_grc_conn_filename.txt" % (self.net_structure_folder_path)
+	self.goc_grc_conn_filename = "%s/goc_grc_conn.txt" % (self.net_structure_folder_path)
         self.data_folder_path = "%s/f%.02f/b%02d/sm%d/ss%d/nm%d/ns%d" % (self.net_structure_folder_path,
                                                                          self.active_mf_fraction,
                                                                          self.bias,

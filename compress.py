@@ -19,8 +19,6 @@ try:
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 
-sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
-
 n_mf = int(round(point.min_mf_number * point.network_scale))
 n_gr = int(round(n_mf * point.grc_mf_ratio))
 

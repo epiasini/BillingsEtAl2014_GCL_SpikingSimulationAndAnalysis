@@ -1,8 +1,6 @@
 # must be compatible with Jython
 import os
 import random
-import networkx as nx
-from math import fabs
 
 from java.awt import Color
 from java.lang import System, Float

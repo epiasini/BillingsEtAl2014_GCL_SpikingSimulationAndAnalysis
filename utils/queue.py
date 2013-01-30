@@ -5,6 +5,7 @@ import random
 import shutil
 import networkx as nx
 from subprocess import Popen, PIPE, call
+from math import fabs
 
 class QueueError(Exception):
     pass
@@ -96,7 +97,7 @@ class BatchManager(object):
 	deg_sigma = 3.2
 	is_good_sequence = False
 	while not is_good_sequence:
-	    deg_seq = [int(fabs(round(random.gauss(mu=deg_mean,sigma=deg_sigma)))) for each in range(45)]
+	    deg_seq = [int(fabs(round(random.gauss(mu=deg_mean,sigma=deg_sigma)))) for each in range(point.n_goc)]
 	    is_good_sequence = nx.is_valid_degree_sequence(deg_seq)
 	# create gap junction graph object
 	gj_graph = nx.configuration_model(deg_seq)
@@ -106,6 +107,7 @@ class BatchManager(object):
 	groups_with_gjs = ['GCL', 'ML1', 'ML2', 'ML3']
 	group_prob = (11./36, 16./36, 7./36, 2./36)
 	segments_with_gjs = ((3,4,9,10), (5,7), (6,8), (6,8))
+        cum_group_prob = tuple(sum(group_prob[:k]) for k in range(len(group_prob))) # cumulative
 	if not os.path.exists(point.golgi_network_filename):
 	    golgi_network_file = open(point.golgi_network_filename, 'w')
 	    for i,j in gj_graph.edges():
@@ -127,7 +129,7 @@ class BatchManager(object):
 	    golgi_network_file.close()
 	## =create Goc->grc connection pattern and save it to a text file=
 	if not os.path.exists(point.goc_grc_conn_filename):
-	    conn_pattern = [random.sample(range(n_goc), point.n_grc_dend) for each in range(point.n_grc)]
+	    conn_pattern = [random.sample(range(point.n_goc), point.n_grc_dend) for each in range(point.n_grc)]
 	    conn_pattern_file = open(point.goc_grc_conn_filename, 'w')
 	    for gr in range(point.n_grc):
 		for goc in conn_pattern[gr]:
