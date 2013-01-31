@@ -3,6 +3,9 @@ import numpy as np
 import scipy.stats as st
 import scipy.optimize as so
 
+def max_edges(n):
+    return n*(n-1)/2
+
 def index_1d(n, row, col):
     '''
     Return linear index for an upper triangular matrix element. If a
@@ -50,34 +53,42 @@ def vector_from_string(s):
 def vector_from_int(n, k):
     return vector_from_string(np.binary_repr(k, width=n*(n-1)/2))
 
+def full_vector_space(n):
+    # each 'adjacency vector' (vector form of an adjacency matrix)
+    # corresponds to the binary representation of a number between 0
+    # and 2**(max_edges)
+    return np.array([vector_from_int(n, m) for m in xrange(2**(max_edges(n)))])
+
 def gamma(n, v):
     '''Variance of the degree distribution of the network.'''
     return matrix_from_vector(n, v).sum(axis=0).var()
+
+def gamma_lookup_table(n, vector_space):
+    '''Tabulate the value of gamma for all possible networks.'''
+    return np.array([gamma(n, v) for v in vector_space]).reshape([2 for each in range(max_edges(n))])
 
 def pdf(n, v, lamb, mu, nu):
     # mu[t]*(1-v[t]) + nu[t]*v[t] = f_t(v_t) (remember that v is binary)
     # mu and nu are n(n-1)/2 dimensional parameter vectors. lambda is scalar.
     return (mu*(1-v) + nu*v).prod() * np.exp(lamb*gamma(n, v))
 
-def constraint_expression(x, n, required_gamma, required_marginals):
-    max_edges = n*(n-1)/2
-    assert x.shape[0] == 2*max_edges+1
+def pdf_lookup_table(n, vector_space, gamma_lt, lamb, mu, nu):
+    return ((mu.reshape(1,max_edges(n))*(1-vector_space) + nu.reshape(1,max_edges(n))*vector_space).prod(axis=1) * np.exp(lamb*np.ravel(gamma_lt))).reshape([2 for each in range(max_edges(n))])
+
+def constraint_expression(x, n, vector_space, gamma_lt, required_gamma, required_marginals):
+    assert x.shape[0] == 2*max_edges(n)+1
     lamb = x[0]
-    mu = x[1:max_edges+1]
-    nu = x[max_edges+1:]
-    # each 'adjacency vector' (vector form of an adjacency matrix)
-    # corresponds to the binary representation of a number between 0
-    # and 2**(max_edges)
-    full_space = np.arange(2**(max_edges))
-    probabilities = np.array([pdf(n,vector_from_int(n, m),lamb,mu,nu) for m in full_space]).reshape([2 for each in range(max_edges)])
-    # for c in zip([np.binary_repr(m) for m in full_space], probabilities.flat):
-    #   print c
+    mu = x[1:max_edges(n)+1]
+    nu = x[max_edges(n)+1:]
+
+    # map out probability for all possible networks
+    pdf_lt = pdf_lookup_table(n, vector_space, gamma_lt, lamb, mu, nu)
 
     # evaluate marginals
-    marginals = np.array([np.squeeze(p) for p in st.contingency.margins(probabilities)])
+    marginals = np.array([np.squeeze(p) for p in st.contingency.margins(pdf_lt)])
 
     # evaluate expectation value of gamma
-    e_gamma = (probabilities * np.array([gamma(n, vector_from_int(n, m)) for m in full_space]).reshape([2 for each in range(max_edges)])).sum().reshape(1,)
+    e_gamma = (pdf_lt * gamma_lt).sum().reshape(1,)
 
     # return flattened array of functions that we want to find the root of
     return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
@@ -86,10 +97,13 @@ if __name__ == "__main__":
     n = 6
     required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
     # check compatibility of input data
-    max_edges = n*(n-1)/2
-    assert len(required_marginals) == max_edges
-    complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges,1),
-					     required_marginals.reshape(max_edges,1)))
+    assert len(required_marginals) == max_edges(n)
+    complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges(n),1),
+					     required_marginals.reshape(max_edges(n),1)))
+    # initialise constant lookup tables
+    vector_space = full_vector_space(n)
+    gamma_lt = gamma_lookup_table(n, vector_space)
+
     # our initial guess for the solution is just a product of marginals
     initial_lamb = np.array([0.])
     initial_nu = required_marginals
@@ -97,10 +111,10 @@ if __name__ == "__main__":
 
     # calculate expected value of gamma for initial guess, as a comparison
     temp = constraint_expression(np.concatenate((initial_lamb, initial_mu, initial_nu)),
-				 n, 0, 0)
+				 n, vector_space, gamma_lt, 0, 0)
 
     initial_e_gamma = temp[0]
-    initial_marginals = temp[1:].reshape(max_edges, 2)
+    initial_marginals = temp[1:].reshape(max_edges(n), 2)
     np.testing.assert_allclose(initial_marginals[:,1], required_marginals)
     np.testing.assert_allclose(initial_marginals[:,0], (1 - required_marginals))
     print("Expected value of gamma for initial guess is {0}".format(initial_e_gamma))
@@ -112,17 +126,17 @@ if __name__ == "__main__":
 	print('------computing-------')
 	temp = so.fsolve(func=constraint_expression,
 			 x0=np.concatenate((initial_lamb, initial_mu, initial_nu)),
-			 args=(n, required_gamma, complete_required_marginals),
+			 args=(n, vector_space, gamma_lt, required_gamma, complete_required_marginals),
 			 full_output=True)
 	sol, infodict, ier, mesg = temp
 	if ier == 1:
 	    lamb = sol[0]
-	    mu = sol[1:max_edges+1]
-	    nu = sol[max_edges+1:]
+	    mu = sol[1:max_edges(n)+1]
+	    nu = sol[max_edges(n)+1:]
 	    print("Required gamma={} ".format(required_gamma))
 	    print(" lambda={}".format(lamb))
-	    print(" mu, nu:\n {}".format(np.hstack((mu.reshape(max_edges,1),
-						 nu.reshape(max_edges,1)))))
+	    print(" mu, nu:\n {}".format(np.hstack((mu.reshape(max_edges(n),1),
+						 nu.reshape(max_edges(n),1)))))
 	else:
 	    print("Required gamma={}: did not converge.".format(required_gamma))
 	print(" badness={}".format(infodict['fvec']))
@@ -171,10 +185,15 @@ def test_transformation(n=5):
     assert (v == vector_from_matrix(matrix_from_vector(n, v))).all()
 
 def test_constraint_expression():
+    n = 3
+    vector_space = full_vector_space(n)
+    gamma_lt = gamma_lookup_table(n, vector_space)
     goodness = constraint_expression(x=np.concatenate((np.array([0.]), # lambda
 						       np.array([0.4, 0.3, 0.8]), # mu
 						       np.array([0.6, 0.7, 0.2]))), # nu
 				     n=3,
+				     vector_space=vector_space,
+				     gamma_lt=gamma_lt,
 				     required_gamma=0.18222222222222223,
                                      required_marginals=np.array([[0.4,0.6], [0.3,0.7], [0.8,0.2]]))
     print goodness
