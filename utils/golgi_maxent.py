@@ -3,6 +3,9 @@ import numpy as np
 import scipy.stats as st
 import scipy.optimize as so
 
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
 def max_edges(n):
     return n*(n-1)/2
 
@@ -51,7 +54,7 @@ def vector_from_string(s):
     return np.array([int(x) for x in s], dtype=np.bool)
 
 def vector_from_int(n, k):
-    return vector_from_string(np.binary_repr(k, width=n*(n-1)/2))
+    return vector_from_string(np.binary_repr(k, width=max_edges(n)))
 
 def full_vector_space(n):
     # each 'adjacency vector' (vector form of an adjacency matrix)
@@ -143,10 +146,42 @@ def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
                      args=(n, vector_space, gamma_lt, required_gamma, complete_required_marginals),
                      **kwargs)
 
-if __name__ == "__main__":
+def example_3():
     n = 3
-    required_marginals = np.random.random(size=max_edges(n))
+    required_marginals = np.array([0.2, 0.6, 0.5])
+    required_gamma_range = np.arange(0.09, 0.22, 0.01)
+    # required_marginals = np.array([0.5]*6)
+    # required_gamma_range = np.arange(0.31, 0.44, 0.01)
+
+    vector_space = full_vector_space(n)
+    gamma_lt = gamma_lookup_table(n, vector_space)
+    probs = np.zeros((required_gamma_range.shape[0], 2**max_edges(n)))
+    for k, required_gamma in enumerate(required_gamma_range):
+        sol = golgi_maxent(n, required_marginals, required_gamma)
+        lamb = sol[0]
+        mu = sol[1:max_edges(n)+1]
+        nu = sol[max_edges(n)+1:]
+        probs[k] = np.ravel(pdf_lookup_table(n, vector_space, gamma_lt, lamb, mu, nu))
+
+    fig, ax = plt.subplots()
+    plot = ax.imshow(probs, cmap='coolwarm', interpolation='none', origin='lower')
+    # def ind(k, pos):
+    #     print k, required_gamma_range[k], pos
+    #     return required_gamma_range[k]
+    ax.set_xlabel("connection pattern")
+    ax.xaxis.set_major_formatter(ticker.FuncFormatter(lambda k, pos: np.binary_repr(k, width=max_edges(n))))
+    ax.set_ylabel("gamma")
+    ax.yaxis.set_major_locator(ticker.IndexLocator(base=2, offset=0.5))
+    ax.yaxis.set_major_formatter(ticker.FuncFormatter(lambda k, pos: required_gamma_range[k]))
+    #cbar = fig.colorbar(plot)
+    #cbar.set_label("probability")
+    plt.show()
+
+if __name__ == "__main__":
+    n = 4
+    #required_marginals = np.random.random(size=max_edges(n))
     #required_marginals = np.array([0.2, 0.6, 0.5])
+    required_marginals = np.array([0.2]*6)
     #required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
 
     initial_e_gamma = golgi_maxent(n, required_marginals, required_gamma=None)
