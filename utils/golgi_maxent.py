@@ -93,9 +93,20 @@ def constraint_expression(x, n, vector_space, gamma_lt, required_gamma, required
     # return flattened array of functions that we want to find the root of
     return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
 
-if __name__ == "__main__":
-    n = 6
-    required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
+def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
+    '''
+    Calculate maximum entropy distribution for given constraints on 1-marginals (i.e. pairwise connection probabilities) and variance of the degree distribution.
+
+    Parameters
+    ----------
+    n : int
+        Number of nodes in the network.
+    required_marginals : array
+        Pairwise connection probabilities.
+    required_gamma : float
+        Desired variance for the degree distribution. If required_gamma is None, the gamma value for the factorised probability distribution is returned.
+    **kwargs : additional arguments to be passed on to scipy.optimize.fsolve.
+    '''
     # check compatibility of input data
     assert len(required_marginals) == max_edges(n)
     complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges(n),1),
@@ -118,17 +129,29 @@ if __name__ == "__main__":
     np.testing.assert_allclose(initial_marginals[:,1], required_marginals)
     np.testing.assert_allclose(initial_marginals[:,0], (1 - required_marginals))
     print("Expected value of gamma for initial guess is {0}".format(initial_e_gamma))
+    if not required_gamma:
+        return initial_e_gamma
 
-    # attempt to create models over a 10% interval of variation for E[gamma]
-    for required_gamma in np.arange(initial_e_gamma - initial_e_gamma*0.05,
-				    initial_e_gamma + initial_e_gamma*0.05,
-				    initial_e_gamma*0.01):#np.arange(.61,.79,.01):
-	print('------computing-------')
-	temp = so.fsolve(func=constraint_expression,
-			 x0=np.concatenate((initial_lamb, initial_mu, initial_nu)),
-			 args=(n, vector_space, gamma_lt, required_gamma, complete_required_marginals),
-			 full_output=True)
-	sol, infodict, ier, mesg = temp
+    # calculate maximum entropy solution
+    print('------computing-------')
+    return so.fsolve(func=constraint_expression,
+                     x0=np.concatenate((initial_lamb, initial_mu, initial_nu)),
+                     args=(n, vector_space, gamma_lt, required_gamma, complete_required_marginals),
+                     **kwargs)
+
+if __name__ == "__main__":
+    n = 3
+    required_marginals = np.random.random(size=max_edges(n))
+    #required_marginals = np.array([0.2, 0.6, 0.5])
+    #required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
+
+    initial_e_gamma = golgi_maxent(n, required_marginals, required_gamma=None)
+    # attempt to create models over a 50% interval of variation for E[gamma]
+    for required_gamma in np.arange(initial_e_gamma - initial_e_gamma*0.5,
+				    initial_e_gamma + initial_e_gamma*0.5,
+				    initial_e_gamma*0.01):
+	sol, infodict, ier, mesg = golgi_maxent(n, required_marginals, required_gamma,
+                                                full_output=True)
 	if ier == 1:
 	    lamb = sol[0]
 	    mu = sol[1:max_edges(n)+1]
@@ -139,7 +162,7 @@ if __name__ == "__main__":
 						 nu.reshape(max_edges(n),1)))))
 	else:
 	    print("Required gamma={}: did not converge.".format(required_gamma))
-	print(" badness={}".format(infodict['fvec']))
+	#print(" badness={}".format(infodict['fvec']))
 
 
 
