@@ -7,11 +7,11 @@ def max_edges(n):
     return n*(n-1)/2
 
 def index_1d(n, row, col):
-    '''
+    """
     Return linear index for an upper triangular matrix element. If a
     lower triangular element (i,j: j<i) is given, the linear index for
     (j,i) will be returned instead.
-    '''
+    """
     if col < row:
         col_old = col
         col = row
@@ -21,7 +21,7 @@ def index_1d(n, row, col):
     return n*row + col - (row+1)*(row+2)/2
 
 def index_2d(n,t):
-    '''Return upper triangular matrix index pair representation.'''
+    """Return upper triangular matrix index pair representation."""
     # fill matrix from the bottom
     tot = n*(n-1)/2
     entries = 0
@@ -60,11 +60,11 @@ def full_vector_space(n):
     return np.array([vector_from_int(n, m) for m in xrange(2**(max_edges(n)))])
 
 def gamma(n, v):
-    '''Variance of the degree distribution of the network.'''
+    """Variance of the degree distribution of the network."""
     return matrix_from_vector(n, v).sum(axis=0).var()
 
 def gamma_lookup_table(n, vector_space):
-    '''Tabulate the value of gamma for all possible networks.'''
+    """Tabulate the value of gamma for all possible networks."""
     return np.array([gamma(n, v) for v in vector_space]).reshape([2 for each in range(max_edges(n))])
 
 def pdf(n, v, lamb, mu, nu):
@@ -94,8 +94,10 @@ def constraint_expression(x, n, vector_space, gamma_lt, required_gamma, required
     return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
 
 def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
-    '''
-    Calculate maximum entropy distribution for given constraints on 1-marginals (i.e. pairwise connection probabilities) and variance of the degree distribution.
+    """
+    Calculate maximum entropy distribution for given constraints on
+    1-marginals (i.e. pairwise connection probabilities) and variance
+    of the degree distribution.
 
     Parameters
     ----------
@@ -104,9 +106,11 @@ def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
     required_marginals : array
         Pairwise connection probabilities.
     required_gamma : float
-        Desired variance for the degree distribution. If required_gamma is None, the gamma value for the factorised probability distribution is returned.
+        Desired variance for the degree distribution. If required_gamma is None,
+        the gamma value for the factorised probability distribution is returned.
     **kwargs : additional arguments to be passed on to scipy.optimize.fsolve.
-    '''
+
+    """
     # check compatibility of input data
     assert len(required_marginals) == max_edges(n)
     complete_required_marginals = np.hstack((1 - required_marginals.reshape(max_edges(n),1),
