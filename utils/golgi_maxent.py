@@ -96,7 +96,7 @@ def constraint_expression(x, n, vector_space, gamma_lt, required_gamma, required
     # return flattened array of functions that we want to find the root of
     return np.concatenate((e_gamma-required_gamma, np.ravel(marginals-required_marginals)))
 
-def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
+def golgi_maxent_parameters(n, required_marginals, required_gamma=None, **kwargs):
     """
     Calculate maximum entropy distribution for given constraints on
     1-marginals (i.e. pairwise connection probabilities) and variance
@@ -146,9 +146,25 @@ def golgi_maxent(n, required_marginals, required_gamma=None, **kwargs):
                      args=(n, vector_space, gamma_lt, required_gamma, complete_required_marginals),
                      **kwargs)
 
+def golgi_maxent_lookup_table(n, required_marginals, required_gamma=None, **kwargs):
+    sol, infodict, ier, mesg = golgi_maxent_parameters(n, required_marginals, required_gamma,
+                                                       full_output=True,
+                                                       **kwargs)
+    if ier == 1:
+         vector_space = full_vector_space(n)
+         gamma_lt = gamma_lookup_table(n, vector_space)
+         lamb = sol[0]
+         mu = sol[1:max_edges(n)+1]
+         nu = sol[max_edges(n)+1:]
+         return pdf_lookup_table(n, vector_space, gamma_lt, lamb, mu, nu)
+     else:
+         return None
+
+
 def example_3():
     n = 3
-    required_marginals = np.array([0.2, 0.6, 0.5])
+    #required_marginals = np.array([0.2, 0.6, 0.5])
+    required_marginals = np.array([0.2, 0.2, 0.2])
     required_gamma_range = np.arange(0.09, 0.22, 0.01)
     # required_marginals = np.array([0.5]*6)
     # required_gamma_range = np.arange(0.31, 0.44, 0.01)
@@ -157,7 +173,7 @@ def example_3():
     gamma_lt = gamma_lookup_table(n, vector_space)
     probs = np.zeros((required_gamma_range.shape[0], 2**max_edges(n)))
     for k, required_gamma in enumerate(required_gamma_range):
-        sol = golgi_maxent(n, required_marginals, required_gamma)
+        sol = golgi_maxent_parameters(n, required_marginals, required_gamma, maxfev=1000*max_edges(n))
         lamb = sol[0]
         mu = sol[1:max_edges(n)+1]
         nu = sol[max_edges(n)+1:]
@@ -178,19 +194,21 @@ def example_3():
     plt.show()
 
 if __name__ == "__main__":
-    n = 4
+    n = 3
     #required_marginals = np.random.random(size=max_edges(n))
     #required_marginals = np.array([0.2, 0.6, 0.5])
-    required_marginals = np.array([0.2]*6)
+    #required_marginals = np.array([0.2, 0.6, 0.5, 0.2, 0.7, 0.4])
+    required_marginals = np.array([0.2]*3)
     #required_marginals = np.array([0.59 , 0.38, 0.33, 0.39, 0.11, 0.70, 0.78, 0.36, 0.56, 0.74, 0.55, 0.46, 0.61, 0.39, 0.45])
 
-    initial_e_gamma = golgi_maxent(n, required_marginals, required_gamma=None)
+    initial_e_gamma = golgi_maxent_parameters(n, required_marginals, required_gamma=None)
     # attempt to create models over a 50% interval of variation for E[gamma]
     for required_gamma in np.arange(initial_e_gamma - initial_e_gamma*0.5,
 				    initial_e_gamma + initial_e_gamma*0.5,
 				    initial_e_gamma*0.01):
-	sol, infodict, ier, mesg = golgi_maxent(n, required_marginals, required_gamma,
-                                                full_output=True)
+	sol, infodict, ier, mesg = golgi_maxent_parameters(n, required_marginals, required_gamma,
+                                                           maxfev=1000*max_edges(n),
+                                                           full_output=True)
 	if ier == 1:
 	    lamb = sol[0]
 	    mu = sol[1:max_edges(n)+1]
