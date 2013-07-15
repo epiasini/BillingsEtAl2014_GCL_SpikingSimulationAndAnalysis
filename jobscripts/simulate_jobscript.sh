@@ -12,7 +12,7 @@
 
 # "jobscripts" are things that should be passed to qsub.
 
-nC_dir=/home/ucbtepi/src/neuroConstruct
+nC_dir=/home/ucbtepi/code/neuroml_dev/neuroConstruct
 
 args_list=$@
 startdir=`pwd`

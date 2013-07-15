@@ -157,25 +157,24 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             sim_config.addInput(stim.getReference())
             project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
             # netconn set-up (remember that all the connections originating from the same MF are identical)
-            syn_props_list = Vector([SynapticProperties('NMDA'), SynapticProperties('AMPA_direct'), SynapticProperties('AMPA_spillover')])
-            for synp in syn_props_list:
-                synp.setFixedDelay(0)
-                synp.setThreshold(0)
-            syn_props_list[0].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'NMDA')))
-            syn_props_list[1].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'AMPA')))
-            syn_props_list[2].setWeightsGenerator(NumberGenerator(plast_correction_factor(rate, 'AMPA')))
-            conn_conditions = ConnectivityConditions()
-            conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
-            project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf), 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
+            for syn_type in ['RothmanMFtoGrCAMPA', 'RothmanMFtoGrCNMDA']:
+                syn_props_list = Vector([SynapticProperties(syn_type)])
+                syn_props_list[0].setFixedDelay(0)
+                syn_props_list[0].setThreshold(0)
+                syn_props_list[0].setWeightsGenerator(NumberGenerator(1))
+                conn_conditions = ConnectivityConditions()
+                conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
+                project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf)+'_'+syn_type, 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
 
         for gr in range(n_gr):
             # set up thresholding current
             project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
             for mf in conn_pattern[gr]:
                 # create connections, following the current connection pattern
-                conn_name = 'conn_'+str(mf)
-                sim_config.addNetConn(conn_name)
-                project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
+                for syn_type in ['RothmanMFtoGrCAMPA', 'RothmanMFtoGrCNMDA']:
+                    conn_name = 'conn_'+str(mf)+'_'+syn_type
+                    sim_config.addNetConn(conn_name)
+                    project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
 
 
         # generate and compile neuron files
