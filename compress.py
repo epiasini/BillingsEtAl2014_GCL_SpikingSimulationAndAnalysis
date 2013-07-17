@@ -38,8 +38,7 @@ stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readl
 spf.close()
 
 # initialise sets for missing data
-missing_mf_datasets = set()
-missing_gr_datasets = set()
+missing_datasets = set()
 missing_directories = set()
 
 for spn, sp in enumerate(stim_patterns):
@@ -56,27 +55,17 @@ for spn, sp in enumerate(stim_patterns):
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 
         try:
-            mf_spike_file = h5py.File(single_trial_path + "/MFs.SPIKE_0.h5")
+            spike_file = h5py.File(single_trial_path + "/" + sim_ref + "_.h5")
             try:
-                target_data_group.create_dataset("mf_spiketimes", data=mf_spike_file['MFs']['SPIKE_0'])
+                target_data_group.create_dataset("mf_spiketimes", data=spike_file['MFs']['SPIKE_0'])
+                target_data_group.create_dataset("grc_spiketimes", data=spike_file['GrCs']['SPIKE_min40'])
             except KeyError:
-                print ("MFs: Missing dataset!")
-                missing_mf_datasets.add(spn)
-            mf_spike_file.close()
+                print ("Missing dataset!")
+                missing_datasets.add(spn)
+            spike_file.close()
         except IOError:
-            print ("Missing directory! (MFs)")
+            print ("Missing directory!")
             missing_directories.add(spn)
-        
-        try:
-            grc_spike_file = h5py.File(single_trial_path + "/GrCs.SPIKE_min40.h5")
-            try:
-                target_data_group.create_dataset("grc_spiketimes", data=grc_spike_file['GrCs']['SPIKE_min40'])
-            except KeyError:
-                print ("GrCs: Missing/empty dataset!")
-                target_data_group.create_dataset("grc_spiketimes", data=-np.ones(shape=(1,n_gr), dtype=np.float))
-            grc_spike_file.close()
-        except IOError:
-            print ("Missing directory! (GrCs)")
         
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
@@ -87,7 +76,7 @@ for spn, sp in enumerate(stim_patterns):
                 print ("Error while cleaning up nC .h5 output files!")
 
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
-defective_datasets = list(missing_directories.union(missing_mf_datasets))
+defective_datasets = list(missing_directories.union(missing_datasets))
 if defective_datasets:
     print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), point.n_stim_patterns))
     for spn in defective_datasets:

@@ -157,7 +157,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             sim_config.addInput(stim.getReference())
             project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
             # netconn set-up (remember that all the connections originating from the same MF are identical)
-            for syn_type in ['RothmanMFtoGrCAMPA', 'RothmanMFtoGrCNMDA']:
+            for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
                 syn_props_list = Vector([SynapticProperties(syn_type)])
                 syn_props_list[0].setFixedDelay(0)
                 syn_props_list[0].setThreshold(0)
@@ -171,7 +171,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
             for mf in conn_pattern[gr]:
                 # create connections, following the current connection pattern
-                for syn_type in ['RothmanMFtoGrCAMPA', 'RothmanMFtoGrCNMDA']:
+                for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
                     conn_name = 'conn_'+str(mf)+'_'+syn_type
                     sim_config.addNetConn(conn_name)
                     project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
@@ -192,7 +192,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 time.sleep(2)
 
         # wait for NEURON to finish writing the results on disk
-        while len(glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5')) < 2:
+        while len(glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5')) < 1:
             print ("Waiting for NEURON to finish writing to disk...")
             time.sleep(1)
         
