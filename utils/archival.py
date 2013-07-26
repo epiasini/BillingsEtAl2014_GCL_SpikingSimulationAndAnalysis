@@ -22,7 +22,10 @@ class SpikesArchive(Archive):
         # TODO: this actually needs to be revised, since ultimately we would like to use the
         # SpikesArchive object also in the compress.py script, which means write-access as well.
         hdf5_handle = self.open_hdf5_handle()
-        n_cells = hdf5_handle['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
+        try:
+            n_cells = hdf5_handle['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
+        except KeyError:
+            raise Exception('Error while trying to access spike archive: {0}'.format(self.path))
         n_expected_obs = self.point.n_stim_patterns * self.point.n_trials
         observation_list = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         max_n_spikes = max([o.shape[0] for o in observation_list])
