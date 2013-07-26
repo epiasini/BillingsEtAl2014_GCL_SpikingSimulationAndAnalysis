@@ -15,7 +15,7 @@ from utils.parameters import ParameterSpacePoint
 point = eval(sys.argv[1])
 
 try:
-    clean_up = bool(int(sys.argv[2]))
+    clean_up = bool(eval(sys.argv[2]))
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 

@@ -9,7 +9,7 @@ class QueueError(Exception):
     pass
 
 class ProcessManager(object):
-    def __init__(self, job_limit=150):
+    def __init__(self, job_limit):
         self.job_limit = job_limit
         self._managed_jobs = set() # all the jobs in the queue that are being managed by this manager
         self.running_jobs = set() # all (managed) running jobs
@@ -73,11 +73,11 @@ class BatchManager(object):
     #   some of the compression jobs. This would require associating somehow the
     #   SIZE_PER_SIMULATION jobs that we split each simulation in to their respective
     #   parameter space point, so that we get to know when any given simulation is finished.
-    def __init__(self, parameter_space):
+    def __init__(self, parameter_space, job_limit=150):
         self.parameter_space = parameter_space
-        self.simulation = ProcessManager(job_limit=150)
-        self.compression = ProcessManager(job_limit=150)
-        self.analysis = ProcessManager(job_limit=150)
+        self.simulation = ProcessManager(job_limit=job_limit)
+        self.compression = ProcessManager(job_limit=job_limit)
+        self.analysis = ProcessManager(job_limit=job_limit)
     def _start_point_simulation(self, point, force):
         # delete all data and results if force is true
         if force:
@@ -123,9 +123,9 @@ class BatchManager(object):
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point, force)
-    def start_compression(self):
+    def start_compression(self, clean_up=True):
         for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]:
-            qsub_argument_list = ['jobscripts/compress_jobscript.sh', repr(point)]
+            qsub_argument_list = ['jobscripts/compress_jobscript.sh', repr(point), str(clean_up)]
             self.compression.submit_job(qsub_argument_list)
     def start_analysis(self):
         for point in self.parameter_space.flat:

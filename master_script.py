@@ -18,9 +18,9 @@ class TrainingSetSizeError(Exception):
     pass
 
 #++++general controls+++++
-simulate = True
-compress = True
-analyse = True
+force_rerun_simulations = False
+clean_up_simulation_files = True
+job_limit = 180
 
 #+++++parameter ranges+++++++++++++
 sim_duration = psl(300.0)
@@ -28,15 +28,15 @@ min_mf_number = psl(6)
 grc_mf_ratio = psl(2.)
 n_grc_dend = psl(4)
 network_scale = psl(5.)
-active_mf_fraction = psl(.5, .7, .1)
-bias = psl(-15., -5., 5.)
-stim_rate_mu = psl(120)
-stim_rate_sigma = psl(30)
+active_mf_fraction = psl(.5)
+bias = psl(-30., 5., 5.)
+stim_rate_mu = psl(40)
+stim_rate_sigma = psl(10)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(10)
 n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
-n_trials = psl(20)
-training_size = psl(40) # must be < min(n_trials)
+n_trials = psl(40)
+training_size = psl(20) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(0) # 0: ward
 tau = psl(5)
@@ -72,13 +72,13 @@ parameter_space = ParameterSpace(sim_duration,
                                  tau,
                                  dt)
 
-batch_manager = BatchManager(parameter_space)
+batch_manager = BatchManager(parameter_space, job_limit)
 
 ############################
 ##====SIMULATION STAGE====##
 ############################
 print("Entering simulation stage.")
-batch_manager.start_simulation(force=False)
+batch_manager.start_simulation(force=force_rerun_simulations)
 while batch_manager.simulation.queue_is_not_empty():
     time.sleep(60)
     batch_manager.update_status()
@@ -86,7 +86,7 @@ print("Simulation stage complete. Entering compression stage.")
 #############################
 ##====COMPRESSION STAGE====##
 #############################
-batch_manager.start_compression()
+batch_manager.start_compression(clean_up=clean_up_simulation_files)
 while batch_manager.compression.queue_is_not_empty():
     time.sleep(60)
     batch_manager.update_status()
