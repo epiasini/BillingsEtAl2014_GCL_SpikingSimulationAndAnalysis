@@ -5,6 +5,7 @@
 #$ -o $HOME/log/
 #$ -e $HOME/log/
 #$ -l h_vmem=4G
+#$ -l tmem=4G
 #$ -l h_rt=48:00:00
 #$ -l s_stack=10M
 #$ -l h_stack=15M
