@@ -6,9 +6,9 @@ To be used with something like this:
 import random
 import time
 import sys
-import glob
 import tempfile
 import shutil
+import subprocess
 import os.path
 
 from java.lang import System, Float
@@ -28,6 +28,7 @@ from utils.pure import SimpleParameterSpacePoint, plast_correction_factor
 point = eval(sys.argv[1])
 rank = int(sys.argv[2])
 
+scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
 sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
@@ -109,105 +110,112 @@ print stim_patterns
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
     for trial in range(point.n_trials):
-        # delete all existing connections
-        project.generatedNetworkConnections.reset()
-        project.morphNetworkConnectionsInfo.deleteAllNetConns()
-        sim_config.setNetConns(ArrayList())        
-        # delete all existing stimuli
-        project.generatedElecInputs.reset()
-        project.elecInputInfo.deleteAllStims()
-        sim_config.setInputs(ArrayList())
+        simulation_trial_is_successful = False
+        while not simulation_trial_is_successful:
+            # delete all existing connections
+            project.generatedNetworkConnections.reset()
+            project.morphNetworkConnectionsInfo.deleteAllNetConns()
+            sim_config.setNetConns(ArrayList())        
+            # delete all existing stimuli
+            project.generatedElecInputs.reset()
+            project.elecInputInfo.deleteAllStims()
+            sim_config.setInputs(ArrayList())
 
-        simulator_seed = random.getrandbits(32)
-        # innermost loop: determine the simulation reference name
-        sim_ref = point.get_simulation_reference(spn, trial)
-        refs_list.append(sim_ref)
-        project.simulationParameters.setReference(sim_ref)
+            simulator_seed = random.getrandbits(32)
+            # innermost loop: determine the simulation reference name
+            sim_ref = point.get_simulation_reference(spn, trial)
+            refs_list.append(sim_ref)
+            project.simulationParameters.setReference(sim_ref)
 
-        #Set the thresholding current
-        bias_in_nA = 0.001 * point.bias
-        bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, point.sim_duration, bias_in_nA, False)
-        project.elecInputInfo.addStim(bias_input)
-        sim_config.addInput(bias_input.getReference())
+            #Set the thresholding current
+            bias_in_nA = 0.001 * point.bias
+            bias_input = IClampSettings('my_bias', 'GrCs', AllCells(), 0, 0, point.sim_duration, bias_in_nA, False)
+            project.elecInputInfo.addStim(bias_input)
+            sim_config.addInput(bias_input.getReference())
 
-        # regenerate network
-        i = 0
-        while True:
-            try:
-                pm.doGenerate(sim_config_name, nC_seed)
-                while pm.isGenerating():        
-                    print 'Waiting for the project to be regenerated...'
-                    time.sleep(1)
-                break
-            except java.util.ConcurrentModificationException:
-                i = i + 1
-                print "ConcurrentModificationException raised by nC; retrying network generation."
-                if i>5:
-                    raise java.util.ConcurrentModificationException
-        
-        for mf in range(point.n_mf):
-            if mf in sp:
-                # create random spiking stimuli on active MFs, following the current stimulus pattern
-                rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
-            else:
-                rate = max(0.1, random.gauss(point.noise_rate_mu, point.noise_rate_sigma))
-            rate_in_khz = rate/1000.
-            stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
-            project.elecInputInfo.addStim(stim)
-            sim_config.addInput(stim.getReference())
-            project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
-            # netconn set-up (remember that all the connections originating from the same MF are identical)
-            for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
-                syn_props_list = Vector([SynapticProperties(syn_type)])
-                syn_props_list[0].setFixedDelay(0)
-                syn_props_list[0].setThreshold(0)
-                syn_props_list[0].setWeightsGenerator(NumberGenerator(1))
-                conn_conditions = ConnectivityConditions()
-                conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
-                project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf)+'_'+syn_type, 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
+            # regenerate network
+            i = 0
+            while True:
+                try:
+                    pm.doGenerate(sim_config_name, nC_seed)
+                    while pm.isGenerating():        
+                        print 'Waiting for the project to be regenerated...'
+                        time.sleep(1)
+                    break
+                except java.util.ConcurrentModificationException:
+                    i = i + 1
+                    print "ConcurrentModificationException raised by nC; retrying network generation."
+                    if i>5:
+                        raise java.util.ConcurrentModificationException
 
-        for gr in range(n_gr):
-            # set up thresholding current
-            project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
-            for mf in conn_pattern[gr]:
-                # create connections, following the current connection pattern
+            for mf in range(point.n_mf):
+                if mf in sp:
+                    # create random spiking stimuli on active MFs, following the current stimulus pattern
+                    rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
+                else:
+                    rate = max(0.1, random.gauss(point.noise_rate_mu, point.noise_rate_sigma))
+                rate_in_khz = rate/1000.
+                stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
+                project.elecInputInfo.addStim(stim)
+                sim_config.addInput(stim.getReference())
+                project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
+                # netconn set-up (remember that all the connections originating from the same MF are identical)
                 for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
-                    conn_name = 'conn_'+str(mf)+'_'+syn_type
-                    sim_config.addNetConn(conn_name)
-                    project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
+                    syn_props_list = Vector([SynapticProperties(syn_type)])
+                    syn_props_list[0].setFixedDelay(0)
+                    syn_props_list[0].setThreshold(0)
+                    syn_props_list[0].setWeightsGenerator(NumberGenerator(1))
+                    conn_conditions = ConnectivityConditions()
+                    conn_conditions.setNumConnsInitiatingCellGroup(NumberGenerator(0))
+                    project.morphNetworkConnectionsInfo.addRow('conn_'+str(mf)+'_'+syn_type, 'MFs', 'GrCs', syn_props_list, SearchPattern.getRandomSearchPattern(), MaxMinLength(Float.MAX_VALUE, 0, 'r', 100), conn_conditions, Float.MAX_VALUE)
+
+            for gr in range(n_gr):
+                # set up thresholding current
+                project.generatedElecInputs.addSingleInput('bias', 'IClamp', 'GrCs', gr, 0, 0, None)
+                for mf in conn_pattern[gr]:
+                    # create connections, following the current connection pattern
+                    for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
+                        conn_name = 'conn_'+str(mf)+'_'+syn_type
+                        sim_config.addNetConn(conn_name)
+                        project.generatedNetworkConnections.addSynapticConnection(conn_name, mf, gr)
 
 
-        # generate and compile neuron files
-        print "Generating NEURON scripts..."
-        project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
-        compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
-        compile_success = compile_process.compileFileWithNeuron(0,0)
-        # simulate
-        if compile_success:
-            print "...success."
-            print "Simulating: simulation reference %s" % str(sim_ref)
-            pm.doRunNeuron(sim_config)
-            timefile_path=temp_dir+"/simulations/"+sim_ref+"/time.dat"
-            while os.path.exists(timefile_path)==0:
-                time.sleep(2)
+            # generate and compile neuron files
+            print "Generating NEURON scripts..."
+            project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
+            compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
+            compile_success = compile_process.compileFileWithNeuron(0,0)
+            # simulate
+            if compile_success:
+                print "...success."
+                print "Simulating: simulation reference %s" % str(sim_ref)
+                pm.doRunNeuron(sim_config)
+                timefile_path = temp_dir+"/simulations/"+sim_ref+"/time.dat"
+                while os.path.exists(timefile_path)==0:
+                    time.sleep(2)
 
-        # wait for NEURON to finish writing the results on disk
-        while len(glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5')) < 1:
-            print ("Waiting for NEURON to finish writing to disk...")
-            time.sleep(1)
-        
-        # copy results to main data folder and delete useless nC files
-        destination = point.data_folder_path + '/' + sim_ref
-        if os.path.isdir(destination):
-            shutil.rmtree(destination)
-        os.mkdir(destination)
-        print "Moving "+ temp_dir+"/simulations/"+sim_ref + " to " + destination
-        for source in glob.glob(temp_dir+'/simulations/'+sim_ref+'/*.h5'):
-            shutil.move(source, destination)
-        try:
-            shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
-        except OSError:
-            print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
+            hdf5_file_name = temp_dir+'/simulations/'+sim_ref+'/'+sim_ref+'_.h5'
+
+            # wait for NEURON to finish writing the results on disk
+            while not os.path.exists(hdf5_file_name):
+                print ("Waiting for NEURON to finish writing to disk...")
+                time.sleep(1)
+
+            # test whether the output data archive has been created
+            # properly (sometimes it's just an empty archive, with no
+            # groups or datasets!)
+            simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+hdf5_file_name, shell=True))
+
+            if simulation_trial_is_successful:
+                # copy results to main data folder
+                print "Moving "+ hdf5_file_name + " to " + point.data_folder_path
+                shutil.move(hdf5_file_name, point.data_folder_path)
+
+            # delete useless files left over by neuroConstruct
+            try:
+                shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+            except OSError:
+                print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 shutil.rmtree(temp_dir) # this sometimes fails and raises an OSError ('couldn't delete directory...'). Doesn't do any harm, for the time being.
 System.exit(0)

@@ -7,7 +7,6 @@ import os
 import glob
 import h5py
 import re
-import shutil
 import numpy as np
 
 from utils.parameters import ParameterSpacePoint
@@ -53,12 +52,12 @@ for spn, sp in enumerate(stim_patterns):
     for trial in range(point.n_trials):
         print (spn, trial)
         sim_ref = point.get_simulation_reference(spn, trial)
-        single_trial_path = point.data_folder_path + "/" + sim_ref
+        sim_data_path = point.data_folder_path + "/" + sim_ref + "_.h5"
         archive["%03d" % spn].create_group("%02d" % trial)
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 
         try:
-            spike_file = h5py.File(single_trial_path + "/" + sim_ref + "_.h5")
+            spike_file = h5py.File(sim_data_path)
             try:
                 target_data_group.create_dataset("mf_spiketimes", data=spike_file['MFs']['SPIKE_0'])
                 target_data_group.create_dataset("grc_spiketimes", data=spike_file['GrCs']['SPIKE_min40'])
@@ -74,7 +73,7 @@ for spn, sp in enumerate(stim_patterns):
         if clean_up:
             print ("Removing everything except the compressed archives.")
             try:
-                shutil.rmtree(single_trial_path)
+                os.remove(sim_data_path)
             except OSError:
                 print ("Error while cleaning up nC .h5 output files!")
 
