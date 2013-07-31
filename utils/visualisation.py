@@ -200,14 +200,22 @@ class RectangularHeatmapPlotter(object):
         self.fig.canvas.mpl_connect('draw_event', on_draw)
     def plot(self, heat_dim, invert_axes=False):
         """Plot a bidimensional heatmap for the heat_dim quantity"""
-        if not invert_axes:
-            plot = self.ax.imshow(self.space._get_attribute_array(heat_dim), interpolation='none', cmap='coolwarm', origin='lower')
+        plot_data = self.space._get_attribute_array(heat_dim)
+        if self.space.ndim == 1:
+            # matplotlib's imshow complains if the data is one-dimensional
+            plot_data = plot_data.reshape(1, -1)
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap='coolwarm', origin='lower')
+            x_param = self.space._param(0)
+            self.ax.set_xticks(np.arange(self.space.shape[0]))
+            self.ax.set_yticks([])
+        elif not invert_axes:            
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap='coolwarm', origin='lower')
             x_param = self.space._param(1)
             y_param = self.space._param(0)
             self.ax.set_xticks(np.arange(self.space.shape[1]))
             self.ax.set_yticks(np.arange(self.space.shape[0]))
         else:
-            plot = self.ax.imshow(self.space._get_attribute_array(heat_dim).transpose(), interpolation='none', cmap='coolwarm', origin='lower')
+            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap='coolwarm', origin='lower')
             x_param = self.space._param(0)
             y_param = self.space._param(1)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
@@ -216,8 +224,9 @@ class RectangularHeatmapPlotter(object):
         self.cbar.set_label(heat_dim)
         self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)])
         self.ax.set_xlabel(x_param)
-        self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)])
-        self.ax.set_ylabel(y_param)
+        if self.space.ndim > 1:
+            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)])
+            self.ax.set_ylabel(y_param)
 
         sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
         fig_title = 'param. coordinates: '+' '.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
@@ -232,6 +241,7 @@ class RectangularHeatmapPlotter(object):
             file_name = '{0}_{1}.png'.format(heat_dim, file_name)
             if base_dir:
                 file_name = '/'.join([base_dir, file_name])
+            print('saving heatmap to {}'.format(file_name))
         self.fig.savefig(file_name)
 
 class InteractiveHeatmap(RectangularHeatmapPlotter):
