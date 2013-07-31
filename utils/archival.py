@@ -16,6 +16,9 @@ class SpikesArchive(Archive):
                                                  self.point.n_trials)
     def open_hdf5_handle(self):
         return h5py.File(self.path)
+    def load_attrs(self):
+        with h5py.File(self.path) as hdf5_handle:
+            self.attrs = dict(hdf5_handle.attrs)
     def get_spikes(self, cell_type='grc'):
         # no need to lock the archive or to save the file handle, since we plan on using this
         # in read-only mode.
@@ -23,7 +26,10 @@ class SpikesArchive(Archive):
         # SpikesArchive object also in the compress.py script, which means write-access as well.
         hdf5_handle = self.open_hdf5_handle()
         try:
-            n_cells = hdf5_handle['000']['00']['{0}_spiketimes'.format(cell_type)].shape[1]
+            if cell_type == 'grc':
+                n_cells = hdf5_handle.attrs['n_gr']
+            elif cell_type == 'mf':
+                n_cells = hdf5_handle.attrs['n_mf']
         except KeyError:
             raise Exception('Error while trying to access spike archive: {0}'.format(self.path))
         n_expected_obs = self.point.n_stim_patterns * self.point.n_trials

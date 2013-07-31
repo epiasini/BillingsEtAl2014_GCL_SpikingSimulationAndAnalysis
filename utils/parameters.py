@@ -99,7 +99,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
             spikes = self.spikes_arch.get_spikes(cell_type='grc')
-            n_cells = spikes.shape[1]
+            self.spikes_arch.load_attrs()
+            n_cells = self.spikes_arch.attrs['n_gr']
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
             n_ts_obs_per_sp = self.n_trials - n_tr_obs_per_sp

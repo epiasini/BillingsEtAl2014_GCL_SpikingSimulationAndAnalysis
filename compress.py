@@ -31,6 +31,9 @@ archive = point.spikes_arch.open_hdf5_handle()
 conn_pattern = np.loadtxt(point.conn_pattern_filename, dtype=np.int)
 archive.create_dataset("conn_pattern", data=conn_pattern)
 archive.create_dataset("bias", data=point.bias)
+archive.attrs['n_mf'] = n_mf
+archive.attrs['n_gr'] = n_gr
+archive.attrs['point_representation'] = repr(point)
 
 # load the file containing the stimulation patterns
 spf = open(point.stim_pattern_filename, "r")
