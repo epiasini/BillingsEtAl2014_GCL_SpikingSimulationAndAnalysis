@@ -17,7 +17,7 @@ def convolve(obs_array, sim_length, tau, dt):
 
     for o, obs in enumerate(obs_array):
         for c, cell in enumerate(obs):
-            for spike_index in [int(floor(spike_time/dt)) for spike_time in cell[cell > 0]]:
+            for spike_index in [int(floor(spike_time/dt)) for spike_time in cell]:
                 # here we could optimise this by writing it as a list comprehension, by using the .__add__ method
                 available_bins = n_bins - spike_index
                 if available_bins > kernel_length:

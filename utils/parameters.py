@@ -6,6 +6,7 @@ from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
 import pyentropy as pe
 
+import pymuvr
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
 from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, output_level, synchrony
@@ -108,100 +109,62 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             test_idxs = [x for x in range(n_obs) if x not in train_idxs]
             n_tr_obs = len(train_idxs)
             n_ts_obs = len(test_idxs)
-            tr_input_signals = [int(x/self.n_trials) for x in train_idxs]
-            tr_spikes = spikes[train_idxs]
-            ts_spikes = spikes[test_idxs]
-            # convolve spike train to generate vector fields
-            tr_fields = convolve(tr_spikes, self.sim_duration, self.tau, self.dt)
-            ts_fields = convolve(ts_spikes, self.sim_duration, self.tau, self.dt)
-            n_timepoints = tr_fields.shape[2]
-            # prepare multineuron distance function by partial application and calculate distances
-            print('computing distances between training observations')
-            if self.multineuron_metric_mixing!=0:
-                theta = (np.eye(n_cells) + self.multineuron_metric_mixing*(np.ones((n_cells, n_cells)) - np.eye(n_cells)))
-                fixed_c_multineuron_distance = functools.partial(multineuron_distance, theta=theta)
-            else:
-                fixed_c_multineuron_distance = multineuron_distance_labeled_line
-            tr_distances = []
-            for h in range(n_tr_obs):
-                for k in range(h+1, n_tr_obs):
-                    tr_distances.append(fixed_c_multineuron_distance(tr_fields[h], tr_fields[k]))
+            tr_spikes = [spikes[o] for o in train_idxs]
+            ts_spikes = [spikes[o] for o in test_idxs]
+            # compute multineuron distance between each pair of training observations
+            tr_distances = pymuvr.square_distance_matrix(tr_spikes,
+                                                         self.multineuron_metric_mixing,
+                                                         self.tau)
             # cluster training data
             print('clustering training data')
             tr_tree = linkage(tr_distances, method=self.linkage_method_string[self.linkage_method])
-            # create an array describing the precision of each clustering step
-            decoder_precision = (1./tr_tree[:,2])[::-1]
-            # compute mutual information by using direct clustering on training data
+
+            # compute mutual information by using direct clustering on training data (REMOVED)
             # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
             tr_direct_mi = np.zeros(n_tr_obs-1)
-            Xn = 1 # the output is effectively one-dimensional
-            Ym = self.n_stim_patterns
-            Ny = np.array([n_tr_obs_per_sp for each in range(self.n_stim_patterns)])
-            for n_clusts in range(1,n_tr_obs):
-                Xm = n_clusts
-                X = fcluster(tr_tree, t=n_clusts, criterion='maxclust') - 1 # cluster number 0 is never present in fcluster's output, so the elements of X live in [1,n_clusts] 
-                X_dims = (Xn, Xm)
-                s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
-                s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
-                tr_direct_mi[n_clusts-1] = s.I()
+
             # train the decoder and use it to calculate mi on the testing dataset
             print("training the decoder and using it to calculate mi on test data")
-            relevant_tr_clusts = np.zeros(n_tr_obs+n_tr_obs-1)
-            # --first step: prepare the 'square part' of the distance matrix. special case for n_clusts==n_tr_obs.
-            relevant_tr_clusts = range(n_tr_obs)
-            tr_clustering = fcluster(tr_tree, t=n_tr_obs, criterion='maxclust')
-            out_alphabet = np.zeros(shape=(n_tr_obs+n_tr_obs-1, n_cells, n_timepoints))
-            out_alphabet[0:n_tr_obs] = tr_fields
-            distances = np.zeros(shape=(n_ts_obs, n_tr_obs+n_tr_obs-1))
-            for n, observation in enumerate(ts_fields):
-                for m, symbol in enumerate(out_alphabet[relevant_tr_clusts]):
-                    distances[n,m] = fixed_c_multineuron_distance(observation, symbol)
-            # --now iterate over the number of clusters and, step by step, train the decoder and use it to calculate mi
+
+            min_clusts_analysed = int(round(self.n_stim_patterns * 0.9))
+            max_clusts_analysed = int(round(self.n_stim_patterns * 1.1))
+            
             ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
             ts_decoded_mi_bootstrap = np.zeros(n_tr_obs-1)
             ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
             ts_decoded_mi_pt = np.zeros(n_tr_obs-1)
             ts_decoded_mi_nsb = np.zeros(n_tr_obs-1)
+            Ym = self.n_stim_patterns
             Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
-            for n_clusts in range(n_tr_obs-1,0,-1):
-                clust_idx = n_tr_obs + n_tr_obs - n_clusts - 1 # n_tr_obs, n_tr_obs+1, ..., n_tr_obs+n_tr_obs-2
-                joined = tr_tree[clust_idx-n_tr_obs, 0:2]
-                [relevant_tr_clusts.remove(c) for c in joined] # from now on, ingore clusters that have just been merged..
-                relevant_tr_clusts.append(clust_idx) # ..but include the newly formed cluster in the next computations
-                tr_clustering[tr_clustering==joined[0]] = clust_idx # this is to avoid calling fcluster again
-                tr_clustering[tr_clustering==joined[1]] = clust_idx
-                # compute new symbol as the weighted average of the joined clusters' centroids (that is, the centroid of the new cluster)
-                # prepare weights for weighted average
-                if joined[0] <= n_tr_obs:
-                    left_weight = 1
-                else:
-                    left_weight = tr_tree[joined[0]-n_tr_obs][3]
-                if joined[1] <= n_tr_obs:
-                    right_weight = 1
-                else:
-                    right_weight = tr_tree[joined[1]-n_tr_obs][3]
-                out_alphabet[clust_idx] = (out_alphabet[joined[0]] *  left_weight+ out_alphabet[joined[1]] * right_weight)/(left_weight + right_weight)
-                # fill in the column in the distance matrix corresponding to the newly created symbol
-                for n, observation in enumerate(ts_fields):
-                    distances[n, clust_idx] = fixed_c_multineuron_distance(observation, out_alphabet[clust_idx])
-                # decode test data with the updated alphabet
-                decoded_output = distances[:, relevant_tr_clusts].argmin(axis=1)
-                # compute MI on the decoded data
+            Xn = 1 # the output is effectively one-dimensional
+
+            tr_distances_square = np.square(tr_distances)
+
+            for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
+                # iterate over the number of clusters and, step by
+                # step, train the decoder and use it to calculate mi
+                tr_clustering = fcluster(tr_tree, t=n_clusts, criterion='maxclust')
+                out_alphabet = []
+                for c in range(n_clusts):
+                    # every cluster is represented in the output
+                    # alphabet by the element which minimizes the sum
+                    # of intra-cluster square distances
+                    obs_in_c = [ob for ob in range(n_tr_obs) if tr_clustering[ob]==c]
+                    sum_of_intracluster_square_distances = tr_distances_square[obs_in_c,:][:,obs_in_c].sum(axis=1)
+                    out_alphabet.append(tr_spikes[np.argmin(sum_of_intracluster_square_distances)])
+                distances = pymuvr.distance_matrix(ts_spikes,
+                                                   out_alphabet,
+                                                   self.multineuron_metric_mixing,
+                                                   self.tau)
+                # each observation in the testing set is decoded by
+                # assigning it to the cluster whose representative
+                # element it's closest to
+                decoded_output = distances.argmin(axis=1)
+                # calculate MI
                 Xm = n_clusts
                 X_dims = (Xn, Xm)
                 X = decoded_output
                 s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
-                # "bootstrap" shuffle estimate of bias.
-                bootstrap_n = 100
-                bootstrap_bias_estimate = 0
-                for nb in range(bootstrap_n):
-                    shX = np.random.permutation(X)
-                    shs = pe.SortedDiscreteSystem(shX, X_dims, Ym, Ny)
-                    shs.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
-                    bootstrap_bias_estimate += shs.I()/bootstrap_n
-                s.calculate_entropies(method='plugin', sampling='naive', calc=['HX', 'HXY'])
-                ts_decoded_mi_plugin[n_clusts-1] = s.I()
-                ts_decoded_mi_bootstrap[n_clusts-1] = s.I() - bootstrap_bias_estimate
                 s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
                 ts_decoded_mi_qe[n_clusts-1] = s.I()
                 s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
@@ -209,14 +172,15 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
                 ts_decoded_mi_nsb[n_clusts-1] = s.I()            
                 if n_clusts == self.n_stim_patterns:
-                    px_at_same_size_point = s.PX
+                    px_at_same_size_point = s.PX    
+
             # compute number of spikes fired by output cells
             print("Calculating output levels")
-            o_level_array, o_level_hist_values, o_level_hist_edges  = output_level(spikes)
+            o_level_array, o_level_hist_values, o_level_hist_edges = np.array([0]),np.array([0]),np.array([0]) #output_level(spikes)
             # compute output layer synchronisation (pairwise average of Schreiber's reliability measure)
-            random_observations_subset = spikes[random.sample(range(spikes.shape[0]), 1000)]
-            random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
-            o_synchrony = np.mean([synchrony(p) for p in random_fields_subset])
+            #random_observations_subset = spikes[random.sample(range(spikes.shape[0]), 1000)]
+            #random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
+            o_synchrony = np.array([0]) #np.mean([synchrony(p) for p in random_fields_subset])
             # save analysis results in the archive
             self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
             self.results_arch.update_result('tr_linkage', data=tr_tree)

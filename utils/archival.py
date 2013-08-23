@@ -32,13 +32,9 @@ class SpikesArchive(Archive):
                 n_cells = hdf5_handle.attrs['n_mf']
         except KeyError:
             raise Exception('Error while trying to access spike archive: {0}'.format(self.path))
-        n_expected_obs = self.point.n_stim_patterns * self.point.n_trials
-        observation_list = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
-        max_n_spikes = max([o.shape[0] for o in observation_list])
-        spikes = -1 * np.ones(shape=(n_expected_obs, n_cells, max_n_spikes))
-        for k, o in enumerate(observation_list):
-            spikes[k][:,0:o.shape[0]] = np.array(o).transpose()
+        observation_list = [np.array(x[1]['{0}_spiketimes'.format(cell_type))] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         hdf5_handle.close()
+        spikes = [[c[c>0].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
 
 class ResultsArchive(Archive):
