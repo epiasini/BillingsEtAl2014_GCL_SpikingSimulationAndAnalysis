@@ -1,0 +1,35 @@
+* Is it possible to use my simulations to support the main claim made in Guy's paper?
+** points for dicussion:
+1. what cell model? should I use my new cell model population? in this
+   case, what about the single-cell-level disorder? given that's
+   impossible to treat this by annealing (ie averaging over it), at
+   which point should I quench it (ie fix network configuration)?
+2. speaking of quenched disorder, what did Guy do for the
+   connection-driven disorder?
+3. I guess we're going to use my new model for the mf->grc
+   synapse.. this means using jLEMS (ie suicide) unless we get the
+   network simulation export function to run. Or do I? probably not,
+   if the network is still described with neuroConstruct.
+4. What exactly do we mean with "testing with rate code"? if it's only
+   rate in-rate out, we don't need to use Conor's metric (or more
+   precisely, we don't need a Van Rossum-type metric), as we can just
+   use spike counts.
+5. I guess the best thing to do would be to check if my simulations
+   agree with Guy's prediction in a low entropy limit, or in general
+   to compare for eg the 4000-pattern case (might help to consider
+   short time windows and spike counting metric). Otherwise, it's
+   going to be impossible to do all of the required simulations.
+6. One thing I still need to do is to implement Guy's connectivity
+   rules (or maybe not, in case we want to compare the numerical
+   results with the random bipartite graph)
+** Angus says:
+1. what about doing a frequency-response curve of the grc model to
+   test the 30ms integration window hypothesis?
+2. for the time windowing side of things, it might be possible to just
+   do the same simulations with synchronised and desynchronised Golgi
+   input, and see what effect that has on the rate-coded information
+   flow. We don’t expect it to have any effect, but that should help
+   address the reviewer’s concerns.
+3. I should make a plan of what I think it’s feasible in time for the
+   meeting with Guy tomorrow.
+
