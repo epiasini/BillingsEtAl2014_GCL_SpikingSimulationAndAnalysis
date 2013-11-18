@@ -1,9 +1,9 @@
 * Is it possible to use my simulations to support the main claim made in Guy's paper?
-** points for dicussion:
 1. what cell model? should I use my new cell model population? in this
    case, what about the single-cell-level disorder? given that's
    impossible to treat this by annealing (ie averaging over it), at
-   which point should I quench it (ie fix network configuration)?
+   which point should I quench it (ie fix network configuration)? An
+   alternative is to use the average model from my population.
 2. speaking of quenched disorder, what did Guy do for the
    connection-driven disorder?
 3. I guess we're going to use my new model for the mf->grc
@@ -21,15 +21,35 @@
    going to be impossible to do all of the required simulations.
 6. One thing I still need to do is to implement Guy's connectivity
    rules (or maybe not, in case we want to compare the numerical
-   results with the random bipartite graph)
-** Angus says:
-1. what about doing a frequency-response curve of the grc model to
-   test the 30ms integration window hypothesis?
-2. for the time windowing side of things, it might be possible to just
+   results with the random bipartite graph).
+7. what about doing a frequency-response curve of the grc model to
+   test the 30ms integration window hypothesis? As an RC circuit, my
+   average grc model has a time constant of about 6ms (so no problem
+   on that front), and the longest decay time constant in my synaptic
+   models is 121ms for the second component of the NMDAr-mediated
+   synapse. But this component is less than 1/6th in amplitude than
+   the first component, which has a time constant of 13.5ms, so
+   overall I might get lucky and get away with considering a 50ms
+   integration window.
+8. for the time windowing side of things, it might be possible to just
    do the same simulations with synchronised and desynchronised Golgi
    input, and see what effect that has on the rate-coded information
-   flow. We don’t expect it to have any effect, but that should help
+   flow. We don’t expect it to have _any_ effect, but that should help
    address the reviewer’s concerns.
-3. I should make a plan of what I think it’s feasible in time for the
-   meeting with Guy tomorrow.
+9. It might even be possible, even though probably outside the scope
+   of the work, make an _analytical_ rate-code extension to the
+   existing work. Moreno-Bote et al (2006) estimate the firing rate
+   and the Fano factor for the spike count in the case of a leaky
+   integrate-and-fire neuron with Poisson input and synaptic time
+   constants longer than the membrane time constant. This could in
+   theory enable us to calculate mean and variance for the spike count
+   of a neuron with any given input, and so, by hypothesising a
+   Gaussian distribution in spike count, the full conditional
+   probability distribution of the spike counts for all the cells in a
+   network given the input rates and the connectivity matrix. from
+   here one should be able to calculate the MI, as this would look
+   like some sort of multidimensional Gaussian channel. This is
+   analogous to what Guy did for the explicit calculation of entropy
+   in the "small" case with 4000 patterns. Anyway, this approach would
+   break down near the refractory limit.
 
