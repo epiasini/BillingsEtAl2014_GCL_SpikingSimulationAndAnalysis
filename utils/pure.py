@@ -1,11 +1,9 @@
 BASE_DIR = "/home/ucbtepi/code/network/data"
-SIZE_PER_SIMULATION = 20
 
 class SimpleParameterSpacePoint(object):
     """Used in the simulation script and as a base class for ParameterSpacePoint"""
     #--class constants
     BASE_DIR = BASE_DIR
-    SIZE_PER_SIMULATION = SIZE_PER_SIMULATION
     def __init__(self,
                  sim_duration,
                  min_mf_number,
@@ -33,6 +31,7 @@ class SimpleParameterSpacePoint(object):
         self.noise_rate_mu = noise_rate_mu
         self.noise_rate_sigma = noise_rate_sigma
         self.n_stim_patterns = int(round(n_stim_patterns))
+        self.SIZE_PER_SIMULATION = self.n_stim_patterns # TODO: rename this to something more sensible as "workers_per_parameter_space_point", or remove it altogether.
         self.n_trials = int(round(n_trials))
         #--useful quantities
         self.n_mf = int(round(self.min_mf_number * self.network_scale))
