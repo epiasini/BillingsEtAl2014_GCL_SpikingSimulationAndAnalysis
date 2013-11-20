@@ -20,23 +20,23 @@ class TrainingSetSizeError(Exception):
 #++++general controls+++++
 force_rerun_simulations = False
 clean_up_simulation_files = True
-job_limit = 180
+job_limit = 240
 
 #+++++parameter ranges+++++++++++++
-sim_duration = psl(300.0)
+sim_duration = psl(50.0)
 min_mf_number = psl(6)
-grc_mf_ratio = psl(2.0)
+grc_mf_ratio = psl(2.9)
 n_grc_dend = psl(4)
-network_scale = psl(5.)
+network_scale = psl(28.74)
 active_mf_fraction = psl(.5)
-bias = psl(-30., 5., 5.)
-stim_rate_mu = psl(40)
+bias = psl(-10.)
+stim_rate_mu = psl(80)
 stim_rate_sigma = psl(10)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(10)
-n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
-n_trials = psl(200)
-training_size = psl(40) # must be < min(n_trials)
+n_stim_patterns = psl(100) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_trials = psl(50)
+training_size = psl(20) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(0) # 0: ward
 tau = psl(5)
@@ -47,9 +47,10 @@ min_nmf = round((network_scale.start)*(min_mf_number.start))
 min_active_mf = round(min_nmf*(active_mf_fraction.start))
 max_active_mf = round(min_nmf*(active_mf_fraction.realstop))
 min_coding_inputs = min(min_active_mf, min_nmf - max_active_mf)
-max_patterns_encoded = float(factorial(min_nmf))/(factorial(min_coding_inputs)*factorial(min_nmf - min_coding_inputs))
-if n_stim_patterns.realstop > max_patterns_encoded:
-    raise NetworkSizeError("Network size inferior limit too small for chosen number of patterns! %d MFs can't represent %d patterns for at least one of the requested sparsity values." % (min_nmf, n_stim_patterns.realstop))
+if network_scale.start <= 5:
+    max_patterns_encoded = float(factorial(min_nmf))/(factorial(min_coding_inputs)*factorial(min_nmf - min_coding_inputs))
+    if n_stim_patterns.realstop > max_patterns_encoded:
+        raise NetworkSizeError("Network size inferior limit too small for chosen number of patterns! %d MFs can't represent %d patterns for at least one of the requested sparsity values." % (min_nmf, n_stim_patterns.realstop))
 
 
 #---parameter space creation

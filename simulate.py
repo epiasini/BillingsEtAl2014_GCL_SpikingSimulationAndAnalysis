@@ -106,7 +106,6 @@ print (rank, my_stim_lower_bound, my_stim_upper_bound)
 
 refs_list = [] # used to keep track of the last simulation that is run
 
-print stim_patterns
 # main loop
 for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
     for trial in range(point.n_trials):
@@ -191,6 +190,7 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 print "Simulating: simulation reference %s" % str(sim_ref)
                 pm.doRunNeuron(sim_config)
                 timefile_path = temp_dir+"/simulations/"+sim_ref+"/time.dat"
+                print "NEURON should have started the simulation. Waiting for timefile to appear at "+timefile_path
                 while os.path.exists(timefile_path)==0:
                     time.sleep(2)
 

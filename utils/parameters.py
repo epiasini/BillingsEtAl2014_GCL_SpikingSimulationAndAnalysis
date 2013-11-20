@@ -112,6 +112,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             tr_spikes = [spikes[o] for o in train_idxs]
             ts_spikes = [spikes[o] for o in test_idxs]
             # compute multineuron distance between each pair of training observations
+            print('calculating distances between training observations')
             tr_distances = pymuvr.square_distance_matrix(tr_spikes,
                                                          self.multineuron_metric_mixing,
                                                          self.tau)
