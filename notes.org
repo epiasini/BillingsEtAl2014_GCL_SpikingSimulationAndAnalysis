@@ -1,4 +1,6 @@
 * Is it possible to use my simulations to support the main claim made in Guy's paper?
+** Meeting with Angus and Guy <2013-11-19 Tue>
+*** Points for discussion
 1. what cell model? should I use my new cell model population? in this
    case, what about the single-cell-level disorder? given that's
    impossible to treat this by annealing (ie averaging over it), at
@@ -72,7 +74,39 @@
     conductance will be tuned depending on their thresholding effect,
     and not on their biological realism. This will probably mean
     choosing unrealistically high levels of inhibition.
-** Estimate of computational cost of doing the spiking network experiments
+*** Outcomes of the meeting
+We are aiming for a set of punctual comparisons (not parameter sweeps)
+between different network configurations. Initially, we are aiming to
+show that we can reproduce some of the main results in the study with
+a spiking network model with detailed synaptic connectivity. In other
+words, for example, "show that the network with 4 dendrites is
+significantly better than the network with 10 dendrites under
+appropriate conditions". Because of the high computational costs
+involved, this is more akin to what one would do experimentally than
+to a numerical extension of the analytical results.
+- network size: 500 GrCs
+- use fixed tonic inhibition, set to an appropriate level (possibly
+  the "natural" level of ~400pS).
+- use Jason's average GrC model
+- use my mf->GrC model built from Jason's data
+- 1000 patterns
+- 50 repetitions per pattern
+- simulation time as short as possible compatibly with the duration of
+  the integration window (hypothesised to be ~30ms in the paper,
+  probably somewhere between that and 120ms, which is the longest time
+  constant present in the synaptic mechanisms)
+- number of dendrites d=4 and d=10
+- use spatially correlated patterns. This should help in making the
+  system more susceptible to variations in its parameters by making it
+  harder to discriminate the patterns. Actually one could do both:
+  correlated and uncorrelated patterns, and show the difference.
+- use a pure rate code (rate in, rate out).
+If there is time, we could add the following features:
+- modulate sinusoidally input rate in time
+- use the MUVR metric to cluster output 
+**** TODO First assessment of the time involved in running simulations and analyses
+***** DONE Back-of-the-envelope estimation of computational cost of simulations
+      CLOSED: [2013-11-19 Wed 01:10]
 This is with respect to my old runs back in spring 2012, which if I
 remember correctly took about a week on matlem with 180 processors
 (even though I might be overestimating this time if the batches of
@@ -89,7 +123,9 @@ be rerun if something went wrong).
 | 1/processors used       | ~1/180 | ~1/220 | 0.8    |
 |-------------------------+--------+--------+--------|
 | total                   |        |        | < 1.4  |
-This of course doesn't account for overheads associated to running a
-larger number of smaller simulations and having more complex synaptic
-models, but it is encouraging, at least from the point of view of
-running the simulations.
+This of course assumes everything scales linerly and doesn't account
+for overheads associated to running a larger number of smaller
+simulations and having more complex synaptic models, but it is
+encouraging, at least from the point of view of running the
+simulations.
+***** TODO Test how many cores I can actually use on the cluster
