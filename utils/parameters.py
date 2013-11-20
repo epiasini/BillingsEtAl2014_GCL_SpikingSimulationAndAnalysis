@@ -145,7 +145,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 # step, train the decoder and use it to calculate mi
                 tr_clustering = fcluster(tr_tree, t=n_clusts, criterion='maxclust')
                 out_alphabet = []
-                for c in range(n_clusts):
+                for c in range(1,n_clusts+1):
                     # every cluster is represented in the output
                     # alphabet by the element which minimizes the sum
                     # of intra-cluster square distances
