@@ -1,3 +1,6 @@
 *.class
 *.pyc
 /notes.html
+/notes.pdf
+/notes.tex
+/auto/notes.el

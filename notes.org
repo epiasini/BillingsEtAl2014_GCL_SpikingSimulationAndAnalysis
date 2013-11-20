@@ -4,25 +4,34 @@
    impossible to treat this by annealing (ie averaging over it), at
    which point should I quench it (ie fix network configuration)? An
    alternative is to use the average model from my population.
-2. speaking of quenched disorder, what did Guy do for the
+2. I also need to remember to update the value of the GABA reversal
+   potential with the figure from Seja2012.
+3. Speaking of quenched disorder, what did Guy do for the
    connection-driven disorder?
-3. I guess we're going to use my new model for the mf->grc
+4. I guess we're going to use my new model for the mf->grc
    synapse.. this means using jLEMS (ie suicide) unless we get the
    network simulation export function to run. Or do I? probably not,
    if the network is still described with neuroConstruct.
-4. What exactly do we mean with "testing with rate code"? if it's only
+5. What exactly do we mean with "testing with rate code"? if it's only
    rate in-rate out, we don't need to use Conor's metric (or more
    precisely, we don't need a Van Rossum-type metric), as we can just
    use spike counts.
-5. I guess the best thing to do would be to check if my simulations
+6. How to measure sparsity in the rate-coded case? An interesting idea
+   would be to use the Gini index, but this is a measure of inequality
+   and would give sparsity=1 in the case of a silent network. If by
+   sparsity we really mean "global activation level", I can just use
+   the average firing rate of the network, but in that case I would
+   still have to normalize it somehow to compare it to the firing rate
+   of the inputs (to impose the sparsifying condition p(GC)<p(MF)).
+7. I guess the best thing to do would be to check if my simulations
    agree with Guy's prediction in a low entropy limit, or in general
    to compare for eg the 4000-pattern case (might help to consider
    short time windows and spike counting metric). Otherwise, it's
    going to be impossible to do all of the required simulations.
-6. One thing I still need to do is to implement Guy's connectivity
+8. One thing I still need to do is to implement Guy's connectivity
    rules (or maybe not, in case we want to compare the numerical
    results with the random bipartite graph).
-7. what about doing a frequency-response curve of the grc model to
+9. what about doing a frequency-response curve of the grc model to
    test the 30ms integration window hypothesis? As an RC circuit, my
    average grc model has a time constant of about 6ms (so no problem
    on that front), and the longest decay time constant in my synaptic
@@ -31,25 +40,56 @@
    the first component, which has a time constant of 13.5ms, so
    overall I might get lucky and get away with considering a 50ms
    integration window.
-8. for the time windowing side of things, it might be possible to just
-   do the same simulations with synchronised and desynchronised Golgi
-   input, and see what effect that has on the rate-coded information
-   flow. We don’t expect it to have _any_ effect, but that should help
-   address the reviewer’s concerns.
-9. It might even be possible, even though probably outside the scope
-   of the work, make an _analytical_ rate-code extension to the
-   existing work. Moreno-Bote et al (2006) estimate the firing rate
-   and the Fano factor for the spike count in the case of a leaky
-   integrate-and-fire neuron with Poisson input and synaptic time
-   constants longer than the membrane time constant. This could in
-   theory enable us to calculate mean and variance for the spike count
-   of a neuron with any given input, and so, by hypothesising a
-   Gaussian distribution in spike count, the full conditional
-   probability distribution of the spike counts for all the cells in a
-   network given the input rates and the connectivity matrix. from
-   here one should be able to calculate the MI, as this would look
-   like some sort of multidimensional Gaussian channel. This is
-   analogous to what Guy did for the explicit calculation of entropy
-   in the "small" case with 4000 patterns. Anyway, this approach would
-   break down near the refractory limit.
-
+10. for the time windowing side of things, it might be possible to just
+    do the same simulations with synchronised and desynchronised Golgi
+    input, and see what effect that has on the rate-coded information
+    flow. We don’t expect it to have _any_ effect, but that should help
+    address the reviewer’s concerns.
+11. It might even be possible, even though probably outside the scope
+    of the work, make an _analytical_ rate-code extension to the
+    existing work. Moreno-Bote et al (2006) estimate the firing rate
+    and the Fano factor for the spike count in the case of a leaky
+    integrate-and-fire neuron with Poisson input and synaptic time
+    constants longer than the membrane time constant. This could in
+    theory enable us to calculate mean and variance for the spike count
+    of a neuron with any given input, and so, by hypothesising a
+    Gaussian distribution in spike count, the full conditional
+    probability distribution of the spike counts for all the cells in a
+    network given the input rates and the connectivity matrix. from
+    here one should be able to calculate the MI, as this would look
+    like some sort of multidimensional Gaussian channel. This is
+    analogous to what Guy did for the explicit calculation of entropy
+    in the "small" case with 4000 patterns. Anyway, this approach would
+    break down near the refractory limit.
+12. How are we going to deal with the effect of STP in my GoC->GrC
+    synaptic model? One could hardcode a dependency of the Golgi
+    firing rate on the p(MF) parameter, but because of depression, the
+    time-averaged amount of inhibitory conductance doesn't scale
+    linearly with the Golgi firing rate. Initially we will just use
+    a varying tonic inhibition as a thresholding mechanism, and once
+    we are suer we can get that working we will move on to using
+    inhibitory synaptic input. Note that the levels of tonic
+    conductance will be tuned depending on their thresholding effect,
+    and not on their biological realism. This will probably mean
+    choosing unrealistically high levels of inhibition.
+** Estimate of computational cost of doing the spiking network experiments
+This is with respect to my old runs back in spring 2012, which if I
+remember correctly took about a week on matlem with 180 processors
+(even though I might be overestimating this time if the batches of
+jobs I was running were larger. Anyway, the values listed here were
+for a simulation run size that I considered "typical", small enough to
+be rerun if something went wrong).
+| dimension               | from   | to     | factor |
+|-------------------------+--------+--------+--------|
+| network size (GrCs)     | 60     | 500    | 8.3    |
+| patterns                | 20     | 1000   | 50     |
+| repetitions per pattern | 200    | 50     | 1/4    |
+| simulation length       | 300ms  | 50ms   | 1/6    |
+| parameter space points  | > 80   | < 8    | < 1/10 |
+| 1/processors used       | ~1/180 | ~1/220 | 0.8    |
+|-------------------------+--------+--------+--------|
+| total                   |        |        | < 1.4  |
+This of course doesn't account for overheads associated to running a
+larger number of smaller simulations and having more complex synaptic
+models, but it is encouraging, at least from the point of view of
+running the simulations.
