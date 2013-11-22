@@ -104,7 +104,8 @@ to a numerical extension of the analytical results.
 If there is time, we could add the following features:
 - modulate sinusoidally input rate in time
 - use the MUVR metric to cluster output 
-**** TODO First assessment of the time involved in running simulations and analyses
+**** DONE First assessment of the time involved in running simulations and analyses
+     CLOSED: [2013-11-22 Fri 10:24]
 ***** DONE Back-of-the-envelope estimation of computational cost of simulations
       CLOSED: [2013-11-19 Wed 01:10]
 This is with respect to my old runs back in spring 2012, which if I
@@ -123,9 +124,45 @@ be rerun if something went wrong).
 | 1/processors used       | ~1/180 | ~1/220 | 0.8    |
 |-------------------------+--------+--------+--------|
 | total                   |        |        | < 1.4  |
-This of course assumes everything scales linerly and doesn't account
+This of course assumes everything scales linearly and doesn't account
 for overheads associated to running a larger number of smaller
 simulations and having more complex synaptic models, but it is
 encouraging, at least from the point of view of running the
 simulations.
-***** TODO Test how many cores I can actually use on the cluster
+***** DONE Test how many cores I can actually use on the cluster
+      CLOSED: [2013-11-20 Wed 10:03]
+      - CLOSING NOTE [2013-11-20 Wed 10:03] \\
+        It seems I can get about _238 cores_.
+***** DONE see if there's any leftover issue with pymuvr
+      CLOSED: [2013-11-22 Fri 10:17]
+      - CLOSING NOTE [2013-11-22 Fri 10:17] \\
+	Issue fixed in [[magit:~/phd/code/network/src/::commit@53ce7fb][commit #53ce7fb]]. This was just a matter of
+        fixing a leftover bug in the integration with pymuvr.
+***** DONE See if I can run the current version of the pipeline (including analysis) out-of-the-box for a problem of the order of magnitude we're interested in.
+      CLOSED: [2013-11-22 Fri 10:20]
+      - CLOSING NOTE [2013-11-22 Fri 10:20] \\
+	The pipeline seems to work, but we'd be better off using a pure rate
+	code for better performance.
+***** Conclusion
+My quick estimate above seems to hold for the simulation, but I think
+that for the analysis we need to use a simpler decoder.
+** Model-related and scientific choices that need to be made
+*** output decoder: pure rate code vs spike metric
+he tradeoff between performance and added usefulness seems in favour
+of using a pure rate code, at least in the first stage as we use a
+rate-coded input.
+*** level of inhibition
+*** input pattern correlation
+** Technical upgrades needed 
+*** Simulation features
+**** TODO Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
+**** TODO Change the tonic inhibition from being a current to being a conductance.
+**** TODO Implement Guy's network connection algorithm
+**** TODO Implement input correlations.
+*** Analysis features
+**** DONE Implement pure rate-code decoder with k-means clustering.
+     CLOSED: [2013-11-22 Fri 10:54]
+     - CLOSING NOTE [2013-11-22 Fri 10:54] \\
+       Done in [[magit:~/phd/code/network/src/::commit@1e7745c][commit #1e7745c]].
+
+
