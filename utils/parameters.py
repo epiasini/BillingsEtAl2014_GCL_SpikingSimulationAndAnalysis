@@ -4,6 +4,7 @@ import functools
 import random
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
+from sklearn.cluster import MiniBatchKMeans
 import pyentropy as pe
 
 import pymuvr
@@ -64,7 +65,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         self.linkage_method = int(round(linkage_method))
         self.tau = tau
         self.dt = dt
-        self.linkage_method_string = ['ward']
+        self.linkage_method_string = ['ward', 'kmeans'][self.linkage_method]
         #--archive objects
         self.spikes_arch = SpikesArchive(self)
         self.results_arch = ResultsArchive(self)
@@ -111,69 +112,98 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             n_ts_obs = len(test_idxs)
             tr_spikes = [spikes[o] for o in train_idxs]
             ts_spikes = [spikes[o] for o in test_idxs]
-            # compute multineuron distance between each pair of training observations
-            print('calculating distances between training observations')
-            tr_distances = pymuvr.square_distance_matrix(tr_spikes,
-                                                         self.multineuron_metric_mixing,
-                                                         self.tau)
-            # cluster training data
-            print('clustering training data')
-            tr_tree = linkage(tr_distances, method=self.linkage_method_string[self.linkage_method])
-
-            # compute mutual information by using direct clustering on training data (REMOVED)
-            # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
-            tr_direct_mi = np.zeros(n_tr_obs-1)
-
-            # train the decoder and use it to calculate mi on the testing dataset
-            print("training the decoder and using it to calculate mi on test data")
-
-            min_clusts_analysed = int(round(self.n_stim_patterns * 0.9))
-            max_clusts_analysed = int(round(self.n_stim_patterns * 1.1))
-            
+            # initialize data structures for storage of results
             ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
             ts_decoded_mi_bootstrap = np.zeros(n_tr_obs-1)
             ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
             ts_decoded_mi_pt = np.zeros(n_tr_obs-1)
             ts_decoded_mi_nsb = np.zeros(n_tr_obs-1)
-            Ym = self.n_stim_patterns
-            Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
-            Xn = 1 # the output is effectively one-dimensional
+            tr_tree = np.zeros(shape=(n_tr_obs-1, 3))
 
-            tr_distances_square = np.square(tr_distances)
+            # compute mutual information by using direct clustering on training data (REMOVED)
+            # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
+            tr_direct_mi = np.zeros(n_tr_obs-1)
 
-            for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
-                # iterate over the number of clusters and, step by
-                # step, train the decoder and use it to calculate mi
-                tr_clustering = fcluster(tr_tree, t=n_clusts, criterion='maxclust')
-                out_alphabet = []
-                for c in range(1,n_clusts+1):
-                    # every cluster is represented in the output
-                    # alphabet by the element which minimizes the sum
-                    # of intra-cluster square distances
-                    obs_in_c = [ob for ob in range(n_tr_obs) if tr_clustering[ob]==c]
-                    sum_of_intracluster_square_distances = tr_distances_square[obs_in_c,:][:,obs_in_c].sum(axis=1)
-                    out_alphabet.append(tr_spikes[np.argmin(sum_of_intracluster_square_distances)])
-                distances = pymuvr.distance_matrix(ts_spikes,
-                                                   out_alphabet,
-                                                   self.multineuron_metric_mixing,
-                                                   self.tau)
-                # each observation in the testing set is decoded by
-                # assigning it to the cluster whose representative
-                # element it's closest to
-                decoded_output = distances.argmin(axis=1)
-                # calculate MI
-                Xm = n_clusts
-                X_dims = (Xn, Xm)
-                X = decoded_output
-                s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
-                s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
-                ts_decoded_mi_qe[n_clusts-1] = s.I()
-                s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
-                ts_decoded_mi_pt[n_clusts-1] = s.I()
-                s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
-                ts_decoded_mi_nsb[n_clusts-1] = s.I()            
-                if n_clusts == self.n_stim_patterns:
-                    px_at_same_size_point = s.PX    
+            if self.linkage_method_string == 'kmeans':
+                print('counting spikes in output spike trains')
+                spike_counts = np.array([[len(cell) for cell in observation] for observation in spikes])
+                Ym = self.n_stim_patterns
+                Ny = np.array([self.n_trials for each in range(self.n_stim_patterns)])
+                Xn = 1 # the output is effectively one-dimensional
+                for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
+                    clustering = MiniBatchKMeans(n_clusters=n_clusts,
+                                                 batch_size=self.n_stim_patterns*10)
+                    print('performing k-means clustering for k='+str(n_clusts))
+                    clustering.fit(spike_counts)
+                    print('using the k-means clustering to classify data points')
+                    decoded_output = clustering.predict(spike_counts)
+                    # calculate MI
+                    print('calculating MI')
+                    Xm = n_clusts
+                    X_dims = (Xn, Xm)
+                    X = decoded_output
+                    s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                    s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
+                    ts_decoded_mi_qe[n_clusts-1] = s.I()
+                    s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
+                    ts_decoded_mi_pt[n_clusts-1] = s.I()
+                    s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
+                    ts_decoded_mi_nsb[n_clusts-1] = s.I()            
+                    if n_clusts == self.n_stim_patterns:
+                        px_at_same_size_point = s.PX  
+                    
+            else:
+
+                # compute multineuron distance between each pair of training observations
+                print('calculating distances between training observations')
+                tr_distances = pymuvr.square_distance_matrix(tr_spikes,
+                                                             self.multineuron_metric_mixing,
+                                                             self.tau)
+                # cluster training data
+                print('clustering training data')
+                tr_tree = linkage(tr_distances, method=self.linkage_method_string)
+
+                # train the decoder and use it to calculate mi on the testing dataset
+                print("training the decoder and using it to calculate mi on test data")
+
+                tr_distances_square = np.square(tr_distances)
+                Ym = self.n_stim_patterns
+                Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
+                Xn = 1 # the output is effectively one-dimensional
+
+                for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
+                    # iterate over the number of clusters and, step by
+                    # step, train the decoder and use it to calculate mi
+                    tr_clustering = fcluster(tr_tree, t=n_clusts, criterion='maxclust')
+                    out_alphabet = []
+                    for c in range(1,n_clusts+1):
+                        # every cluster is represented in the output
+                        # alphabet by the element which minimizes the sum
+                        # of intra-cluster square distances
+                        obs_in_c = [ob for ob in range(n_tr_obs) if tr_clustering[ob]==c]
+                        sum_of_intracluster_square_distances = tr_distances_square[obs_in_c,:][:,obs_in_c].sum(axis=1)
+                        out_alphabet.append(tr_spikes[np.argmin(sum_of_intracluster_square_distances)])
+                    distances = pymuvr.distance_matrix(ts_spikes,
+                                                       out_alphabet,
+                                                       self.multineuron_metric_mixing,
+                                                       self.tau)
+                    # each observation in the testing set is decoded by
+                    # assigning it to the cluster whose representative
+                    # element it's closest to
+                    decoded_output = distances.argmin(axis=1)
+                    # calculate MI
+                    Xm = n_clusts
+                    X_dims = (Xn, Xm)
+                    X = decoded_output
+                    s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                    s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
+                    ts_decoded_mi_qe[n_clusts-1] = s.I()
+                    s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
+                    ts_decoded_mi_pt[n_clusts-1] = s.I()
+                    s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
+                    ts_decoded_mi_nsb[n_clusts-1] = s.I()            
+                    if n_clusts == self.n_stim_patterns:
+                        px_at_same_size_point = s.PX    
 
             # compute number of spikes fired by output cells
             print("Calculating output levels")
