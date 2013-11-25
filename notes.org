@@ -150,11 +150,16 @@ that for the analysis we need to use a simpler decoder.
 *** TODO frequency response of the GrC model to synaptic stimulation
     I have to check if the 30ms integration time window hypothesis is
     justified, and adjust the length of the simulations accordingly.
+    I think the correct way of going about this would be to look at
+    the autocorrelation function of the spike train (or voltage trace)
+    produced by the cell model under Poisson stimulation at different
+    rates.
 *** output decoder: pure rate code vs spike metric
     The tradeoff between performance and added usefulness seems in
     favour of using a pure rate code, at least in the first stage as
     we use a rate-coded input.
 *** TODO inhibition: decide on the (fixed) level of tonic GABA conductance
+*** TODO mf -> grc synapses: decide if total conductance should scale inversely with the number of dendrites.
 *** input pattern correlation
 ** Technical upgrades needed 
 *** Simulation features
@@ -171,6 +176,7 @@ that for the analysis we need to use a simpler decoder.
        Tonic GABA has been added as a conductance. Its value is fixed,
        though, and at the moment the "bias" parameter still controls an
        inhibitory current.
+**** TODO If the simulation time is short, should the variables in the synaptic plasticity mechanisms be initialised at their steady state value for the given stimulation frequency?
 **** TODO Implement Guy's network connection algorithm
 **** TODO Implement input correlations.
 *** Analysis features
@@ -178,5 +184,10 @@ that for the analysis we need to use a simpler decoder.
      CLOSED: [2013-11-22 Fri 10:54]
      - CLOSING NOTE [2013-11-22 Fri 10:54] \\
        Done in [[magit:~/phd/code/network/src/::commit@1e7745c][commit #1e7745c]].
-
+**** DONE check if analysis workflow can handle a problem of the scale we're interested in
+     CLOSED: [2013-11-25 Mon 16:00]
+     - CLOSING NOTE [2013-11-25 Mon 16:00] \\
+       The whole workflow can run overnight for a single parameter space
+       point, 1000 patterns, 50 repetitions, 150ms long simulations, and
+       rate-coded k-means based decoding.
 
