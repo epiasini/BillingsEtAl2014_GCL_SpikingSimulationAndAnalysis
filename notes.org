@@ -147,16 +147,30 @@ simulations.
 My quick estimate above seems to hold for the simulation, but I think
 that for the analysis we need to use a simpler decoder.
 ** Model-related and scientific choices that need to be made
+*** TODO frequency response of the GrC model to synaptic stimulation
+    I have to check if the 30ms integration time window hypothesis is
+    justified, and adjust the length of the simulations accordingly.
 *** output decoder: pure rate code vs spike metric
-he tradeoff between performance and added usefulness seems in favour
-of using a pure rate code, at least in the first stage as we use a
-rate-coded input.
-*** level of inhibition
+    The tradeoff between performance and added usefulness seems in
+    favour of using a pure rate code, at least in the first stage as
+    we use a rate-coded input.
+*** TODO inhibition: decide on the (fixed) level of tonic GABA conductance
 *** input pattern correlation
 ** Technical upgrades needed 
 *** Simulation features
-**** TODO Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
-**** TODO Change the tonic inhibition from being a current to being a conductance.
+**** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
+     CLOSED: [2013-11-22 Fri 13:10]
+**** DONE Update the GABA reversal potential with the value reported in Seja2012.
+     CLOSED: [2013-11-22 Fri 17:03]
+     - CLOSING NOTE [2013-11-22 Fri 17:03] \\
+       Updated the value in the GrC model file in the original OSB repo and
+       in the if_gl neuroConstruct project.
+**** DONE Change the tonic inhibition from being a current to being a conductance.
+     CLOSED: [2013-11-22 Fri 16:59]
+     - CLOSING NOTE [2013-11-22 Fri 16:59] \\
+       Tonic GABA has been added as a conductance. Its value is fixed,
+       though, and at the moment the "bias" parameter still controls an
+       inhibitory current.
 **** TODO Implement Guy's network connection algorithm
 **** TODO Implement input correlations.
 *** Analysis features
