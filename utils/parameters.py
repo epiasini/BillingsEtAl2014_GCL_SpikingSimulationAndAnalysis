@@ -102,7 +102,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # load data
             spikes = self.spikes_arch.get_spikes(cell_type='grc')
             self.spikes_arch.load_attrs()
-            n_cells = self.spikes_arch.attrs['n_gr']
+            min_clusts_analysed = int(round(self.n_stim_patterns * 0.8))
+            max_clusts_analysed = int(round(self.n_stim_patterns * 1.2))
+            clusts_step = int(round(self.n_stim_patterns * 0.05))
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
             n_ts_obs_per_sp = self.n_trials - n_tr_obs_per_sp
@@ -110,14 +112,12 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             test_idxs = [x for x in range(n_obs) if x not in train_idxs]
             n_tr_obs = len(train_idxs)
             n_ts_obs = len(test_idxs)
-            tr_spikes = [spikes[o] for o in train_idxs]
-            ts_spikes = [spikes[o] for o in test_idxs]
             # initialize data structures for storage of results
-            ts_decoded_mi_plugin = np.zeros(n_tr_obs-1)
-            ts_decoded_mi_bootstrap = np.zeros(n_tr_obs-1)
-            ts_decoded_mi_qe = np.zeros(n_tr_obs-1)
-            ts_decoded_mi_pt = np.zeros(n_tr_obs-1)
-            ts_decoded_mi_nsb = np.zeros(n_tr_obs-1)
+            ts_decoded_mi_plugin = np.zeros(n_obs)
+            ts_decoded_mi_bootstrap = np.zeros(n_obs)
+            ts_decoded_mi_qe = np.zeros(n_obs)
+            ts_decoded_mi_pt = np.zeros(n_obs)
+            ts_decoded_mi_nsb = np.zeros(n_obs)
             tr_tree = np.zeros(shape=(n_tr_obs-1, 3))
 
             # compute mutual information by using direct clustering on training data (REMOVED)
@@ -130,7 +130,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 Ym = self.n_stim_patterns
                 Ny = np.array([self.n_trials for each in range(self.n_stim_patterns)])
                 Xn = 1 # the output is effectively one-dimensional
-                for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
+                for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1, clusts_step):
                     clustering = MiniBatchKMeans(n_clusters=n_clusts,
                                                  batch_size=self.n_stim_patterns*10)
                     print('performing k-means clustering for k='+str(n_clusts))
@@ -153,6 +153,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                         px_at_same_size_point = s.PX  
                     
             else:
+                tr_spikes = [spikes[o] for o in train_idxs]
+                ts_spikes = [spikes[o] for o in test_idxs]
 
                 # compute multineuron distance between each pair of training observations
                 print('calculating distances between training observations')

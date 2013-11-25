@@ -23,22 +23,22 @@ clean_up_simulation_files = True
 job_limit = 240
 
 #+++++parameter ranges+++++++++++++
-sim_duration = psl(50.0)
+sim_duration = psl(150.0)
 min_mf_number = psl(6)
 grc_mf_ratio = psl(2.9)
 n_grc_dend = psl(4)
 network_scale = psl(28.74)
 active_mf_fraction = psl(.5)
-bias = psl(-10.)
+bias = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(10)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(10)
-n_stim_patterns = psl(100) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_stim_patterns = psl(1000) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
 n_trials = psl(50)
 training_size = psl(20) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
-linkage_method = psl(0) # 0: ward
+linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
 dt = psl(2)
 
