@@ -124,7 +124,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
 
             if self.linkage_method_string == 'kmeans':
                 print('counting spikes in output spike trains')
-                spike_counts = np.array([[len(cell) for cell in observation] for observation in spikes])
+                spike_counts = self.spikes_arch.get_spike_counts()
                 Ym = self.n_stim_patterns
                 Ny = np.array([self.n_trials for each in range(self.n_stim_patterns)])
                 Xn = 1 # the output is effectively one-dimensional
@@ -133,7 +133,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                                                  batch_size=self.n_stim_patterns*10)
                     print('performing k-means clustering for k='+str(n_clusts))
                     clustering.fit(spike_counts)
-                    print('using the k-means clustering to classify data points')
+                    print('using k-means clustering to classify data points')
                     decoded_output = clustering.predict(spike_counts)
                     # calculate MI
                     print('calculating MI')
@@ -151,6 +151,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                         px_at_same_size_point = s.PX  
                     
             else:
+                spikes = self.spikes_arch.get_spikes(cell_type='grc')
+                self.spikes_arch.load_attrs()
                 tr_spikes = [spikes[o] for o in train_idxs]
                 ts_spikes = [spikes[o] for o in test_idxs]
 
