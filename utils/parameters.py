@@ -100,10 +100,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
-            spikes = self.spikes_arch.get_spikes(cell_type='grc')
-            self.spikes_arch.load_attrs()
-            min_clusts_analysed = int(round(self.n_stim_patterns * 0.8))
-            max_clusts_analysed = int(round(self.n_stim_patterns * 1.2))
+            min_clusts_analysed = int(round(self.n_stim_patterns * 0.4))
+            max_clusts_analysed = int(round(self.n_stim_patterns * 1.6))
             clusts_step = int(round(self.n_stim_patterns * 0.05))
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
