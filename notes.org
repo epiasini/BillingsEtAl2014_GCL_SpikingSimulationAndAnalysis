@@ -150,15 +150,40 @@ that for the analysis we need to use a simpler decoder.
 *** TODO frequency response of the GrC model to synaptic stimulation
     I have to check if the 30ms integration time window hypothesis is
     justified, and adjust the length of the simulations accordingly.
-    I think the correct way of going about this would be to look at
-    the autocorrelation function of the spike train (or voltage trace)
-    produced by the cell model under Poisson stimulation at different
-    rates.
+    It looks like a good way of justifying this would be by looking at
+    the autocorrelation function of the spike train produced by the
+    cell model under Poisson stimulation at different rates. This
+    actually shows that, for stimulation rates high enough to give a
+    decent estimate of the ACF with a simulation 60s long, the
+    autocorrelation seems to drop to its asymptotic value (the average
+    firing rate) after about 50ms (see figures below, and note that
+    the reported stimulation rate is for each of 4 MFs).
+    
+    Another interesing phenomenon can be seen in this experiment: as
+    reported in Moreno-Bote and Parga 2006, there are two regimes
+    depending on whether the average membrane depolarization is above
+    or below threshold. Below threshold firing is driven by
+    fluctuations and input spike bunching, while above threshold
+    the cell tend to fire regularly and fluctuations only add noise to
+    this process. This is reflected in a different structure of the
+    ACF in the two cases.
+
+    [[file:fig/acf_40Hz.png][file:fig/acf_40Hz.png]]
+    [[file:fig/acf_40Hz_detail.png][file:fig/acf_40Hz_detail.png]]
+    [[file:fig/acf_100Hz.png][file:fig/acf_100Hz.png]]
+    [[file:fig/acf_100Hz_detail.png]]
+    [[file:fig/acf_160Hz_detail.png]]
+
+    Also, I should have a look at how Guy explains the 30ms assumption
+    in the paper.
 *** output decoder: pure rate code vs spike metric
     The tradeoff between performance and added usefulness seems in
     favour of using a pure rate code, at least in the first stage as
     we use a rate-coded input.
-*** TODO inhibition: decide on the (fixed) level of tonic GABA conductance
+*** DONE inhibition: decide on the (fixed) level of tonic GABA conductance
+    CLOSED: [2013-11-27 Wed 12:26]
+    - CLOSING NOTE [2013-11-27 Wed 12:26] \\
+      The experimental value of 0.438nS seems the best option.
 *** TODO mf -> grc synapses: decide if total conductance should scale inversely with the number of dendrites.
 *** input pattern correlation
 ** Technical upgrades needed 
@@ -176,9 +201,51 @@ that for the analysis we need to use a simpler decoder.
        Tonic GABA has been added as a conductance. Its value is fixed,
        though, and at the moment the "bias" parameter still controls an
        inhibitory current.
-**** TODO If the simulation time is short, should the variables in the synaptic plasticity mechanisms be initialised at their steady state value for the given stimulation frequency?
+**** DONE If the simulation time is short, should the variables in the synaptic plasticity mechanisms be initialised at their steady state value for the given stimulation frequency?
+     CLOSED: [2013-11-27 Wed 12:17]
+     - CLOSING NOTE [2013-11-27 Wed 12:17] \\
+       No, we'd better keep simulation time a bit longer (say 200ms) and only
+       analyse the final window of the simulation (50, 100 or 150ms).
+**** TODO Make a table of all the parameters in the model, noting where each of them comes from.
+**** TODO Make a simple f/f curve for the GrC model with 4 dendrites.
 **** TODO Implement Guy's network connection algorithm
+     Message from Guy:
+     #+BEGIN_QUOTE
+     Unless you have already solved it I would suggest an
+     implementation such as the following
+
+     i) generate glomerular degree distribution (that of a binomial)
+
+     ii) for each (randomly chosen) connection chose a granule cell to
+     connect to subject to the constraints:
+
+     connection length as close as possible to 'x' (we used 15 microns I believe)
+     granule cell would not have more than 'd' connections
+     the connection does not repeat with a granule cell to which the glom. is already connectioned
+     the connection would not cause a single mossy fibre to be connection to the same granule cell
+     [The last one is a bit of an artificial one that had to be introduced because for high number of connections, the resampling because an problem since it diminishes the number
+     of independent inputs to the network, which create conceptual issues]
+       
+     The above also assumes that all cells and connections are
+     confined to the same sphere (connections do not penetrate the
+     sphere holding the GRCs).
+
+     The problem I am having is that I also definately had to create a
+     method to shuffle some connections about with the aim of
+     minimising the mean squared deviation from the target dendrite
+     lenght. I think it might be that the above created a weird
+     dendrite length distribution (i.e. not central). But I am not
+     sure and I cant look at my Mathematica notebooks right now.
+
+     So try the above. You might find it works in which case no
+     problem. If there are any problems however, let me know because I
+     will probably remember it at that stage!
+     #+END_QUOTE
 **** TODO Implement input correlations.
+     In the paper, an input frequncy range of about 10-50Hz was
+     mentioned when justifying the 30ms integration window
+     hypothesis. My input patterns should live within that range as
+     well.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -190,4 +257,6 @@ that for the analysis we need to use a simpler decoder.
        The whole workflow can run overnight for a single parameter space
        point, 1000 patterns, 50 repetitions, 150ms long simulations, and
        rate-coded k-means based decoding.
-
+       
+* Questions to be addressed with the model after we're sure it works
+** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
