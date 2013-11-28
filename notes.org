@@ -114,6 +114,7 @@ remember correctly took about a week on matlem with 180 processors
 jobs I was running were larger. Anyway, the values listed here were
 for a simulation run size that I considered "typical", small enough to
 be rerun if something went wrong).
+|-------------------------+--------+--------+--------|
 | dimension               | from   | to     | factor |
 |-------------------------+--------+--------+--------|
 | network size (GrCs)     | 60     | 500    | 8.3    |
@@ -174,8 +175,8 @@ that for the analysis we need to use a simpler decoder.
     [[file:fig/acf_100Hz_detail.png]]
     [[file:fig/acf_160Hz_detail.png]]
 
-    Also, I should have a look at how Guy explains the 30ms assumption
-    in the paper.
+**** TODO Have a look at how Guy explains the 30ms assumption in the paper.
+**** TODO Look at lower stimulation frequencies and longer simulations, to make sure these observations do not depend on the rates chosen.
 *** output decoder: pure rate code vs spike metric
     The tradeoff between performance and added usefulness seems in
     favour of using a pure rate code, at least in the first stage as
@@ -186,6 +187,62 @@ that for the analysis we need to use a simpler decoder.
       The experimental value of 0.438nS seems the best option.
 *** TODO mf -> grc synapses: decide if total conductance should scale inversely with the number of dendrites.
 *** input pattern correlation
+*** DONE Make a table of all the parameters in the model, noting where each of them comes from.
+    CLOSED: [2013-11-28 Thu 16:21]
+    - CLOSING NOTE [2013-11-28 Thu 16:21] \\
+      This is ready to be sent to Angus.
+    |----------------+----------------------------------+-----------+-----------------------|
+    | model          | parameter                        | value     | source                |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | Grc IaF        | leak reversal potential          | -79.9 mV  | Schwartz2012          |
+    |                | leak conductance                 | 1.06 nS   |                       |
+    |                | membrane capacitance             | 3.22 pF   |                       |
+    |                | spike threshold                  | -40 mV    |                       |
+    |                | reset potential                  | -63 mV    |                       |
+    |                | refractory time                  | 2 ms      |                       |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | GABA (tonic)   | reversal potential               | -79.1 mV  | Seja2012              |
+    |                | conductance                      | 0.438 nS  | Rothman2009           |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | AMPA direct    | reversal potential               | 0 mV      | Rothman2009 (new fit) |
+    |                | amplitude 1                      | 3.724 nS  |                       |
+    |                | amplitude 2                      | 0.3033 nS |                       |
+    |                | rise time                        | 0.3274 ms |                       |
+    |                | decay time 1                     | 0.3351 ms |                       |
+    |                | decay time 2                     | 1.651 ms  |                       |
+    |                | plasticity: initial release prob | 0.1249    |                       |
+    |                | plasticity: depr. recovery time  | 131 ms    |                       |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | AMPA spillover | reversal potential               | 0 mV      | Rothman2009 (new fit) |
+    |                | amplitude 1                      | 0.2487 nS |                       |
+    |                | amplitude 2                      | 0.2799 nS |                       |
+    |                | amplitude 3                      | 0.1268 nS |                       |
+    |                | rise time                        | 0.5548 ms |                       |
+    |                | decay time 1                     | 0.4 ms    |                       |
+    |                | decay time 2                     | 4.899 ms  |                       |
+    |                | decay time 3                     | 43.1 ms   |                       |
+    |                | plasticity: initial release prob | 0.2792    |                       |
+    |                | plasticity: depr. recovery time  | 14.85 ms  |                       |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | NMDA           | reversal potential               | 0 mV      | Rothman2009 (new fit) |
+    |                | amplitude 1                      | 17 nS     | Schwartz2012          |
+    |                | amplitude 2                      | 2.645 nS  | Schwartz2012          |
+    |                | rise time                        | 0.8647 ms | Rothman2009 (new fit) |
+    |                | decay time 1                     | 13.52 ms  | Rothman2009 (new fit) |
+    |                | decay time 2                     | 121.9 ms  | Rothman2009 (new fit) |
+    |                | plasticity: release probability  | 0.0322    | Rothman2009 (new fit) |
+    |                | plasticity: depr. recovery time  | 236.1 ms  | Rothman2009 (new fit) |
+    |                | plasticity: pot. recovery time   | 6.394 ms  | Rothman2009 (new fit) |
+    |                | Mg2+ block: Z                    | 2         | Schwartz2012          |
+    |                | Mg2+ block: T                    | 35 degC   | Schwartz2012          |
+    |                | Mg2+ block: [Mg2+]               | 1 mM      | Schwartz2012          |
+    |                | Mg2+ block: delta_bind           | 0.35      | Schwartz2012          |
+    |                | Mg2+ block: delta_perm           | 0.53      | Schwartz2012          |
+    |                | Mg2+ block: C1                   | 2.07 mM   | Schwartz2012          |
+    |                | Mg2+ block: C2                   | 0.015 mM  | Schwartz2012          |
+    |----------------+----------------------------------+-----------+-----------------------|
+    | MF terminal    | refractory time                  | 1 ms      | Schwartz2012          |
+
 ** Technical upgrades needed 
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
@@ -206,7 +263,6 @@ that for the analysis we need to use a simpler decoder.
      - CLOSING NOTE [2013-11-27 Wed 12:17] \\
        No, we'd better keep simulation time a bit longer (say 200ms) and only
        analyse the final window of the simulation (50, 100 or 150ms).
-**** TODO Make a table of all the parameters in the model, noting where each of them comes from.
 **** TODO Make a simple f/f curve for the GrC model with 4 dendrites.
 **** TODO Implement Guy's network connection algorithm
      Message from Guy:
