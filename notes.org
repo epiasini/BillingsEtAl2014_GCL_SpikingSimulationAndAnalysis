@@ -252,7 +252,10 @@ that for the analysis we need to use a simpler decoder.
     |                | Mg2+ block: C2                   | 0.015 mM  | Schwartz2012          |
     |----------------+----------------------------------+-----------+-----------------------|
     | MF terminal    | refractory time                  | 1 ms      | Schwartz2012          |
-**** TODO find an appropriate reference for the upper limit on MF firing rate
+**** DONE find an appropriate reference for the upper limit on MF firing rate
+     CLOSED: [2013-11-29 Fri 19:05]
+     - CLOSING NOTE [2013-11-29 Fri 19:05] \\
+       Rancz2007 and references 8-11 therein should be enough.
 ** Technical upgrades needed 
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
