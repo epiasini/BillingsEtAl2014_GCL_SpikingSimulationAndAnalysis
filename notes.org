@@ -252,7 +252,7 @@ that for the analysis we need to use a simpler decoder.
     |                | Mg2+ block: C2                   | 0.015 mM  | Schwartz2012          |
     |----------------+----------------------------------+-----------+-----------------------|
     | MF terminal    | refractory time                  | 1 ms      | Schwartz2012          |
-
+**** TODO find an appropriate reference for the upper limit on MF firing rate
 ** Technical upgrades needed 
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
@@ -273,7 +273,14 @@ that for the analysis we need to use a simpler decoder.
      - CLOSING NOTE [2013-11-27 Wed 12:17] \\
        No, we'd better keep simulation time a bit longer (say 200ms) and only
        analyse the final window of the simulation (50, 100 or 150ms).
-**** TODO Make a simple f/f curve for the GrC model with 4 dendrites.
+**** DONE Make a simple f-f curve for the GrC model with 4 dendrites.
+     CLOSED: [2013-11-29 Fri 14:21]
+     - CLOSING NOTE [2013-11-29 Fri 14:21] \\
+       This curve, showing the response of the cell to Poisson
+       stimulation by 4 mossy fiber terminals firing at various rates,
+       has been produced with rev [[magit:~/phd/nC_projects/GranCellRothmanIf/::commit@7260f5d][GranCellRothmanIf.git
+       commit #7260f5d]] in the granule cell model repo.
+     [[file:fig/rate_IO.png][file:fig/rate_IO.png]]
 **** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
 **** TODO Implement Guy's network connection algorithm
      Message from Guy:
