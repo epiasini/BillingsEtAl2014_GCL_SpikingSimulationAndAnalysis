@@ -40,15 +40,30 @@ def output_level(spike_array):
     o_level_hist_values, o_level_hist_edges = np.histogram(o_level_array, bins=10)
     return o_level_array, o_level_hist_values, o_level_hist_edges
 
-def population_sparseness(level_array):
-    """if level_array is a n_stimuli*n_cells array of spike
-    numbers/firing rates, return the Treves-Rolls population
-    sparseness measure. Any stimulus that doesn't evoke any response
-    is excluded from the final averaging."""
-    square_of_average_by_stimulus = np.square(np.mean(level_array, axis=1)) # n_responses * 1
-    average_of_square_by_stimulus = np.mean(np.square(level_array), axis=1)
-    # now we average across all stimuli to get the average population sparseness for the dataset. Note that if the sparseness is not well defined if, for at least one stimulus, the average number of spikes is 0 across all neurons.
-    return 1 - np.mean((square_of_average_by_stimulus/average_of_square_by_stimulus)[average_of_square_by_stimulus > 0])
+def hoyer_sparseness(level_array):
+    """if level_array is a n_stimuli*n_cells array of spike numbers/firing
+    rates, return the mean Hoyer sparseness measure, as described in
+    Hurley2009, which is a proerly normalised version of the 'modified
+    Treves-Rolls measure' as discussed in Willmore2001. Formally, this
+    measure is not defined for stimuli which do not evoke any
+    response: we set the sparsity to 1 in this case."""
+    n_cells = level_array.shape[1]
+    response_sparseness = (np.sqrt(n_cells) - level_array.sum(axis=1)/np.sqrt(np.square(level_array).sum(axis=1))) / (np.sqrt(n_cells) - 1)
+    response_sparseness[np.isnan(response_sparseness)] = 0
+    # now we average across all stimuli to get the average population
+    # sparseness for the dataset. 
+    return response_sparseness.mean()
+
+def activity_sparseness(level_array):
+    """if level_array is a n_stimuli*n_cells array of spike numbers/firing
+    rates, return the 'activity sparseness' measure as defined in
+    Willmore2001. For a given network response, this is just the number
+    of cells that are classified as 'non active' after thresholding
+    their spike count with the standard deviation of the spike counts
+    across the network."""
+    standard_deviations = np.atleast_2d(level_array.std(axis=1)).transpose()
+    binary_activity = level_array > standard_deviations
+    return (level_array.size - binary_activity.sum())/float(level_array.size)
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
