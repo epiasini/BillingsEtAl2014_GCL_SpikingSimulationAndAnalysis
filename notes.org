@@ -281,12 +281,28 @@ that for the analysis we need to use a simpler decoder.
 **** DONE Make a simple f-f curve for the GrC model with 4 dendrites.
      CLOSED: [2013-11-29 Fri 14:21]
      - CLOSING NOTE [2013-11-29 Fri 14:21] \\
-       This curve, showing the response of the cell to Poisson
-       stimulation by 4 mossy fiber terminals firing at various rates,
-       has been produced with rev [[magit:~/phd/nC_projects/GranCellRothmanIf/::commit@7260f5d][GranCellRothmanIf.git
-       commit #7260f5d]] in the granule cell model repo.
-     [[file:fig/rate_IO.png][file:fig/rate_IO.png]]
-**** TODO Make a comparison between my f-f curve and what Jason had in Schwartz2012.
+       #+CAPTION: Comparison of the f-f curve for my model in LEMS and Jason's model cell number 156. The model receives 4 independent Poisson MF stimuli, plus tonic inhibition. Cell number 156 has been chosen because it's the one whose parameters are closer to the average of the population (ie it's an approximation of 'the average model'). Generated using [[magit:~/phd/nC_projects/GranCellRothmanIf/::commit@4671576][commit #4671576]] in the granule cell model repo.
+       #+NAME: fig:rate_IO
+       [[file:fig/rate_IO.png]]
+**** DONE Make a comparison between my f-f curve and what Jason had in Schwartz2012.
+     CLOSED: [2013-12-02 Mon 14:57]
+     - CLOSING NOTE [2013-12-02 Mon 14:57] \\
+       Figure [[fig:rate_IO]] shows that my model tends to fire a bit more
+       than Jason's. This was expected, and (given that the cell
+       models are very similar in the two cases) mostly depends on the
+       time-averaged NMDA component of my synaptic model being
+       somewhat larger. This, in turn, depends on the fact that both
+       me and Jason normalised the NMDA waveform at -60mV to have the
+       same peak amplitude as the AMPA component, with the two NMDA
+       models having a different base waveform shape. Specifically, my
+       waveform is somewhat less peaked than Jason's, so this results
+       in a larger time-averaged conductance in my mode. Anyway, as
+       can be seen in the figure below, the value for the
+       time-averaged NMDA to AMPA ratio remains within the biological
+       range as published in Schwartz2012.
+       #+NAME: fig:NMDA_to_AMPA_ratio
+       #+ATTR_HTML: :width 100%
+       [[file:fig/NMDA_to_AMPA_ratio.png][file:fig/NMDA_to_AMPA_ratio.png]]
 **** DONE +Implement Guy's network connection algorithm+
      CLOSED: [2013-12-02 Mon 10:30]
      - CLOSING NOTE [2013-12-02 Mon 10:30] \\
