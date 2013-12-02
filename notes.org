@@ -45,10 +45,10 @@
 10. for the time windowing side of things, it might be possible to just
     do the same simulations with synchronised and desynchronised Golgi
     input, and see what effect that has on the rate-coded information
-    flow. We don’t expect it to have _any_ effect, but that should help
+    flow. We don’t expect it to have /any/ effect, but that should help
     address the reviewer’s concerns.
 11. It might even be possible, even though probably outside the scope
-    of the work, make an _analytical_ rate-code extension to the
+    of the work, make an /analytical/ rate-code extension to the
     existing work. Moreno-Bote et al (2006) estimate the firing rate
     and the Fano factor for the spike count in the case of a leaky
     integrate-and-fire neuron with Poisson input and synaptic time
@@ -133,7 +133,7 @@ simulations.
 ***** DONE Test how many cores I can actually use on the cluster
       CLOSED: [2013-11-20 Wed 10:03]
       - CLOSING NOTE [2013-11-20 Wed 10:03] \\
-        It seems I can get about _238 cores_.
+        It seems I can get about *238 cores*.
 ***** DONE see if there's any leftover issue with pymuvr
       CLOSED: [2013-11-22 Fri 10:17]
       - CLOSING NOTE [2013-11-22 Fri 10:17] \\
@@ -196,7 +196,7 @@ that for the analysis we need to use a simpler decoder.
       No, it shouldn't change, otherwise altering the number of dendrites in
       the spiking model would have a very different meaning than in th
       binary model.
-*** input pattern correlation
+*** TODO specify a form of input pattern correlation
 *** DONE Make a table of all the parameters in the model, noting where each of them comes from.
     CLOSED: [2013-11-28 Thu 16:21]
     - CLOSING NOTE [2013-11-28 Thu 16:21] \\
@@ -256,6 +256,8 @@ that for the analysis we need to use a simpler decoder.
      CLOSED: [2013-11-29 Fri 19:05]
      - CLOSING NOTE [2013-11-29 Fri 19:05] \\
        Rancz2007 and references 8-11 therein should be enough.
+*** Plan B: is there an easy way of integrating synaptic noise in our analysis?
+    CLOSED: [2013-12-02 Mon 11:10]
 ** Technical upgrades needed 
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
@@ -284,8 +286,13 @@ that for the analysis we need to use a simpler decoder.
        has been produced with rev [[magit:~/phd/nC_projects/GranCellRothmanIf/::commit@7260f5d][GranCellRothmanIf.git
        commit #7260f5d]] in the granule cell model repo.
      [[file:fig/rate_IO.png][file:fig/rate_IO.png]]
-**** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
-**** TODO Implement Guy's network connection algorithm
+**** TODO Make a comparison between my f-f curve and what Jason had in Schwartz2012.
+**** DONE +Implement Guy's network connection algorithm+
+     CLOSED: [2013-12-02 Mon 10:30]
+     - CLOSING NOTE [2013-12-02 Mon 10:30] \\
+       No need for this; Guy is going to send me a bunch of network
+       realisations exported from his code, and I'll have to import them at
+       network creation time.
      Message from Guy:
      #+BEGIN_QUOTE
      Unless you have already solved it I would suggest an
@@ -318,6 +325,7 @@ that for the analysis we need to use a simpler decoder.
      problem. If there are any problems however, let me know because I
      will probably remember it at that stage!
      #+END_QUOTE
+**** TODO Implement importer for text-based network descriptions.
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
      mentioned when justifying the 30ms integration window
@@ -335,5 +343,30 @@ that for the analysis we need to use a simpler decoder.
        point, 1000 patterns, 50 repetitions, 150ms long simulations, and
        rate-coded k-means based decoding.
        
+**** TODO Implement sparsity measure.
+     Try playing around with a properly normalised version of the
+     Treves-Rolls sparsity measure (ie the Hoyer sparsity measure) and
+     what Willmore and Tolhurst (2001) call 'activity sparseness'.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
+   My guess is that, unless our choice of input correlations make a
+   massive difference, the d=10 network will be just as good as the
+   d=4 network at transmitting information, mainly because we are
+   operating with such a small number of patterns and so far away from
+   channel capacity. What /could/ be different, though, is the
+   sparsification: in that case, if the d=10 network sparsifies less,
+   we can then ask: /what is the required amount of tonic inhibition
+   to bring sparsification back to where it was with d=4? and what
+   happens to information transmission if we set inhibition to that
+   value?/ This would also offer a good way of formulating an
+   experimentally testable hypothesis: if information transmission is
+   still good even in this heavily inhibited case, then this is the
+   homeostatic compensation we expect to arise in a mutant mouse with
+   large d; otherwise, we expect to see some other mechanism coming
+   into play, but still something that would tend towards allowing
+   complete information transmission with a sparse code (for example,
+   conformational changes in the granule cell's ion channels or
+   a decrease in the amount of neurotransmitter released at the mossy
+   fibre synapse).
+
+*** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
