@@ -56,14 +56,14 @@ def hoyer_sparseness(level_array):
 
 def activity_sparseness(level_array):
     """if level_array is a n_stimuli*n_cells array of spike numbers/firing
-    rates, return the 'activity sparseness' measure as defined in
-    Willmore2001. For a given network response, this is just the number
-    of cells that are classified as 'non active' after thresholding
+    rates, return 1 minus the 'activity sparseness' measure as defined
+    in Willmore2001. For a given network response, this is just the
+    number of cells that are classified as 'active' after thresholding
     their spike count with the standard deviation of the spike counts
     across the network."""
     standard_deviations = np.atleast_2d(level_array.std(axis=1)).transpose()
     binary_activity = level_array > standard_deviations
-    return (level_array.size - binary_activity.sum())/float(level_array.size)
+    return binary_activity.sum()/float(level_array.size)
 
 def cluster_centroids(min_mf_number, grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, stim_rate_mu, stim_rate_sigma, noise_rate_mu, noise_rate_sigma, n_stim_patterns, n_trials, sim_duration, tau, dt, multineuron_metric_mixing, training_size, linkage_method, n_clusts, cell_type='grc'):
     '''Returns cluster centroids for the given analysis and number of clusters. Useful to build representations of the "typical" network activities at a particular resolution.'''
