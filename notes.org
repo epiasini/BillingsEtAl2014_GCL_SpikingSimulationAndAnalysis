@@ -263,9 +263,7 @@ that for the analysis we need to use a simpler decoder.
        sparsity measure as described in Hurley2009
      - what Willmore and Tolhurst (2001) call 'activity
        sparseness'.
-*** Plan B: is there an easy way of integrating
-       synaptic noise in our analysis?
-    CLOSED: [2013-12-02 Mon 11:10]
+*** Plan B: is there an easy way of integrating synaptic noise in our analysis?
 ** Technical upgrades needed 
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
@@ -367,10 +365,13 @@ that for the analysis we need to use a simpler decoder.
        point, 1000 patterns, 50 repetitions, 150ms long simulations, and
        rate-coded k-means based decoding.
        
-**** TODO [1/2] Implement sparsity measure.
+**** DONE [2/2] Implement sparsity measure.
+     CLOSED: [2013-12-03 Tue 16:22]
+     - CLOSING NOTE [2013-12-03 Tue 16:22] \\
+       Implemented both 'activity' and 'hoyer' sparseness measures in [[magit:~/phd/code/network/src/::commit@0577178][commit #0577178]].
      - [X] Implement measure candidates, so that I can play around
        with them while we decide on which ones to use.
-     - [ ] Add sparseness estimation to analysis workflow.
+     - [X] Add sparseness estimation to analysis workflow.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -394,3 +395,21 @@ that for the analysis we need to use a simpler decoder.
    fibre synapse).
 
 *** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
+    <2013-12-03 Tue> Preliminary simulations indicate that, at least
+    for the random bipartite graph and uncorrelated inputs, and for an
+    initial fraction of active mossy fibers of 0.5, the results on
+    sparsification are what we expect:
+    | dendrites | in sp (activity) | out sp (activity) | in sp (hoyer) | out sp (hoyer) |
+    |-----------+------------------+-------------------+---------------+----------------|
+    |         3 |              0.5 |              0.85 |          0.27 |           0.61 |
+    |         9 |              0.5 |              0.14 |          0.26 |           0.09 |
+    We can also note that, at least in this case, the /activity
+    sparseness/ measure seems to reflect better our intuition (I
+    wonder if the Treves-Rolls measure would perform better than the
+    Hoyer measure, here, the main difference between the two being a
+    square root operation). I'm running now a parameter sweep over
+    ~n_grc_dend~ and ~active_mf_fraction~ with a relatively small
+    number of simulated patterns (100) to understand if this is a
+    fluke or not, and more generally to compare the behaviour of the
+    two sparseness measures across a wider range of conditions.
+
