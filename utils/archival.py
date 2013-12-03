@@ -2,7 +2,7 @@ import numpy as np
 import h5py
 import fcntl
 
-from analysis import entropy, population_sparseness
+from analysis import entropy
 
 class Archive(object):
     def __init__(self, point):
@@ -57,9 +57,12 @@ class ResultsArchive(Archive):
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
                          'px_at_same_size_point',
+                         'i_level_array',
+                         'i_sparseness_hoyer',
+                         'i_sparseness_activity',
                          'o_level_array',
-                         'o_level_hist_values',
-                         'o_level_hist_edges',
+                         'o_sparseness_hoyer',
+                         'o_sparseness_activity',
                          'o_synchrony']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
@@ -97,9 +100,6 @@ class ResultsArchive(Archive):
             self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns]
             self.point.o_level_entropy = entropy(self.point.o_level_hist_values/float(self.point.o_level_hist_values.sum()))
             self.point.o_level_average_spiken = np.zeros(shape=(self.point.n_stim_patterns, self.point.n_grc))
-            for p in range(self.point.n_stim_patterns):
-                self.point.o_level_average_spiken[p,:] = np.mean(self.point.o_level_array[p*self.point.n_trials:(p+1)*self.point.n_trials], axis=0)
-            self.point.o_population_sparseness = population_sparseness(self.point.o_level_average_spiken)
             #self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
             #self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
             self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]

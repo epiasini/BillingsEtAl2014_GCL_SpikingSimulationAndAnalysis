@@ -10,7 +10,7 @@ import pyentropy as pe
 import pymuvr
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
-from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, output_level, synchrony
+from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, hoyer_sparseness, activity_sparseness
 
 class PSlice(object):
     """
@@ -100,8 +100,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
-            min_clusts_analysed = int(round(self.n_stim_patterns * 0.4))
-            max_clusts_analysed = int(round(self.n_stim_patterns * 1.6))
+            min_clusts_analysed = int(round(self.n_stim_patterns * 1.0))
+            max_clusts_analysed = int(round(self.n_stim_patterns * 1.0))
             clusts_step = int(round(self.n_stim_patterns * 0.05))
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
@@ -121,10 +121,18 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # compute mutual information by using direct clustering on training data (REMOVED)
             # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
             tr_direct_mi = np.zeros(n_tr_obs-1)
-
+            print('counting spikes in output spike trains')
+            i_level_array = self.spikes_arch.get_spike_counts(cell_type='mf')
+            o_level_array = self.spikes_arch.get_spike_counts(cell_type='grc')
+            print('computing input and output sparsity')
+            i_sparseness_hoyer = hoyer_sparseness(i_level_array)
+            i_sparseness_activity = activity_sparseness(i_level_array)
+            o_sparseness_hoyer = hoyer_sparseness(o_level_array)
+            o_sparseness_activity = activity_sparseness(o_level_array)
+            print('input sparseness: hoyer {:.2f}, activity {:.2f}'.format(i_sparseness_hoyer, i_sparseness_activity))
+            print('output sparseness: hoyer {:.2f}, activity {:.2f}'.format(o_sparseness_hoyer, o_sparseness_activity))
             if self.linkage_method_string == 'kmeans':
-                print('counting spikes in output spike trains')
-                spike_counts = self.spikes_arch.get_spike_counts()
+                spike_counts = o_level_array
                 Ym = self.n_stim_patterns
                 Ny = np.array([self.n_trials for each in range(self.n_stim_patterns)])
                 Xn = 1 # the output is effectively one-dimensional
@@ -207,9 +215,6 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     if n_clusts == self.n_stim_patterns:
                         px_at_same_size_point = s.PX    
 
-            # compute number of spikes fired by output cells
-            print("Calculating output levels")
-            o_level_array, o_level_hist_values, o_level_hist_edges = np.array([0]),np.array([0]),np.array([0]) #output_level(spikes)
             # compute output layer synchronisation (pairwise average of Schreiber's reliability measure)
             #random_observations_subset = spikes[random.sample(range(spikes.shape[0]), 1000)]
             #random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
@@ -224,9 +229,12 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
             self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
             self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
+            self.results_arch.update_result('i_level_array', data=i_level_array)
+            self.results_arch.update_result('i_sparseness_hoyer', data=i_sparseness_hoyer)
+            self.results_arch.update_result('i_sparseness_activity', data=i_sparseness_activity)
             self.results_arch.update_result('o_level_array', data=o_level_array)
-            self.results_arch.update_result('o_level_hist_values', data=o_level_hist_values)
-            self.results_arch.update_result('o_level_hist_edges', data=o_level_hist_edges)
+            self.results_arch.update_result('o_sparseness_hoyer', data=o_sparseness_hoyer)
+            self.results_arch.update_result('o_sparseness_activity', data=o_sparseness_activity)
             self.results_arch.update_result('o_synchrony', data=o_synchrony)
             # update attributes
             self.results_arch.load()
