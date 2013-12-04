@@ -347,6 +347,7 @@ that for the analysis we need to use a simpler decoder.
      problem. If there are any problems however, let me know because I
      will probably remember it at that stage!
      #+END_QUOTE
+**** TODO Use ~bias~ parameter to control tonic GABA.
 **** TODO Implement importer for text-based network descriptions.
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
@@ -372,6 +373,7 @@ that for the analysis we need to use a simpler decoder.
      - [X] Implement measure candidates, so that I can play around
        with them while we decide on which ones to use.
      - [X] Add sparseness estimation to analysis workflow.
+**** TODO Add dimension to analysis parameter space to represent integration window length.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -390,9 +392,55 @@ that for the analysis we need to use a simpler decoder.
    large d; otherwise, we expect to see some other mechanism coming
    into play, but still something that would tend towards allowing
    complete information transmission with a sparse code (for example,
-   conformational changes in the granule cell's ion channels or
-   a decrease in the amount of neurotransmitter released at the mossy
-   fibre synapse).
+   conformational changes in the granule cell's ion channels or a
+   decrease in the amount of neurotransmitter released at the mossy
+   fibre synapse). Or the mutant mouse's cerebellum might not function
+   as well as the wild type's, of course.
+*** Pushing the network to its limits <2013-12-04 Wed>
+    We assume that the purpose of the network is to strike a balance
+    between information transmission and sparsification. Some of the
+    parameters in the simulations are relatively free (like input
+    correlations and integration time window), and some can be changed
+    but we have an idea of what they should be in a 'normal' network
+    (like the amount of tonic inhibition). We want to compare, say,
+    the network with 4 dendrites to the network with 20 dendrites.
+**** Free parameters (input correlation, length of integration time window)
+     We start by estimating, in parameter space, the edge of the
+     region where the network with 4 dendrites transmits all of the
+     information. In practice, this means finding the maximum amount
+     of correlations in the inputs or the shortest integration window
+     we can use before we start losing information. We then see how
+     the network with 20 dendrites performs in these "extreme"
+     conditions: our guess is that it will transmit less information
+     for strongly correlated inputs and it will sparsify
+     (proportionately) less for short integration time windows. My
+     idea, though, by looking at the f-f curve in figure [[fig:rate_IO]]
+     and considering that our input rates won't go above 50Hz, is that
+     _at about 100ms we are already fairly close to the lower limit
+     for the integration window in the network with 4 dendrites_, as
+     already with 4 30Hz inputs we are below the 10Hz firing threshold
+     for detection of a single spike in such a time interval.
+**** Tonic inhibition
+     Tonic inhibition is not really a free parameter of our model, and
+     also has a very direct and obvious effect on sparsification. My
+     proposal is that we treat it as an example of a possible
+     homeostatic mechanism that could be used by the organism to
+     balance the extra excitation the GCL would get if the number of
+     dendrites was larger. We can then proceed as follows: we look at
+     the network in 'normal' conditions and we note the MI and the
+     sparsification, then we increase the number of dendrites from 4
+     to 20 and we estimate again these two measures. Presumably, MI
+     would be the same (if it's not, all the better) but there will be
+     less sparsification. We could then increase inhibition to a level
+     that will bring sparsification back to what we had with 4
+     dendrites, and observe if there is any decrease in transmitted
+     information. If that's the case, we can conclude that it's not
+     possible to achieve the same optimal tradeoff between information
+     and sparsity in a network with many dendrites without resorting
+     to some more complicated homeostatic mechanism.
+
+*** 1/r benchmark as mentioned in the discussion?
+
 
 *** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
     <2013-12-03 Tue> Preliminary simulations indicate that, at least
