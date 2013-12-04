@@ -217,5 +217,15 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
             except OSError:
                 print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
-shutil.rmtree(temp_dir) # this sometimes fails and raises an OSError ('couldn't delete directory...'). Doesn't do any harm, for the time being.
+print('removing job-specific temporary directory %s' % temp_dir)
+delete_attempts = 0
+while delete_attempts < 10:
+    try:
+        shutil.rmtree(temp_dir)
+        print('temporary directory removed')
+        break
+    except OSError:
+        delete_attempts += 1
+        print('waiting and retrying to remove temporary directory')
+        time.sleep(20)
 System.exit(0)
