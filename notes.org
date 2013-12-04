@@ -347,6 +347,8 @@ that for the analysis we need to use a simpler decoder.
      problem. If there are any problems however, let me know because I
      will probably remember it at that stage!
      #+END_QUOTE
+**** TODO Reduce maximum number of files used by a complete run through of the workflow.
+     - [ ] Make sure nC garbage gets cleaned up before a simulation job exits.
 **** TODO Use ~bias~ parameter to control tonic GABA.
 **** TODO Implement importer for text-based network descriptions.
 **** TODO Implement input correlations.
@@ -365,7 +367,6 @@ that for the analysis we need to use a simpler decoder.
        The whole workflow can run overnight for a single parameter space
        point, 1000 patterns, 50 repetitions, 150ms long simulations, and
        rate-coded k-means based decoding.
-       
 **** DONE [2/2] Implement sparsity measure.
      CLOSED: [2013-12-03 Tue 16:22]
      - CLOSING NOTE [2013-12-03 Tue 16:22] \\
@@ -373,6 +374,7 @@ that for the analysis we need to use a simpler decoder.
      - [X] Implement measure candidates, so that I can play around
        with them while we decide on which ones to use.
      - [X] Add sparseness estimation to analysis workflow.
+**** TODO Take info on number of cells from archive metadata and not from size of spike tables.
 **** TODO Add dimension to analysis parameter space to represent integration window length.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
