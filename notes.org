@@ -347,9 +347,15 @@ that for the analysis we need to use a simpler decoder.
      problem. If there are any problems however, let me know because I
      will probably remember it at that stage!
      #+END_QUOTE
-**** TODO [1/1] Reduce maximum number of files used by a complete run through of the workflow.
-     - [X] Make sure nC garbage gets cleaned up before a simulation job exits.
+**** DONE [1/1] Reduce maximum number of files used by a complete run through of the workflow.
+     CLOSED: [2013-12-05 Thu 11:13]
+     - CLOSING NOTE [2013-12-05 Thu 11:13] \\
+       Improved garbage collection in [[magit:~/phd/code/network/src/::commit@78beb48][commit #78beb48]]. Let's see if
+       this is enough.
+     - [X] Make sure nC garbage gets cleaned up before a simulation
+       job exits.
 **** TODO Use ~bias~ parameter to control tonic GABA.
+**** TODO Fix csv export of glomerular positions in Guy's mathematica notebook.
 **** TODO Implement importer for text-based network descriptions.
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
