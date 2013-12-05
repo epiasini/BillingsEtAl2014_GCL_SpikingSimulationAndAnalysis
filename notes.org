@@ -477,4 +477,10 @@ that for the analysis we need to use a simpler decoder.
     number of simulated patterns (100) to understand if this is a
     fluke or not, and more generally to compare the behaviour of the
     two sparseness measures across a wider range of conditions.
-
+    
+    <2013-12-05 Thu> The results from the parameter sweep look
+    encouraging in terms of behaviour of the 'activity' sparseness. It
+    looks like a (random) network with 4 dendrites sparsifies all
+    the time, one with 6 dendrites keeps the sparseness roughly the
+    same between input and output, and networks with 8 or 10 dendrites
+    always amplify.
