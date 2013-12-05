@@ -356,6 +356,15 @@ that for the analysis we need to use a simpler decoder.
        job exits.
 **** TODO Use ~bias~ parameter to control tonic GABA.
 **** TODO Fix csv export of glomerular positions in Guy's mathematica notebook.
+     It seems like glomerular positions are expressed as a list of
+     lists of 3d points, but the length of the lists of points is not
+     constant. Also, the graphml file seems to contain a glomerular
+     node for each list, and not for each point. What are the extra 3d
+     points for? what's the correspondence between nodes in the graph
+     and spatial coordinates? Maybe this has something to do with
+     having the glomeruli grouped by the MFs to which they belong, and
+     then keeping only one glomerulus per MF at some point downstream
+     in the code during network building.
 **** TODO Implement importer for text-based network descriptions.
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was

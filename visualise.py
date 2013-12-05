@@ -15,8 +15,9 @@ from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter
 
 
 
-plot_mi_detail = True
+plot_mi_detail = False
 plot_mi_heatmap = True
+plot_sparseness = True
 
 plot_dendrograms = False
 plot_mutual_information = False
@@ -32,22 +33,22 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-sim_duration = psl(300.0)
+sim_duration = psl(150.0)
 min_mf_number = psl(6)
-grc_mf_ratio = psl(2.)
-n_grc_dend = psl(4)
-network_scale = psl(5.)
-active_mf_fraction = psl(.1, 1., .1)
-bias = psl(-30., 5., 5.)
-stim_rate_mu = psl(120)
-stim_rate_sigma = psl(30)
-noise_rate_mu = psl(10, 70, 10)
+grc_mf_ratio = psl(2.9)
+n_grc_dend = psl(4, 11, 2)
+network_scale = psl(28.74)
+active_mf_fraction = psl(.1, 1., .2)
+bias = psl(0)
+stim_rate_mu = psl(80)
+stim_rate_sigma = psl(10)
+noise_rate_mu = psl(10)
 noise_rate_sigma = psl(10)
-n_stim_patterns = psl(20) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
-n_trials = psl(200)
-training_size = psl(40) # must be < min(n_trials)
+n_stim_patterns = psl(100) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+n_trials = psl(50)
+training_size = psl(20) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
-linkage_method = psl(0)
+linkage_method = psl(1)
 tau = psl(5)
 dt = psl(2)
 
@@ -60,6 +61,15 @@ if plot_mi_heatmap:
         rhm = RectangularHeatmapPlotter(subspace)
         rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/data/figures')
         plt.close(rhm.fig)
+
+if plot_sparseness:
+    for noise in space.get_range('noise_rate_mu'):
+        subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
+        rhm = RectangularHeatmapPlotter(subspace)
+        rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        plt.close(rhm.fig)
+    
 
 if plot_mi_detail:
     for p in space.flat:
