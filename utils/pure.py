@@ -1,3 +1,5 @@
+import networkx as nx
+
 BASE_DIR = "/home/ucbtepi/code/network/data"
 
 class SimpleParameterSpacePoint(object):
@@ -33,18 +35,15 @@ class SimpleParameterSpacePoint(object):
         self.n_stim_patterns = int(round(n_stim_patterns))
         self.SIZE_PER_SIMULATION = self.n_stim_patterns # TODO: rename this to something more sensible as "workers_per_parameter_space_point", or remove it altogether.
         self.n_trials = int(round(n_trials))
-        #--useful quantities
-        self.n_mf = int(round(self.min_mf_number * self.network_scale))
-        self.n_grc = int(round(self.n_mf * self.grc_mf_ratio))
         #--relevant filenames
         self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (self.BASE_DIR,
                                                                       self.grc_mf_ratio,
                                                                       self.n_grc_dend,
                                                                       self.network_scale)
-        self.conn_pattern_filename = "%s/gmr%.02f_gd%d_s%.02f_conn.txt" % (self.net_structure_folder_path,
-                                                                           self.grc_mf_ratio,
-                                                                           self.n_grc_dend,
-                                                                           self.network_scale)
+        self.graphml_network_filename = "%s/gmr%.02f_gd%d_s%.02f.graphml" % (self.net_structure_folder_path,
+                                                                             self.grc_mf_ratio,
+                                                                             self.n_grc_dend,
+                                                                             self.network_scale)
         self.stim_pattern_filename = "%s/f%.02f/gmr%.02f_gd%d_s%.02f_sp%d_stim.txt" % (self.net_structure_folder_path,
                                                                                        self.active_mf_fraction,
                                                                                        self.grc_mf_ratio,
@@ -58,6 +57,16 @@ class SimpleParameterSpacePoint(object):
                                                                          self.stim_rate_sigma,
                                                                          self.noise_rate_mu,
                                                                          self.noise_rate_sigma)
+        #--useful quantities
+        self.network_graph = nx.read_graphml(self.graphml_network_filename)
+        self.graph_mf_nodes = [n for n,d in self.network_graph.nodes(data=True) if d['bipartite']==0]
+        self.graph_grc_nodes = [n for n,d in self.network_graph.nodes(data=True) if d['bipartite']==1]
+        self.n_mf = len(self.graph_mf_nodes)
+        self.n_grc = len(self.graph_grc_nodes)
+        # calculate the number of mf terminals that had to be pruned
+        # after network generation, thus creating a gap in the
+        # indexing of nodes between mfs and grcs. Should be 1.
+        self.pruned_mfs = max([int(n) for n in self.graph_grc_nodes]) - (self.n_mf + self.n_grc)
     def __repr__(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
         return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
@@ -68,6 +77,18 @@ class SimpleParameterSpacePoint(object):
         Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.
         """
         return "sp%d_t%d_spn%d_tn%d" % (self.n_stim_patterns, self.n_trials, stimulus_pattern_index, trial)
+    def nC_cell_index_from_graph_node(self, node):
+        """
+        given the name of a graph node, return the nC CellGroup and the
+        index of the cell in the group.
+        """
+        int_node = int(node)
+        if int_node <= self.n_mf:
+            return int_node - 1, 'MFs'
+        else:
+            return int_node - (self.n_mf + self.pruned_mfs + 1), 'GrCs'
+
+
 
 
 def plast_correction_factor(f, syn_type):

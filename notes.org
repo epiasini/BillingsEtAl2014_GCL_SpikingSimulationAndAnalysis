@@ -391,6 +391,7 @@ that for the analysis we need to use a simpler decoder.
      - [X] Add sparseness estimation to analysis workflow.
 **** TODO Take info on number of cells from archive metadata and not from size of spike tables.
 **** TODO Add dimension to analysis parameter space to represent integration window length.
+**** TODO Remove saving of all rates to results archives before running with big network
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
