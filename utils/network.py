@@ -11,15 +11,12 @@ def generate_nC_network(point, project_manager, project, sim_config):
     This should be used instead than pm.doGenerate(sim_config_name,
     nC_seed) to build the general structure of the network
     """
-    # if this sim config has never been generated, generate it to make
-    # sure we have the recordings in place
-    if not project.generatedPlotSaves.getSavedPlotSaves():
-        project_manager.doGenerate(sim_config.getName(), 1234)
-    # delete all existing generated connections
-    project.generatedNetworkConnections.reset()
-    # delete all existing cell positions
+    # delete all existing cells
+    for cell_group in ['MFs', 'GrCs']:
+        adapter = project.cellGroupsInfo.getCellPackingAdapter(cell_group)
+        adapter.reset()
     project.generatedCellPositions.reset()    
-    # generate cell positions according to network graph
+    # set cell positions according to network graph
     for node in point.network_graph.nodes():
         cell, group_name = point.nC_cell_index_from_graph_node(node)
         project.generatedCellPositions.addPosition(group_name,
@@ -27,12 +24,37 @@ def generate_nC_network(point, project_manager, project, sim_config):
                                                    point.network_graph.node[node]['x'],
                                                    point.network_graph.node[node]['y'],
                                                    point.network_graph.node[node]['z'])
+    # delete all existing generated connections
+    project.generatedNetworkConnections.reset()
     # generate connections according to the network graph
     for mf in point.graph_mf_nodes:
         for gr in point.network_graph.neighbors(mf):
             for syn_type in ['RothmanMFToGrCAMPA', 'RothmanMFToGrCNMDA']:
                 conn_name = 'MFs_to_GrCs_' + syn_type[-4:]
                 project.generatedNetworkConnections.addSynapticConnection(conn_name, point.nC_cell_index_from_graph_node(mf)[0], point.nC_cell_index_from_graph_node(gr)[0])
+
+def generate_nC_saves(point, project):
+    """
+    This should be used instead than pm.doGenerate(sim_config_name,
+    nC_seed) to set up the saves for the simulation.
+    """
+    # delete all existing plots and saves
+    project.generatedPlotSaves.reset()
+    
+    # include saves for MFs and GrCs
+    for sim_plot_name in ["MF_spikes", "GrC_spikes"]:
+        all_cells_in_group = True
+        all_segments = False
+        sim_plot = project.simPlotInfo.getSimPlot(sim_plot_name)
+        cell_nums_to_plot_list = [int(x) for x in range(project.generatedCellPositions.getNumberInCellGroup(sim_plot.getCellGroup()))]
+        cell_nums_to_plot = ArrayList(cell_nums_to_plot_list)
+        seg_ids_to_plot = ArrayList([int(sim_plot.getSegmentId())])
+        project.generatedPlotSaves.addPlotSaveDetails(sim_plot.getPlotReference(),
+                                                      sim_plot,
+                                                      cell_nums_to_plot,
+                                                      seg_ids_to_plot,
+                                                      all_cells_in_group,
+                                                      all_segments)
 
 def generate_nC_stimuli(point, project, sim_config, stim_pattern):
     """
