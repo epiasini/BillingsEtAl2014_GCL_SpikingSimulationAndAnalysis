@@ -24,22 +24,34 @@ class SpikesArchive(Archive):
         # in read-only mode.
         # TODO: this actually needs to be revised, since ultimately we would like to use the
         # SpikesArchive object also in the compress.py script, which means write-access as well.
+        self.load_attrs()
+        if cell_type == 'grc':
+            n_cells = self.attrs['n_gr']
+        elif cell_type == 'mf':
+            n_cells = self.attrs['n_mf']
         hdf5_handle = self.open_hdf5_handle()
-        try:
-            if cell_type == 'grc':
-                n_cells = hdf5_handle.attrs['n_gr']
-            elif cell_type == 'mf':
-                n_cells = hdf5_handle.attrs['n_mf']
-        except KeyError:
-            raise Exception('Error while trying to access spike archive: {0}'.format(self.path))
         observation_list = [np.array(x[1]['{0}_spiketimes'.format(cell_type)]) for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         hdf5_handle.close()
         spikes = [[c[c>0].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
     def get_spike_counts(self, cell_type='grc'):
+        self.load_attrs()
+        if cell_type == 'grc':
+            n_cells = self.attrs['n_gr']
+        elif cell_type == 'mf':
+            n_cells = self.attrs['n_mf']
         hdf5_handle = self.open_hdf5_handle()
         observation_handles = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         spike_counts = np.array([[np.sum(c > 0) for c in np.array(o).transpose()] for o in observation_handles])
+        if spike_counts.dtype == np.dtype('O')
+            # network was completely silent for at least one
+            # observation. We need to carefully loop over all
+            # observations to avoid the problematic case
+            spike_counts = np.zeros(shape=(len(observation_handles), n_cells))
+            for n, oh in enumerate(observation_handles):
+                ob = np.array(oh)
+                if ob.size:
+                    spike_counts[n] = np.sum(ob > 0, axis=0)
         hdf5_handle.close()
         return spike_counts
 
