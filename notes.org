@@ -355,7 +355,13 @@ that for the analysis we need to use a simpler decoder.
      - [X] Make sure nC garbage gets cleaned up before a simulation
        job exits.
 **** TODO Use ~bias~ parameter to control tonic GABA.
-**** TODO Fix csv export of glomerular positions in Guy's mathematica notebook.
+**** DONE Fix csv export of glomerular positions in Guy's mathematica notebook.
+     CLOSED: [2013-12-08 Sun 19:03]
+     - CLOSING NOTE [2013-12-08 Sun 19:03] \\
+       Done. This required changing his Mathematica library to add a function
+       to compute an adjacency matrix for the network composed by glomeruli
+       and granules (as opposed to the network composed by mossy fibres and
+       granules), and updating the network generation notebook accordingly.
      It seems like glomerular positions are expressed as a list of
      lists of 3d points, but the length of the lists of points is not
      constant. Also, the graphml file seems to contain a glomerular
@@ -365,7 +371,26 @@ that for the analysis we need to use a simpler decoder.
      having the glomeruli grouped by the MFs to which they belong, and
      then keeping only one glomerulus per MF at some point downstream
      in the code during network building.
-**** TODO Implement importer for text-based network descriptions.
+**** DONE Implement importer for text-based network descriptions.
+     CLOSED: [2013-12-08 Sun 19:05]
+     - CLOSING NOTE [2013-12-08 Sun 19:05] \\
+       Done in [[magit:~/phd/code/network/src/::commit@63aacda][commit #63aacda]], and added a script in [[magit:~/phd/code/network/src/::commit@ebe4d78][commit #ebe4d78]]
+       which takes care of setting up the data directories and to copy
+       the graphml files in place for a predefined set of network
+       structure configurations.  The figures below show a 3D view
+       (made with the [[file:scripts/visualise_network.py::filename%20%3D%20'/home/ucbtepi/code/network/data/network_structures/gd4/GCLconnectivity_full.graphml'][mayavi-based network visualisation script]]) and a
+       (x, y) projection (made with Gephi) of an instantiation of the
+       network with 4 dendrites. Also shown is a map of the number of
+       degrees of separation between one granule node (in red) and the
+       other nodes. A correlation between euclidean and separation
+       distance is evident.
+       #+ATTR_HTML: :width 60%
+       [[file:fig/tissue_model_3d_gd4.png][file:~/phd/code/network/src/fig/tissue_model_3d_gd4.png]]
+       #+ATTR_HTML: :width 60%
+       [[file:fig/tissue_model_gd4.png][file:~/phd/code/network/src/fig/tissue_model_gd4.png]]
+       #+ATTR_HTML: :width 60%
+       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:~/phd/code/network/src/fig/tissue_model_distance_from_gr_gd4.png]]
+       
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
      mentioned when justifying the 30ms integration window
@@ -389,9 +414,15 @@ that for the analysis we need to use a simpler decoder.
      - [X] Implement measure candidates, so that I can play around
        with them while we decide on which ones to use.
      - [X] Add sparseness estimation to analysis workflow.
-**** TODO Take info on number of cells from archive metadata and not from size of spike tables.
+**** DONE Take info on number of cells from archive metadata and not from size of spike tables.
+     CLOSED: [2013-12-08 Sun 19:08]
+     - CLOSING NOTE [2013-12-08 Sun 19:08] \\
+       Done in [[magit:~/phd/code/network/src/::commit@d239378][commit #d239378]].
 **** TODO Add dimension to analysis parameter space to represent integration window length.
-**** TODO Remove saving of all rates to results archives before running with big network
+**** DONE Remove saving of all rates to results archives before running with big network
+     CLOSED: [2013-12-08 Sun 19:13]
+     - CLOSING NOTE [2013-12-08 Sun 19:13] \\
+       Done in [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
