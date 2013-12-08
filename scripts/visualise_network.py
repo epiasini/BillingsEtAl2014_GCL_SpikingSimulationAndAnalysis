@@ -1,6 +1,7 @@
 import networkx as nx
 import numpy as np
 from mayavi import mlab
+
 mlab.figure(1, bgcolor=(0, 0, 0))
 mlab.clf()
 
@@ -20,14 +21,14 @@ y = g_pos_matrix[:,1]
 z = g_pos_matrix[:,2]
 s = g_id_matrix
 pts = mlab.points3d(x, y, z, s,
-                    scale_factor=4,
+                    scale_factor=3,
                     resolution=10,
                     opacity=1,
                     scale_mode='none')
 pts.mlab_source.dataset.lines = np.array(g_a_list)
 
 # Use a tube fiter to plot tubes on the link
-tube = mlab.pipeline.tube(pts, tube_radius=0.05)
+tube = mlab.pipeline.tube(pts, tube_radius=0.04)
 tube.filter.radius_factor = 1.
 #tube.filter.vary_radius = 'vary_radius_by_scalar'
 mlab.pipeline.surface(tube, color=(0.8, 0.8, 0))
