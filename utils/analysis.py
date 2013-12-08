@@ -43,16 +43,16 @@ def output_level(spike_array):
 def hoyer_sparseness(level_array):
     """if level_array is a n_stimuli*n_cells array of spike numbers/firing
     rates, return the mean Hoyer sparseness measure, as described in
-    Hurley2009, which is a proerly normalised version of the 'modified
+    Hurley2009, which is a properly normalised version of the 'modified
     Treves-Rolls measure' as discussed in Willmore2001. Formally, this
     measure is not defined for stimuli which do not evoke any
-    response: we set the sparsity to 1 in this case."""
+    response: we set the sparsity to 0 in this case."""
     n_cells = level_array.shape[1]
     response_sparseness = (np.sqrt(n_cells) - level_array.sum(axis=1)/np.sqrt(np.square(level_array).sum(axis=1))) / (np.sqrt(n_cells) - 1)
     response_sparseness[np.isnan(response_sparseness)] = 0
     # now we average across all stimuli to get the average population
     # sparseness for the dataset. 
-    return response_sparseness.mean()
+    return 1 - response_sparseness.mean()
 
 def activity_sparseness(level_array):
     """if level_array is a n_stimuli*n_cells array of spike numbers/firing
