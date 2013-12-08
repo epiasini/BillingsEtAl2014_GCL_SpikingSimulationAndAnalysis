@@ -13,6 +13,7 @@ for n_grc_dend in n_grc_dend_range:
     grc_pos = np.loadtxt(join(current_dir, 'GCpositions.csv'), delimiter=',')
     mf_pos = np.loadtxt(join(current_dir, 'GLOMpositions.csv'), delimiter=',')
     n_grc = grc_pos.shape[0]
+    n_mf = mf_pos.shape[0]
     # add namespace declaration to work around Mathematica's sloppy handling of graphml
     graphml_file = join(current_dir, 'GCLconnectivity.graphml')
     for line in fileinput.input(graphml_file, inplace=True):
@@ -22,10 +23,9 @@ for n_grc_dend in n_grc_dend_range:
             sys.stdout.write(line)
     # load graphml file as a nx.Graph object
     g = nx.read_graphml(graphml_file, node_type=int)
-    n_mf = g.number_of_nodes() - n_grc
-    #assert g.number_of_nodes() == n_grc + n_mf
+    assert g.number_of_nodes() == n_grc + n_mf
     # remove isolated nodes
-    g.remove_nodes_from(nx.isolates(g))
+    #g.remove_nodes_from(nx.isolates(g))
     # add position attributes
     for node in g.nodes():
         # remember that node ids go from 1 to n_grc or n_mf
