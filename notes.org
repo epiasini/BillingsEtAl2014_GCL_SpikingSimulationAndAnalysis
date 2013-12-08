@@ -377,19 +377,29 @@ that for the analysis we need to use a simpler decoder.
        Done in [[magit:~/phd/code/network/src/::commit@63aacda][commit #63aacda]], and added a script in [[magit:~/phd/code/network/src/::commit@ebe4d78][commit #ebe4d78]]
        which takes care of setting up the data directories and to copy
        the graphml files in place for a predefined set of network
-       structure configurations.  The figures below show a 3D view
-       (made with the [[file:scripts/visualise_network.py::filename%20%3D%20'/home/ucbtepi/code/network/data/network_structures/gd4/GCLconnectivity_full.graphml'][mayavi-based network visualisation script]]) and a
-       (x, y) projection (made with Gephi) of an instantiation of the
-       network with 4 dendrites. Also shown is a map of the number of
+       structure configurations. Shown below in figure
+       [[fig:tissue_model_3d_view]] is a 3D view (made with the
+       [[file:scripts/visualise_network.py::filename%20%3D%20'/home/ucbtepi/code/network/data/network_structures/gd4/GCLconnectivity_full.graphml'][mayavi-based network visualisation script]]) and in figure
+       [[fig:tissue_model_2d_view]] a (x, y) projection (made with [[https://gephi.org][Gephi]])
+       of an instantiation of the network with 4 dendrites. Figure
+       [[fig:tissue_model_distance_from_gr]] shows a map of the number of
        degrees of separation between one granule node (in red) and the
        other nodes. A correlation between euclidean and separation
        distance is evident.
+       #+CAPTION: three-dimensional view of a network exported from the Mathematica toolbox.
+       #+NAME: fig:tissue_model_3d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_3d_gd4.png][file:~/phd/code/network/src/fig/tissue_model_3d_gd4.png]]
+       [[file:fig/tissue_model_3d_gd4.png][file:fig/tissue_model_3d_gd4.png]]
+
+       #+CAPTION: (x, y) projection of an exported network. Red: glomeruli; light blue: granule cells.
+       #+NAME: fig:tissue_model_2d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_gd4.png][file:~/phd/code/network/src/fig/tissue_model_gd4.png]]
+       [[file:fig/tissue_model_gd4.png][file:fig/tissue_model_gd4.png]]
+
+       #+CAPTION: color-coded map of length of the shortest path between the granule cell in red and all the other cells in the network. Light colours mean longer distances.
+       #+NAME: fig:tissue_model_distance_from_gr
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:~/phd/code/network/src/fig/tissue_model_distance_from_gr_gd4.png]]
+       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:fig/tissue_model_distance_from_gr_gd4.png]]
        
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
