@@ -43,7 +43,7 @@ class SpikesArchive(Archive):
         hdf5_handle = self.open_hdf5_handle()
         observation_handles = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         spike_counts = np.array([[np.sum(c > 0) for c in np.array(o).transpose()] for o in observation_handles])
-        if spike_counts.dtype == np.dtype('O')
+        if spike_counts.dtype == np.dtype('O'):
             # network was completely silent for at least one
             # observation. We need to carefully loop over all
             # observations to avoid the problematic case
