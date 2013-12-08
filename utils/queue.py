@@ -88,17 +88,7 @@ class BatchManager(object):
         except OSError:
             # this means that the directory is already there
             pass
-        # create connection pattern and save it in a text file
-        n_mf = int(round(point.min_mf_number * point.network_scale))
-        n_gr = int(round(n_mf * point.grc_mf_ratio))
-        if not os.path.exists(point.conn_pattern_filename):
-            conn_pattern = [random.sample(range(n_mf), point.n_grc_dend) for each in range(n_gr)]
-            conn_pattern_file = open(point.conn_pattern_filename, "w")
-            for gr in range(n_gr):
-                for mf in conn_pattern[gr]:
-                    conn_pattern_file.write(str(mf) + " ")
-                conn_pattern_file.write("\n")
-            conn_pattern_file.close()
+        n_mf = point.n_mf
         # generate random stimulation patterns and save them in a text file
         if not os.path.exists(point.stim_pattern_filename):
             active_mf_number = int(round(n_mf*point.active_mf_fraction))
