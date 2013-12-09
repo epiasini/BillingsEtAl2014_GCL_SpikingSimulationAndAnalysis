@@ -58,15 +58,13 @@ class SimpleParameterSpacePoint(object):
                                                                          self.noise_rate_mu,
                                                                          self.noise_rate_sigma)
         #--useful quantities
-        self.network_graph = nx.read_graphml(self.graphml_network_filename)
+        self.network_graph = nx.read_graphml(self.graphml_network_filename,
+                                             node_type=int)
         self.graph_mf_nodes = [n for n,d in self.network_graph.nodes(data=True) if d['bipartite']==0]
         self.graph_grc_nodes = [n for n,d in self.network_graph.nodes(data=True) if d['bipartite']==1]
         self.n_mf = len(self.graph_mf_nodes)
         self.n_grc = len(self.graph_grc_nodes)
-        # calculate the number of mf terminals that had to be pruned
-        # after network generation, thus creating a gap in the
-        # indexing of nodes between mfs and grcs. Should be 1.
-        self.pruned_mfs = max([int(n) for n in self.graph_grc_nodes]) - (self.n_mf + self.n_grc)
+        assert self.n_mf + self.n_grc == self.network_graph.number_of_nodes()
     def __repr__(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
         return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
@@ -82,17 +80,7 @@ class SimpleParameterSpacePoint(object):
         given the name of a graph node, return the nC CellGroup and the
         index of the cell in the group.
         """
-        int_node = int(node)
-        if int_node <= self.n_mf:
-            return int_node - 1, 'MFs'
+        if node <= self.n_mf:
+            return node - 1, 'MFs'
         else:
-            return int_node - (self.n_mf + self.pruned_mfs + 1), 'GrCs'
-
-
-
-
-def plast_correction_factor(f, syn_type):
-    if syn_type=='AMPA':
-        return 0.92 - 0.004*f + 1e-5 * f**2
-    elif syn_type=='NMDA':
-        return 0.94 - 0.0032*f + 8.5e-6 * f**2
+            return node - (self.n_mf + 1), 'GrCs'
