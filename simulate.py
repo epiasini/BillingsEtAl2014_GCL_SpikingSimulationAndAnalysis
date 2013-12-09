@@ -19,7 +19,7 @@ from ucl.physiol.neuroconstruct.project import ProjectManager
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
-from utils.pure import SimpleParameterSpacePoint, plast_correction_factor
+from utils.pure import SimpleParameterSpacePoint
 from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli
 
 point = eval(sys.argv[1])
