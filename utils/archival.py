@@ -41,6 +41,7 @@ class SpikesArchive(Archive):
             # network was completely silent for at least one
             # observation. We need to carefully loop over all
             # observations to avoid the problematic case
+            print("archive {0}: found at least one completely silent observation.".format(self.path))
             spike_counts = np.zeros(shape=(len(observation_handles), n_cells))
             for n, oh in enumerate(observation_handles):
                 ob = np.array(oh)
