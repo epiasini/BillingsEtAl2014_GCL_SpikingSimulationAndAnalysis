@@ -7,6 +7,7 @@ import os
 import glob
 import h5py
 import re
+import networkx
 import numpy as np
 
 from utils.parameters import ParameterSpacePoint
@@ -20,19 +21,25 @@ except IndexError:
 
 sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 
-n_mf = int(round(point.min_mf_number * point.network_scale))
-n_gr = int(round(n_mf * point.grc_mf_ratio))
-
 # open the hdf5 file
 archive = point.spikes_arch.open_hdf5_handle()
-
-# load connection pattern from txt file and save it in the hdf5 file
-conn_pattern = np.loadtxt(point.conn_pattern_filename, dtype=np.int)
-archive.create_dataset("conn_pattern", data=conn_pattern)
-archive.create_dataset("bias", data=point.bias)
-archive.attrs['n_mf'] = n_mf
-archive.attrs['n_gr'] = n_gr
+archive.attrs['n_mf'] = point.n_mf
+archive.attrs['n_grc'] = point.n_grc
 archive.attrs['point_representation'] = repr(point)
+
+# load network description from graphml file and save it in the hdf5 file
+network_adjacency_matrix = networkx.to_numpy_matrix(point.network_graph)
+cell_positions = {'MFs':np.zeros(shape=(point.n_mf, 3)),
+                  'GrCs':np.zeros(shape=(point.n_grc, 3))}
+for node in point.network_graph.nodes():
+    cell, group_name = point.nC_cell_index_from_graph_node(node)
+    cell_positions[group_name][cell,0] = point.network_graph.node[node]['x']
+    cell_positions[group_name][cell,1] = point.network_graph.node[node]['y']
+    cell_positions[group_name][cell,2] = point.network_graph.node[node]['z']
+archive.create_dataset("network_adjacency_matrix", data=network_adjacency_matrix)
+archive.create_dataset("cell_positions_MFs", data=cell_positions['MFs'])
+archive.create_dataset("cell_positions_GrCs", data=cell_positions['GrCs'])
+archive.create_dataset("bias", data=point.bias)
 
 # load the file containing the stimulation patterns
 spf = open(point.stim_pattern_filename, "r")

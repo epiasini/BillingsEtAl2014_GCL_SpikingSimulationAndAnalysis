@@ -25,10 +25,7 @@ class SpikesArchive(Archive):
         # TODO: this actually needs to be revised, since ultimately we would like to use the
         # SpikesArchive object also in the compress.py script, which means write-access as well.
         self.load_attrs()
-        if cell_type == 'grc':
-            n_cells = self.attrs['n_gr']
-        elif cell_type == 'mf':
-            n_cells = self.attrs['n_mf']
+        n_cells = self.attrs['n_'+cell_type]
         hdf5_handle = self.open_hdf5_handle()
         observation_list = [np.array(x[1]['{0}_spiketimes'.format(cell_type)]) for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         hdf5_handle.close()
@@ -36,10 +33,7 @@ class SpikesArchive(Archive):
         return spikes
     def get_spike_counts(self, cell_type='grc'):
         self.load_attrs()
-        if cell_type == 'grc':
-            n_cells = self.attrs['n_gr']
-        elif cell_type == 'mf':
-            n_cells = self.attrs['n_mf']
+        n_cells = self.attrs['n_'+cell_type]
         hdf5_handle = self.open_hdf5_handle()
         observation_handles = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         spike_counts = np.array([[np.sum(c > 0) for c in np.array(o).transpose()] for o in observation_handles])
