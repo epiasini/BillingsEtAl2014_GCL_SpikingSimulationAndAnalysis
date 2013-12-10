@@ -1,6 +1,7 @@
 import sys
 from os.path import abspath, dirname, join
 import networkx as nx
+from networkx.algorithms import bipartite
 import numpy as np
 import fileinput
 
@@ -41,5 +42,12 @@ for n_grc_dend in n_grc_dend_range:
             g.node[node]['x'] = float(grc_pos[pos_index, 0])
             g.node[node]['y'] = float(grc_pos[pos_index, 1])
             g.node[node]['z'] = float(grc_pos[pos_index, 2])
+    # project bipartite graph onto GrCs
+    grc_nodes = set(n for n,d in g.nodes(data=True) if d['bipartite']==1)
+    h = bipartite.weighted_projected_graph(g, grc_nodes)
+    # invert weight to give a correct 'heatmap' plot in Gephi
+    for u, v, data in h.edges(data=True):
+        data['weight'] = n_grc_dend - data['weight']
     # export as graphml
     nx.write_graphml(g, join(current_dir, 'GCLconnectivity_full.graphml'))
+    nx.write_graphml(h, join(current_dir, 'GCLconnectivity_full_projected.graphml'))
