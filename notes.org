@@ -406,6 +406,47 @@ that for the analysis we need to use a simpler decoder.
      mentioned when justifying the 30ms integration window
      hypothesis. My input patterns should live within that range as
      well.
+**** DONE Substitute Jython 2.5 with 2.7b1 in nC, test and make a pull request
+     CLOSED: [2013-12-09 Mon 23:03]
+     - CLOSING NOTE [2013-12-09 Mon 23:03] \\
+       [[http://bugs.jython.org/issue2070][An issue]] with Jython 2.7b1 prevents recent versions of xlrd to be
+       imported. xlrd is a package that was bundled with nC/Jython upon
+       request by the OpenWorm people. It's possible to bundle an earlier
+       version, though, which would still be newer than the one we currently
+       offer. I've made a pull request and there is [[https://github.com/NeuralEnsemble/neuroConstruct/issues/33][a discussion]] going on on
+       github at the moment. We'll see what comes out of it.
+**** TODO Fix out of memory error for qstat poller
+     #+BEGIN_SRC sh
+     SIM: 172 running, 68 waiting, 0 other jobs, 473 in the pre-queue
+     Traceback (most recent call last):
+       File "master_script.py", line 85, in <module>
+	 batch_manager.update_status()
+       File "/home/ucbtepi/code/network/src/utils/queue.py", line 126, in update_status
+	 self.simulation.update_jobs_and_check_for_CME()
+       File "/home/ucbtepi/code/network/src/utils/queue.py", line 56, in update_jobs_and_check_for_CME
+	 self.update_job_sets()
+       File "/home/ucbtepi/code/network/src/utils/queue.py", line 53, in update_job_sets
+	 self.waiting_jobs = self._managed_jids_from_qstat('-s', 'p')
+       File "/home/ucbtepi/code/network/src/utils/queue.py", line 21, in _managed_jids_from_qstat
+	 stat_lines = Popen(itertools.chain(['qstat'], qstat_argument_list), stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
+       File "/share/apps/python/lib/python2.7/subprocess.py", line 672, in __init__
+	 errread, errwrite)
+       File "/share/apps/python/lib/python2.7/subprocess.py", line 1112, in _execute_child
+	 self.pid = os.fork()
+     OSError: [Errno 12] Cannot allocate memory
+     #+END_SRC
+     This is probably caused by the fact that (from [[http://stackoverflow.com/a/13329386][a question on
+     stack overflow]])
+     #+BEGIN_QUOTE
+     subprocess.Popen uses fork/clone under the hood, meaning that every
+     time you call it you're requesting once more as much memory as Python
+     is already eating up.
+     #+END_QUOTE
+     The solution is to reimplement qstat poller as a shell script
+     spawned at the start of ~master_script~. This poller should keep
+     probing the queue status on a loop (qstat;wait;etc) and output to
+     stdout. ~master_script~ should just 'poll the poller' by using
+     its ~stdout~ attribute (see [[http://docs.python.org/2/library/subprocess.html#subprocess.Popen.stdout][the suprocess docs]]).
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]

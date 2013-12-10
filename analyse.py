@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage example: analyse.py ParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200,40,0,5,2)"""
+"""Usage example: analyse.py ParameterSpacePoint(300,6,2.90,4,28.74,0.5,0,80,10,10,10,100,50,20,0,1,5,2)"""
 import sys
 
 from utils.parameters import ParameterSpacePoint
