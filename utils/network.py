@@ -33,6 +33,8 @@ def generate_nC_network(point, project_manager, project, sim_config):
                 conn_name = 'MFs_to_GrCs_' + syn_type[-4:]
                 project.generatedNetworkConnections.addSynapticConnection(conn_name, point.nC_cell_index_from_graph_node(mf)[0], point.nC_cell_index_from_graph_node(gr)[0])
 
+    #export_to_neuroml(point, project, sim_config)
+
 def generate_nC_saves(point, project):
     """
     This should be used instead than pm.doGenerate(sim_config_name,
@@ -80,4 +82,34 @@ def generate_nC_stimuli(point, project, sim_config, stim_pattern):
         project.elecInputInfo.addStim(stim)
         sim_config.addInput(stim.getReference())
         project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
+
+def export_to_neuroml(point, project, sim_config):
+    # export to NeuroML (debug feature)
+    from os.path import join, abspath, dirname
+    import shutil
+    from java.io import File
+    from ucl.physiol.neuroconstruct.neuroml import NeuroMLFileManager, NeuroMLConstants, LemsConstants
+    from ucl.physiol.neuroconstruct.cell.compartmentalisation import CompartmentalisationManager
+    from ucl.physiol.neuroconstruct.utils.units import UnitConverter
+    
+    neuroml_path = '/tmp/generatedNeuroML2'
+    structure_file_path = '/tmp/if_gl/conn'
+    mf_pos_file_path = '/tmp/if_gl/mf_pos'
+    grc_pos_file_path = '/tmp/if_gl/grc_pos'
+    neuroml_version = NeuroMLConstants.NeuroMLVersion.NEUROML_VERSION_2_BETA
+    lems_option = LemsConstants.LemsOption.NONE
+    mc = CompartmentalisationManager.getOrigMorphCompartmentalisation()
+    units = UnitConverter.getUnitSystemDescription(UnitConverter.GENESIS_PHYSIOLOGICAL_UNITS);
+    neuroml_dir = File(neuroml_path)
+    NeuroMLFileManager.saveNetworkStructureXML(project,
+                                               File("/tmp/GeneratedNeuroML2.xml"),
+                                               False,
+                                               False,
+                                               sim_config.getName(),
+                                               "Physiological Units",
+                                               NeuroMLConstants.NeuroMLVersion.NEUROML_VERSION_2_BETA,
+                                               None)
+    print('Exporting network in NeuroML2 format in ' + neuroml_path)
+    project.neuromlFileManager.reset()
+    project.neuromlFileManager.generateNeuroMLFiles(sim_config, neuroml_version, lems_option, mc, 1234, False, False, neuroml_dir, units, False)
         
