@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 from mayavi import mlab
 
-mlab.figure(1, bgcolor=(0, 0, 0))
+mlab.figure(1, bgcolor=(1, 1, 1))
 mlab.clf()
 
 # this code has been taken from the 'protein example' on the mayavi website.
@@ -24,14 +24,15 @@ pts = mlab.points3d(x, y, z, s,
                     scale_factor=3,
                     resolution=10,
                     opacity=1,
-                    scale_mode='none')
+                    scale_mode='none',
+                    colormap='RdYlBu')
 pts.mlab_source.dataset.lines = np.array(g_a_list)
 
 # Use a tube fiter to plot tubes on the link
-tube = mlab.pipeline.tube(pts, tube_radius=0.04)
+tube = mlab.pipeline.tube(pts, tube_radius=0.1)
 tube.filter.radius_factor = 1.
 #tube.filter.vary_radius = 'vary_radius_by_scalar'
-mlab.pipeline.surface(tube, color=(0.8, 0.8, 0))
+mlab.pipeline.surface(tube, color=(0.2, 0.2, 0.2))
 
 # # Visualize the local atomic density
 #mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts))
