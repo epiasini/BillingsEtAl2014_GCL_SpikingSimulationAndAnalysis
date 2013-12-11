@@ -256,6 +256,12 @@ that for the analysis we need to use a simpler decoder.
      - CLOSING NOTE [2013-11-29 Fri 19:05] \\
        Rancz2007 and references 8-11 therein should be enough.
 *** TODO specify a form of input pattern correlation
+When doing this, we should keep in mind the ~40um figure for
+correlation of grc activity. Or rather +the inverse, ie+ the typical
+distance between two glomeruli which share a common output, /which is
+the same thing, right?/ (probably true for the mean values, but false,
+in general, for the shape of th distribution describing the falloff of
+correlation with distance).
 *** TODO finalise a choice for the sparsity measure
     The best candidates at the moment are:
      - a properly normalised version of the Treves-Rolls sparsity
@@ -541,7 +547,6 @@ that for the analysis we need to use a simpler decoder.
 
 *** 1/r benchmark as mentioned in the discussion?
 
-
 *** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
     <2013-12-03 Tue> Preliminary simulations indicate that, at least
     for the random bipartite graph and uncorrelated inputs, and for an
@@ -567,3 +572,21 @@ that for the analysis we need to use a simpler decoder.
     the time, one with 6 dendrites keeps the sparseness roughly the
     same between input and output, and networks with 8 or 10 dendrites
     always amplify.
+
+    <2013-12-11 Wed> From the point of view of information
+    transmission, it looks like *the tissue model behaves very
+    differently than the random bipartite graph*, especially at high
+    p(MF).
+
+* Other issues with the paper
+** Work out a better graph-theoretical characterisation of the differences between the tissue model and the random bipartite graph.
+* Other ideas
+*** Testing for 'randomness' in the mf->grc connectivity
+If it were possible to measure the correlation range of the activity
+of grcs following independent signals from the mfs, (see work by
+Mapelli?), then given the measurements of the length of the grc
+dendrites we should be able to test if the mf->grc connections are
+'randomly' (ie after some opportunely constrained maxent distribution)
+by predicting the correlation range and seeing if it matches with the
+experiments. An easier proxy for correlation could be some sort of
+LFP, given that we know the density of the grcs themselves.
