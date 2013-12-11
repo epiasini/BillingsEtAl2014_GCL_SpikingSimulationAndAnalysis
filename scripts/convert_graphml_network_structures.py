@@ -4,6 +4,7 @@ import networkx as nx
 from networkx.algorithms import bipartite
 import numpy as np
 import fileinput
+import random
 
 network_structures_dir = '/home/ucbtepi/code/network/data/network_structures'
 n_grc_dend_range = [1,2,3,4,5,6,7,8,9,10,20]
@@ -48,6 +49,19 @@ for n_grc_dend in n_grc_dend_range:
     # invert weight to give a correct 'heatmap' plot in Gephi
     for u, v, data in h.edges(data=True):
         data['weight'] = n_grc_dend - data['weight']
+    # create randomised version of the same graph
+    r = g.copy()
+    r.remove_edges_from(g.edges())
+    mf_nodes = list(set(n for n,d in r.nodes(data=True) if d['bipartite']==0))
+    for n in grc_nodes:
+        r.add_edges_from([(random.choice(mf_nodes), n) for each in range(n_grc_dend)])
+    # project randomised graph onto GrCs and invert weights
+    rh = bipartite.weighted_projected_graph(r, grc_nodes)
+    for u, v, data in rh.edges(data=True):
+        data['weight'] = n_grc_dend - data['weight']
+    
     # export as graphml
     nx.write_graphml(g, join(current_dir, 'GCLconnectivity_full.graphml'))
     nx.write_graphml(h, join(current_dir, 'GCLconnectivity_full_projected.graphml'))
+    nx.write_graphml(r, join(current_dir, 'GCLconnectivity_full_randomised.graphml'))
+    nx.write_graphml(rh, join(current_dir, 'GCLconnectivity_full_randomised_projected.graphml'))
