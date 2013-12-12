@@ -479,7 +479,33 @@ correlation with distance).
 **** DONE Remove saving of all rates to results archives before running with big network
      CLOSED: [2013-12-08 Sun 19:13]
      - CLOSING NOTE [2013-12-08 Sun 19:13] \\
-       Done in [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
+       Done in
+       [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
+** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri> 
+*** Points for discussion
+1. sim length: I should probably implement it as a free parameter that
+   only requests for simulations to be rerun if the new length is
+   longer than what's available
+2. inhibition: implement as a free parameter (using ~bias~?)
+3. spatial structure: discrete parameter to switch between random and
+   spatial graph.
+4. input correlation: once I've implemented is, apart from the
+   parameters I have already to specify mean and fluctuations for
+   rates, I will also need a discrete parameter to switch between
+   correlated and uncorrelated input.
+5. intra-pattern vs inter-pattern correlations
+6. should we tune the input correlations to the spatial correlation
+   scale in the grcs? This should boost information transmission, but
+   we don't know how uniformly across parameter space.
+7. in the paper, what will we test with the biologically constrained
+   network? We need a clear hypothesis, so that we can test it and
+   argue about how highly constrained is the spiking network and why
+   it's a good testbed for our hypothesis.
+8. should we use some more graph theory to expand on the differences
+   between random and anatomical models?
+9. input frequency range? shall we go from 10/50Hz to 10/100Hz? This
+   would probably shift the activity for high ~d~ well into
+   saturation, thus helping us to make our point.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
