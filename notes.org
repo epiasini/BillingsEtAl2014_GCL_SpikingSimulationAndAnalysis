@@ -388,7 +388,7 @@ correlation with distance).
        [[file:scripts/visualise_network.py::filename%20%3D%20'/home/ucbtepi/code/network/data/network_structures/gd4/GCLconnectivity_full.graphml'][mayavi-based network visualisation script]]) and in figure
        [[fig:tissue_model_2d_view]] a (x, y) projection (made with [[https://gephi.org][Gephi]])
        of an instantiation of the network with 4 dendrites. Figure
-       [[fig:tissue_model_distance_from_gr]] shows a map of the number of
+       [[fig:tissue_model_projected]] shows a map of the number of
        degrees of separation between one granule node (in red) and the
        other nodes. A correlation between euclidean and separation
        distance is evident.
@@ -400,13 +400,18 @@ correlation with distance).
        #+CAPTION: (x, y) projection of an exported network. Red: glomeruli; light blue: granule cells.
        #+NAME: fig:tissue_model_2d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_gd4.png][file:fig/tissue_model_gd4.png]]
+       [[file:fig/network_projected_gd4.png][file:fig/network_bipartite_gd4.png]]
 
-       #+CAPTION: color-coded map of length of the shortest path between the granule cell in red and all the other cells in the network. Light colours mean longer distances.
-       #+NAME: fig:tissue_model_distance_from_gr
+       #+CAPTION: projection of the network onto the set of granule cells, color-coded by the shortest path distance from a specific node.
+       #+NAME: fig:tissue_model_projected
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:fig/tissue_model_distance_from_gr_gd4.png]]
-       
+       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:fig/network_projected_gd4.png]]
+
+       #+CAPTION: same as figure [[fig:tissue_model_projected]] but after randomizing the edges of the graph.
+       #+NAME: fig:random_bipartite_projected
+       #+ATTR_HTML: :width 60%
+       [[file:fig/network_projected_randomised_gd4.png][file:fig/network_projected_randomised_gd4.png]]
+
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
      mentioned when justifying the 30ms integration window
@@ -502,7 +507,8 @@ correlation with distance).
    argue about how highly constrained is the spiking network and why
    it's a good testbed for our hypothesis.
 8. should we use some more graph theory to expand on the differences
-   between random and anatomical models?
+   between random and anatomical models? See figures
+   [[fig:tissue_model_projected]] and [[fig:random_bipartite_projected]].
 9. input frequency range? shall we go from 10/50Hz to 10/100Hz? This
    would probably shift the activity for high ~d~ well into
    saturation, thus helping us to make our point.
