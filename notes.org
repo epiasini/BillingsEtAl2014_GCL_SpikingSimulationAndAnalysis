@@ -488,30 +488,143 @@ correlation with distance).
        [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
 ** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri> 
 *** Points for discussion
-1. sim length: I should probably implement it as a free parameter that
-   only requests for simulations to be rerun if the new length is
-   longer than what's available
-2. inhibition: implement as a free parameter (using ~bias~?)
-3. spatial structure: discrete parameter to switch between random and
-   spatial graph.
-4. input correlation: once I've implemented is, apart from the
-   parameters I have already to specify mean and fluctuations for
-   rates, I will also need a discrete parameter to switch between
-   correlated and uncorrelated input.
-5. intra-pattern vs inter-pattern correlations
-6. should we tune the input correlations to the spatial correlation
+1. *integration time window*: 
+   - I should probably implement it as a free parameter that only
+     requests for simulations to be rerun if the new length is longer
+     than what's available
+   - Are we still going to parameter-sweep in this dimension? it's
+     probably worth at least some exploratory analyses, especially
+     because after the data management part is implemented it's a
+     relatively cheap thing to do (doesn't require additional
+     simulations)
+2. *inhibition*:
+   - implement as a free parameter (using ~bias~?)
+   - Are we still going to do the analysis where we see what happens
+     to MI in the many-dendrites case if we try to bring
+     sparsification levels down to what the few-dendrites network do?
+     I think this is a good idea, and since I don't expect
+     sparsification to depend on the number patterns we can use
+     simulations with few patterns to map sparsification, and then use
+     this mappings to select the parameter space points where we want
+     to calculate MI for the larger network.
+3. Actually, this is in general a good idea: we can calculate
+   sparsification for a much wider range of parameters than MI, so we
+   should make use of this.
+4. *spatial structure*: discrete parameter to switch between random and
+   spatial graph I already have randomised replicas of each network
+   realisation, so it's just a matter of selecting a different graphml
+   file.
+5. *input correlation*:
+   - how I am going to map the idea of P(MF) to the continuous case
+     with gaussian blobs of activation in space? I could do this by
+     manipulating the variance, but I have to keep in mind that a
+     single gaussian spatial profile will give different average input
+     rates depending on where it's centered with respect to the
+     border of the tissue sphere. An alternative for working around
+     this issue would be to normalise the rate profiles over the set
+     of nodes, so that we are sure we always get the same input
+     rate. But then again this would effectively alter the sparsity of
+     the input pattern.. we need to think if there's a way of 
+   - once I've implemented it, apart from the parameters I have
+     already to specify mean and fluctuations for rates, I will also
+     need a discrete parameter to switch between correlated and
+     uncorrelated input.
+   - I need to be careful though when confronting network activity for
+     correlated and uncorrelated input, as - I guess - I want to make
+     sure that the average input rate is the same. so, for example,
+     gaussian blobs with peak at 50Hz superimposed over a noisy
+     backgorund of 10Hz shouldn't be translated directly to binary
+     patterns with 10/50Hz activation; alternativly, the
+     transformation should happen very carefully with respect to the
+     resulting P(MF).
+6. intra-pattern vs inter-pattern correlations
+7. should we tune the input correlations to the spatial correlation
    scale in the grcs? This should boost information transmission, but
    we don't know how uniformly across parameter space.
-7. in the paper, what will we test with the biologically constrained
+8. in the paper, what will we test with the biologically constrained
    network? We need a clear hypothesis, so that we can test it and
    argue about how highly constrained is the spiking network and why
    it's a good testbed for our hypothesis.
-8. should we use some more graph theory to expand on the differences
+9. should we use some more graph theory to expand on the differences
    between random and anatomical models? See figures
    [[fig:tissue_model_projected]] and [[fig:random_bipartite_projected]].
-9. input frequency range? shall we go from 10/50Hz to 10/100Hz? This
-   would probably shift the activity for high ~d~ well into
-   saturation, thus helping us to make our point.
+10. input frequency range? shall we go from 10/50Hz to 10/100Hz? This
+    would probably shift the activity for high ~d~ well into
+    saturation, thus helping us to make our point.
+*** Outcomes of the meeting
+**** TODO *integration time window*
+See above. Big simulations with a thousand of patterns should be run
+for a longer time, so that in case we have room for investigating the
+effect of shortening or lenghtening it. Anyway, it needs to be
+promoted to being a parameter anyway.
+**** TODO Implement a discrete parameter to switch between random and anatomical graphs.
+**** TODO Implement a discrete parameter to switch between correlated and uncorrelated inputs.
+**** TODO I have to improve my plots, and in particular make some output sparsity vs input sparsity plots, which would make it easier to visualise ranges over which the network sparsifies.
+**** TODO If I've got time to do it, I would like to make some more quantitative analysis on the difference in structure between the random and spatial graphs.
+**** TODO Quantitative, numerical measure of sparsification
+At the moment, I am using /amplification/ (P(GC)/P(MF)) and Guy is
+using /sparsification/ (1-P(GC)/P(MF)). I like /amplification/ because
+it's not a negative (ie saying 'network A has lower sparsification
+than network B' sounds more ambiguous than saying 'lower
+amplification'), but then again 'ampliication' has other ambiguities,
+as in the spiking network it could be taken to represent some measure
+of /gain/ in rates between the inputs and the outputs. In conclusion,
+I think either measure would work if we find an appropriate name for
+it, and I don't think we need a different mathematical
+characterisation of this quantity.
+**** Sparsification as an average property of the network transfer function
+It's a good idea to make use of the fact that sparsification is an
+average property of the network transfer function (maybe make a test
+for this?). This implies that we can map out sparsification for a wide
+range of points in parameter space, by simulating just a small number
+of patterns (we don't even require repetitions, in theory), using this
+information to guide our intuition as to where to calcolate MI.
+**** Input correlations
+First of all, our main figure is still going to be about uncorrelated
+patterns, as this is the case which is most exhaustingly investigated
+in the rest of the paper. Unless we find something extremely
+interesting, this case is going to end up in the supplementary
+information anyway.
+
+An example of a particularly interesting thing that might happen, by
+the way, is if we got a sudden boost to information transmission in
+the anatomical model when the spatial scale of the input correlations
+matches the typical scale of network connectivity.
+
+There are several issues with using gaussian blobs, mainly linked to
+the fact that they are unlike our uncorrelated binary patterns /in too
+many ways/. One way of introducing spatial correlations without
+unnecessarily complicating things is to use *binary tilings* of the
+set of glomeruli. Something like an n-nearest-neighbor tiling, which
+(as opposed to eg a Voronoi tiling) would allow for exact control over
+P(MF).
+**** Input rates
+We should raise the upper bound of our range of input rates, as this
+will make the effect we're looking for more evident, but of course
+while staying within what's known from the biology.
+**** Type of analysis we're going for
+If I can, I should try and estimate the efficient frontier by
+calculating the sparse encodable range for a sufficiently large number
+of network configurations. If this proves to be too computationally
+expensive, I should try and make some 'point' measurements of
+performance in parameter space, as one would do in the case of an
+actual experimental test, trying to analyse a few significant
+points. Another idea to keep in mind is to try and be smart about how
+I try to determine the sparse encodable range, perhaps by integrating
+some sort of nonlinear optimisation technique (but we might be too
+short with time for designing that), or some simpler system for not
+wasting time exploring the big information plateau in the interior of
+the encodable range for a given network configuration.
+**** Figure 7 in the paper:
+The point we're trying to make is that this is a very stringent test
+of our hypothesis, as we're building the spiking network from the
+bottom up with respect to cell and synaptic physiology and tissue
+anatomy, as we know from the experiments.
+
+To do this we need:
+***** TODO 3D representation of the network with input and output raster plots
+***** TODO graph-theoretical projection onto the set of GrCs showing the range of input sharing
+***** TODO heatmap plot or efficient frontier plot where we actually make our point.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -609,7 +722,7 @@ correlation with distance).
     transmission, it looks like *the tissue model behaves very
     differently than the random bipartite graph*, especially at high
     p(MF).
-
+    
 * Other issues with the paper
 ** Work out a better graph-theoretical characterisation of the differences between the tissue model and the random bipartite graph.
 * Other ideas
