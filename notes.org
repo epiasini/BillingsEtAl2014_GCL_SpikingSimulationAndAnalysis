@@ -552,10 +552,10 @@ correlation with distance).
     would probably shift the activity for high ~d~ well into
     saturation, thus helping us to make our point.
 *** Outcomes of the meeting
-**** TODO *integration time window*
+**** TODO integration time window
 See above. Big simulations with a thousand of patterns should be run
 for a longer time, so that in case we have room for investigating the
-effect of shortening or lenghtening it. Anyway, it needs to be
+effect of shortening the time window. It needs to be
 promoted to being a parameter anyway.
 **** TODO Implement a discrete parameter to switch between random and anatomical graphs.
 **** TODO Implement a discrete parameter to switch between correlated and uncorrelated inputs.
@@ -566,7 +566,7 @@ At the moment, I am using /amplification/ (P(GC)/P(MF)) and Guy is
 using /sparsification/ (1-P(GC)/P(MF)). I like /amplification/ because
 it's not a negative (ie saying 'network A has lower sparsification
 than network B' sounds more ambiguous than saying 'lower
-amplification'), but then again 'ampliication' has other ambiguities,
+amplification'), but then again 'amplification' has other ambiguities,
 as in the spiking network it could be taken to represent some measure
 of /gain/ in rates between the inputs and the outputs. In conclusion,
 I think either measure would work if we find an appropriate name for
@@ -578,18 +578,18 @@ average property of the network transfer function (maybe make a test
 for this?). This implies that we can map out sparsification for a wide
 range of points in parameter space, by simulating just a small number
 of patterns (we don't even require repetitions, in theory), using this
-information to guide our intuition as to where to calcolate MI.
+information to guide our intuition as to where to calculate MI.
 **** Input correlations
 First of all, our main figure is still going to be about uncorrelated
 patterns, as this is the case which is most exhaustingly investigated
 in the rest of the paper. Unless we find something extremely
-interesting, this case is going to end up in the supplementary
-information anyway.
+interesting, correlated inputs are going to end up in the
+supplementary information anyway.
 
-An example of a particularly interesting thing that might happen, by
-the way, is if we got a sudden boost to information transmission in
-the anatomical model when the spatial scale of the input correlations
-matches the typical scale of network connectivity.
+An example of a particularly interesting thing that might happen is if
+we got a sudden boost to information transmission in the anatomical
+model when the spatial scale of the input correlations matches the
+typical scale of network connectivity.
 
 There are several issues with using gaussian blobs, mainly linked to
 the fact that they are unlike our uncorrelated binary patterns /in too
@@ -618,8 +618,8 @@ the encodable range for a given network configuration.
 **** Figure 7 in the paper:
 The point we're trying to make is that this is a very stringent test
 of our hypothesis, as we're building the spiking network from the
-bottom up with respect to cell and synaptic physiology and tissue
-anatomy, as we know from the experiments.
+bottom up with respect to the available experimental data on cell and
+synaptic physiology and tissue anatomy.
 
 To do this we need:
 ***** TODO 3D representation of the network with input and output raster plots
