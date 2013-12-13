@@ -400,12 +400,12 @@ correlation with distance).
        #+CAPTION: (x, y) projection of an exported network. Red: glomeruli; light blue: granule cells.
        #+NAME: fig:tissue_model_2d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/network_projected_gd4.png][file:fig/network_bipartite_gd4.png]]
+       [[file:fig/network_bipartite_gd4.png][file:fig/network_bipartite_gd4.png]]
 
        #+CAPTION: projection of the network onto the set of granule cells, color-coded by the shortest path distance from a specific node.
        #+NAME: fig:tissue_model_projected
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_distance_from_gr_gd4.png][file:fig/network_projected_gd4.png]]
+       [[file:fig/network_projected_gd4.png][file:fig/network_projected_gd4.png]]
 
        #+CAPTION: same as figure [[fig:tissue_model_projected]] but after randomizing the edges of the graph.
        #+NAME: fig:random_bipartite_projected
