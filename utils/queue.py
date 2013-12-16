@@ -1,83 +1,48 @@
 import itertools
-import collections
 import os
 import random
 import shutil
-from subprocess import Popen, PIPE, call
+from subprocess import Popen, PIPE
 
 class QueueError(Exception):
     pass
 
-class ProcessManager(object):
-    def __init__(self, job_limit):
-        self.job_limit = job_limit
-        self._managed_jobs = set() # all the jobs in the queue that are being managed by this manager
-        self.running_jobs = set() # all (managed) running jobs
-        self.waiting_jobs = set() # all (managed) waiting jobs
-        self.other_jobs = set() # all the other managed jobs (e.g. jobs that are being transferred)
-        self._qsub_commands = dict() # historical record of the qsub commands that generated each managed job
-        self._prequeue = collections.deque() # jobs that are waiting to be submitted to the queue
-    def _managed_jids_from_qstat(self, *qstat_argument_list):
-        stat_lines = Popen(itertools.chain(['qstat'], qstat_argument_list), stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
-        return set(int(l.split()[0]) for l in stat_lines[2:] if len(l)>0).intersection(self._managed_jobs)
-    # 'query' methods
-    def queue_is_not_empty(self):
-        return bool(self.running_jobs or self.waiting_jobs or self.other_jobs)
-    def get_prequeue_length(self):
-        return len(self._prequeue)
-    def get_total_jobs_number(self):
-        return len(self.running_jobs) + len(self.waiting_jobs) + len(self.other_jobs)
-    # job management
-    def submit_job(self, qsub_argument_list):
-        popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
-        self.update_job_sets()
-        if self.get_total_jobs_number() < self.job_limit:
-            handle = Popen(popen_command, stdout=PIPE)
-            jid = handle.communicate()[0]
-            if handle.returncode!=0:
-                raise QueueError()
-            self._qsub_commands[jid] = popen_command[1:]
-            self._managed_jobs.add(jid)
-            self.update_job_sets()
-            print('Submitted job {jid}'.format(jid=jid))
-        else:
-            self._prequeue.append(popen_command[1:])
-            print('Job command appended to the pre-queue: {command}'.format(command=str(popen_command[1:])))
-    def delete_job(self, jid):
-        call(['qdel', str(jid)])
-        self.update_job_sets()
-        print('Deleted job {jid}'.format(jid=jid))
-    # job lists/queues upkeeping
-    def update_job_sets(self):
-        self.running_jobs = self._managed_jids_from_qstat('-s', 'r')
-        self.waiting_jobs = self._managed_jids_from_qstat('-s', 'p')
-        self.other_jobs = set(jid for jid in self._managed_jids_from_qstat() if jid not in self.running_jobs.union(self.waiting_jobs))
-    def update_jobs_and_check_for_CME(self):
-        self.update_job_sets()
-        for jid in self.running_jobs:
-            try:
-                with open('/home/ucbtepi/log/simulate_jobscript.sh.e{jid}'.format(jid=jid), 'r') as f:
-                    if 'ConcurrentModificationException' in f.read():
-                        print('Found ConcurrentModificationException in job {jid}'.format(jid=jid))
-                        self.delete_job(jid)
-                        self.submit_job(self._qsub_commands[jid])
-            except IOError as (errno, strerror):
-                print('Error log file for simulation job {jid} not found.'.format(jid=jid))
-    def update_prequeue(self):
-        while (self.get_total_jobs_number() < self.job_limit) and self._prequeue:
-            self.submit_job(self._prequeue.popleft())  
-
 class BatchManager(object):
-    # TODO: once this works, it would be nice to remove the 'barriers' between the three stages,
-    #   so that - e.g. - we don't have to wait for the last simulation to finish before starting
-    #   some of the compression jobs. This would require associating somehow the
-    #   SIZE_PER_SIMULATION jobs that we split each simulation in to their respective
-    #   parameter space point, so that we get to know when any given simulation is finished.
-    def __init__(self, parameter_space, job_limit=150):
+    """Helper class for submitting the simulation, compression and analysis
+jobs for a given grid in parameter space on SGE.
+
+    For each parameter space point, if the corresponding spikes
+    archive is not already present on disk a job array is submitted,
+    where every job takes care of doing all the simulations for a
+    given stim pattern. A compression job is also submitted, whose
+    execution depends on the completion of the corresponding
+    simulation job array. If the spike array is already in place
+    simulation and compression are skipped, unless the 'force' option
+    is set to True, in which case existing simulation results are
+    deleted to start with. The 'clean_up' option for the compression
+    step regulates whether the smaller archives left behind by the
+    simulations should get deleted after compression (default: True).
+
+    After compression (or right away if the spike archives were
+    already there), for each parameter space point an analysis job is
+    sumbitted. If this comes after compression, the execution of this
+    job will be dependent on compression being over.
+
+    """
+    def __init__(self, parameter_space):
         self.parameter_space = parameter_space
-        self.simulation = ProcessManager(job_limit=job_limit)
-        self.compression = ProcessManager(job_limit=job_limit)
-        self.analysis = ProcessManager(job_limit=job_limit)
+        self.sim_jids = {}
+        self.compr_jids = {}
+
+    def _submit_job(self, qsub_argument_list):
+        popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
+        handle = Popen(popen_command, stdout=PIPE)
+        jid = handle.communicate()[0]
+        if handle.returncode!=0:
+            raise QueueError()
+        print('Submitted job {jid}'.format(jid=jid))
+        return jid
+
     def _start_point_simulation(self, point, force):
         # delete all data and results if force is true
         if force:
@@ -105,32 +70,34 @@ class BatchManager(object):
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
-        # submit simulations to the queue as an array job
         if not os.path.exists(point.spikes_arch.path):
+            # submit simulations to the queue as an array job
             qsub_argument_list = ['-t 1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
-            self.simulation.submit_job(qsub_argument_list)
+            # store id of array job for job dependency management
+            self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point, force)
     def start_compression(self, clean_up=True):
-        for point in [p for p in self.parameter_space.flat if not os.path.exists(p.spikes_arch.path)]:
-            qsub_argument_list = ['jobscripts/compress_jobscript.sh', repr(point), str(clean_up)]
-            self.compression.submit_job(qsub_argument_list)
+        for point in [p for p in self.parameter_space.flat if point.simple_representation() in self.sim_jids.keys()]:
+            qsub_argument_list = ['-hold_jid',
+                                  self.sim_jids[point.simple_representation()],
+                                  'jobscripts/compress_jobscript.sh',
+                                  repr(point),
+                                  str(clean_up)]
+            self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
     def start_analysis(self):
         for point in self.parameter_space.flat:
-            qsub_argument_list = ['jobscripts/analyse_jobscript.sh', repr(point)]
-            self.analysis.submit_job(qsub_argument_list)
-    def update_status(self):
-        if self.simulation.queue_is_not_empty():
-            self.simulation.update_jobs_and_check_for_CME()
-            self.simulation.update_prequeue()
-            print('SIM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.simulation.running_jobs), wj=len(self.simulation.waiting_jobs), oj=len(self.simulation.other_jobs), pqj=self.simulation.get_prequeue_length()))
-        if self.compression.queue_is_not_empty():
-            self.compression.update_job_sets()
-            self.compression.update_prequeue()
-            print('COM: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.compression.running_jobs), wj=len(self.compression.waiting_jobs), oj=len(self.compression.other_jobs), pqj=self.compression.get_prequeue_length()))
-        if self.analysis.queue_is_not_empty():
-            self.analysis.update_job_sets()
-            self.analysis.update_prequeue()
-            print('ANA: {rj} running, {wj} waiting, {oj} other jobs, {pqj} in the pre-queue'.format(rj=len(self.analysis.running_jobs), wj=len(self.analysis.waiting_jobs), oj=len(self.analysis.other_jobs), pqj=self.analysis.get_prequeue_length()))
+            if repr(point) in self.compr_jids.keys():
+                # a compression job has been submitted for this
+                # parameter space point, so wait until it's done befre
+                # starting analysis
+                qsub_argument_list = ['-hold_jid',
+                                      self.compr_jids[repr(point)],
+                                      'jobscripts/analyse_jobscript.sh',
+                                      repr(point)]
+            else:
+                qsub_argument_list = ['jobscripts/analyse_jobscript.sh',
+                                      repr(point)]
+            self._submit_job(qsub_argument_list)
         

@@ -20,7 +20,6 @@ class TrainingSetSizeError(Exception):
 #++++general controls+++++
 force_rerun_simulations = False
 clean_up_simulation_files = True
-job_limit = 240
 
 #+++++parameter ranges+++++++++++++
 sim_duration = psl(150.0)
@@ -73,30 +72,22 @@ parameter_space = ParameterSpace(sim_duration,
                                  tau,
                                  dt)
 
-batch_manager = BatchManager(parameter_space, job_limit)
+batch_manager = BatchManager(parameter_space)
 
 ############################
 ##====SIMULATION STAGE====##
 ############################
-print("Entering simulation stage.")
+print("Submitting simulation array jobs")
 batch_manager.start_simulation(force=force_rerun_simulations)
-while batch_manager.simulation.queue_is_not_empty():
-    time.sleep(60)
-    batch_manager.update_status()
-print("Simulation stage complete. Entering compression stage.")
 #############################
 ##====COMPRESSION STAGE====##
 #############################
+print("Submitting compression jobs")
 batch_manager.start_compression(clean_up=clean_up_simulation_files)
-while batch_manager.compression.queue_is_not_empty():
-    time.sleep(60)
-    batch_manager.update_status()
-print("Compression stage complete. Entering analysis stage.")
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################
+print("Submitting analysis jobs.")
 batch_manager.start_analysis()
-while batch_manager.analysis.queue_is_not_empty():
-    time.sleep(60)
-    batch_manager.update_status()
-print("Analysis stage complete. Master script execution terminated.")
+
+print("All jobs submitted.")
