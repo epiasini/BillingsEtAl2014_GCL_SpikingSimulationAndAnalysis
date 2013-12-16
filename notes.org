@@ -395,22 +395,22 @@ correlation with distance).
        #+CAPTION: three-dimensional view of a network exported from the Mathematica toolbox.
        #+NAME: fig:tissue_model_3d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/tissue_model_3d_gd4.png][file:fig/tissue_model_3d_gd4.png]]
+       [[file:fig/tissue_model_3d_gd4.png]]
 
        #+CAPTION: (x, y) projection of an exported network. Red: glomeruli; light blue: granule cells.
        #+NAME: fig:tissue_model_2d_view
        #+ATTR_HTML: :width 60%
-       [[file:fig/network_bipartite_gd4.png][file:fig/network_bipartite_gd4.png]]
+       [[file:fig/network_bipartite_gd4.png]]
 
        #+CAPTION: projection of the network onto the set of granule cells, color-coded by the shortest path distance from a specific node.
        #+NAME: fig:tissue_model_projected
        #+ATTR_HTML: :width 60%
-       [[file:fig/network_projected_gd4.png][file:fig/network_projected_gd4.png]]
+       [[file:fig/network_projected_gd4.png]]
 
        #+CAPTION: same as figure [[fig:tissue_model_projected]] but after randomizing the edges of the graph.
        #+NAME: fig:random_bipartite_projected
        #+ATTR_HTML: :width 60%
-       [[file:fig/network_projected_randomised_gd4.png][file:fig/network_projected_randomised_gd4.png]]
+       [[file:fig/network_projected_randomised_gd4.png]]
 
 **** TODO Implement input correlations.
      In the paper, an input frequncy range of about 10-50Hz was
@@ -602,6 +602,16 @@ P(MF).
 We should raise the upper bound of our range of input rates, as this
 will make the effect we're looking for more evident, but of course
 while staying within what's known from the biology.
+**** Role of inhibition
+We think that we will be testing the effect of varying level of
+inhibition in two situations:
+- what would happen if there was a homeostatic mechanism which scaled
+  tonic inhibition to match the increase in average excitatory
+  conductance we get when increasing the number of dendrites?
+- what happens to information transmission if we increase inhibition
+  to force networks with many dendrites to sparsify as well as
+  networks with fewer dendrites? (sort of like what Guy did in his new
+  examples for figure 5)
 **** Type of analysis we're going for
 If I can, I should try and estimate the efficient frontier by
 calculating the sparse encodable range for a sufficiently large number
@@ -622,7 +632,11 @@ bottom up with respect to the available experimental data on cell and
 synaptic physiology and tissue anatomy.
 
 To do this we need:
-***** TODO 3D representation of the network with input and output raster plots
+***** DONE 3D representation of the network with input and output raster plots
+      CLOSED: [2013-12-16 Mon 12:31]
+      - CLOSING NOTE [2013-12-16 Mon 12:31] \\
+	3d representation implemented with Mayavi in [[magit:~/phd/code/network/src/::commit@6f6da5b][commit #6f6da5b]], and
+	raster plot implemented in [[magit:~/phd/code/network/src/::commit@a42cb02][commit #a42cb02]].
 ***** TODO graph-theoretical projection onto the set of GrCs showing the range of input sharing
 ***** TODO heatmap plot or efficient frontier plot where we actually make our point.
 * Questions to be addressed with the model after we're sure it works
