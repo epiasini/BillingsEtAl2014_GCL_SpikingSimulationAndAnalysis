@@ -5,6 +5,8 @@ from matplotlib import pyplot as plt
 from matplotlib.ticker import FuncFormatter
 from matplotlib.text import Text
 import textwrap
+import random
+
 import analysis
 
 def on_draw(event):
@@ -272,58 +274,34 @@ class InteractiveHeatmap(RectangularHeatmapPlotter):
         self.detailed_point_plots.append(midp)
         midp.plot()
 
-class raster_plot(object):
-    def __init__(self, point, cell_type, stim, trial, alpha=1):
-        self.spike_resolution_dt = 0.01
+class RasterPlot(object):
+    """plot a random observation of network activity for the given parameter space point.
+
+    Usage: something along the lines of 
+    rp = RasterPlot(ParameterSpacePoint(150,6,2.900000,4,28.740000,0.500000,0,50,10,10,10,100,50,20,0.0,1,5.0,2.0))
+    rp.plot()
+    """
+    def __init__(self, point, alpha=1):
         self.point = point
         self.alpha = alpha
-        self.spikes = self.point.spikes_arch.get_spikes(cell_type=cell_type)[(stim*point.n_trials)+trial]
-        self.conv = analysis.convolve(self.spikes.reshape(1,
-                                                          self.spikes.shape[0],
-                                                          self.spikes.shape[1]),
-                                      self.point.sim_duration,
-                                      self.point.tau,
-                                      self.point.dt)[0]
-        self.time_points = np.arange(0, self.point.sim_duration, self.spike_resolution_dt)
-        self.n_cells = self.spikes.shape[0]
-        if cell_type == 'grc':
-            self.raster_color = 'yellow'
-        elif cell_type == 'mf':
-            self.raster_color = 'red'
-        # prepare for the raster: for each cell, count spikes
-        # occurring in each bin of width spike_resolution_dt
-        self.aoh = np.zeros(shape=(self.n_cells, self.point.sim_duration/self.spike_resolution_dt))
-        for k, c in enumerate(self.spikes):
-            self.aoh[k] = np.histogram(c[c>0], bins=np.arange(0., self.point.sim_duration+self.spike_resolution_dt, self.spike_resolution_dt))[0]
-    def time_convolution_formatter(self,x,pos):
-        return '{0}'.format(self.point.dt*x)
-    def plot_convolution(self):
-        self.conv_fig, self.conv_ax = plt.subplots()
-        self.conv_fig.patch.set_alpha(self.alpha)
-        self.conv_plot =  self.conv_ax.imshow(self.conv, interpolation='none', cmap='coolwarm', origin='lower')
-        self.conv_cbar = self.conv_fig.colorbar(self.conv_plot, orientation='vertical')
-        self.conv_cbar.set_label('field component (a.u.)', fontsize=14)
-        self.conv_ax.xaxis.set_major_formatter(FuncFormatter(self.time_convolution_formatter))
-        self.conv_ax.set_xlabel('time (ms)', fontsize=16)
-        self.conv_ax.set_ylabel('cell index', fontsize=16)
+        observation = random.randint(0, point.n_trials*point.n_stim_patterns)
+        print(observation)
+        self.grc_spikes = self.point.spikes_arch.get_spikes(cell_type='grc')[observation]
+        self.mf_spikes = self.point.spikes_arch.get_spikes(cell_type='mf')[observation]
     def plot_raster(self):
-        self.raster_fig, self.raster_ax = plt.subplots()
-        self.raster_fig.patch.set_alpha(self.alpha)
-        for k, h in enumerate(self.aoh):
-            selected_idxs = h>0
-            if any(selected_idxs):
-                h[selected_idxs] = k
-                self.raster_ax.scatter(self.time_points[selected_idxs],
-                                       h[selected_idxs],
-                                       c=self.raster_color,
-                                       marker='o')
-        self.raster_ax.set_xlabel('time (ms)', fontsize=16)
-        self.raster_ax.set_ylabel('cell index', fontsize=16)
-        self.raster_ax.set_ylim([-1, self.n_cells+1])
-        if self.conv_ax:
-            # if a convolution plot exists, use its same time limits
-            self.raster_ax.set_xlim([self.point.dt*lim for lim in self.conv_ax.get_xlim()])
+        out = []
+        for cell_type, spikes in enumerate([self.mf_spikes, self.grc_spikes]):
+            color = ['r', 'b'][cell_type]
+            fig, ax = plt.subplots()
+            fig.patch.set_alpha(self.alpha)
+            for cell, cell_times in enumerate(spikes):
+                ax.scatter(cell_times,
+                           np.zeros_like(cell_times)+cell,
+                           c=color,
+                           marker='|')
+            ax.set_xlabel('time (ms)', fontsize=16)
+            ax.set_ylabel('cell index', fontsize=16)
     def plot(self):
-        self.plot_convolution()
         self.plot_raster()
+        plt.show()
 
