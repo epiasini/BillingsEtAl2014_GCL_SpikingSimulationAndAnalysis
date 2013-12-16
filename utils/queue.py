@@ -29,11 +29,11 @@ class ProcessManager(object):
         return len(self.running_jobs) + len(self.waiting_jobs) + len(self.other_jobs)
     # job management
     def submit_job(self, qsub_argument_list):
-        popen_command = list(itertools.chain(['qsub'], qsub_argument_list))
+        popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
         self.update_job_sets()
         if self.get_total_jobs_number() < self.job_limit:
-            handle = Popen(popen_command, stdin=PIPE, stdout=PIPE, stderr=PIPE)
-            jid = int((handle.communicate()[0]).split(' ')[2])
+            handle = Popen(popen_command, stdout=PIPE)
+            jid = handle.communicate()[0]
             if handle.returncode!=0:
                 raise QueueError()
             self._qsub_commands[jid] = popen_command[1:]
@@ -105,11 +105,10 @@ class BatchManager(object):
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
-        # submit simulations to the queue
+        # submit simulations to the queue as an array job
         if not os.path.exists(point.spikes_arch.path):
-            for rank in range(point.SIZE_PER_SIMULATION):
-                qsub_argument_list = ['jobscripts/simulate_jobscript.sh', point.simple_representation(), str(rank)]
-                self.simulation.submit_job(qsub_argument_list)
+            qsub_argument_list = ['-t 1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
+            self.simulation.submit_job(qsub_argument_list)
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point, force)

@@ -23,7 +23,7 @@ from utils.pure import SimpleParameterSpacePoint
 from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli
 
 point = eval(sys.argv[1])
-rank = int(sys.argv[2])
+stim_pattern_number = int(sys.argv[2])
 
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
@@ -64,77 +64,69 @@ spf = open(point.stim_pattern_filename, "r")
 stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
 spf.close()
 
-# calculate which patterns are mine to simulate
-patterns_per_chunk = point.n_stim_patterns/point.SIZE_PER_SIMULATION
-my_stim_lower_bound = rank*patterns_per_chunk
-if rank != point.SIZE_PER_SIMULATION-1:
-    my_stim_upper_bound = (rank + 1) * patterns_per_chunk
-else:
-    my_stim_upper_bound = point.n_stim_patterns
-print (point.n_stim_patterns, patterns_per_chunk)
-print (rank, my_stim_lower_bound, my_stim_upper_bound)
+# select the pattern I have been assigned to simulate
+stim_pattern = stim_patterns[stim_pattern_number]
 
 refs_list = [] # used to keep track of the last simulation that is run
 
 # main loop
-for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper_bound]:
-    for trial in range(point.n_trials):
-        simulation_trial_is_successful = False
-        while not simulation_trial_is_successful:
-            simulator_seed = random.getrandbits(32)
-            # innermost loop: determine the simulation reference name
-            sim_ref = point.get_simulation_reference(spn, trial)
-            refs_list.append(sim_ref)
-            project.simulationParameters.setReference(sim_ref)
+for trial in range(point.n_trials):
+    simulation_trial_is_successful = False
+    while not simulation_trial_is_successful:
+        simulator_seed = random.getrandbits(32)
+        # innermost loop: determine the simulation reference name
+        sim_ref = point.get_simulation_reference(stim_pattern_number, trial)
+        refs_list.append(sim_ref)
+        project.simulationParameters.setReference(sim_ref)
 
-            # generate stimuli in nC
-            generate_nC_stimuli(point, project, sim_config, sp)
+        # generate stimuli in nC
+        generate_nC_stimuli(point, project, sim_config, stim_pattern)
 
-            # generate and compile neuron files
-            print "Generating NEURON scripts..."
-            project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
-            compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
-            compile_success = compile_process.compileFileWithNeuron(0,0)
-            # simulate
-            if compile_success:
-                print "...success."
-                print "Simulating: simulation reference %s" % str(sim_ref)
-                pm.doRunNeuron(sim_config)
-                timefile_path = temp_dir+"/simulations/"+sim_ref+"/time.dat"
-                print "NEURON should have started the simulation. Waiting for timefile to appear at "+timefile_path
-                while os.path.exists(timefile_path)==0:
-                    time.sleep(2)
+        # generate and compile neuron files
+        print "Generating NEURON scripts..."
+        project.neuronFileManager.generateTheNeuronFiles(sim_config, None, NeuronFileManager.RUN_HOC,simulator_seed)
+        compile_process = ProcessManager(project.neuronFileManager.getMainHocFile())
+        compile_success = compile_process.compileFileWithNeuron(0,0)
+        # simulate
+        if compile_success:
+            print "...success."
+            print "Simulating: simulation reference %s" % str(sim_ref)
+            pm.doRunNeuron(sim_config)
+            timefile_path = temp_dir+"/simulations/"+sim_ref+"/time.dat"
+            print "NEURON should have started the simulation. Waiting for timefile to appear at "+timefile_path
+            while os.path.exists(timefile_path)==0:
+                time.sleep(2)
 
-            hdf5_file_name = temp_dir+'/simulations/'+sim_ref+'/'+sim_ref+'_.h5'
+        hdf5_file_name = temp_dir+'/simulations/'+sim_ref+'/'+sim_ref+'_.h5'
 
-            # wait for NEURON to finish writing the results on disk
-            while not os.path.exists(hdf5_file_name):
-                print ("Waiting for NEURON to finish writing to disk...")
-                time.sleep(1)
+        # wait for NEURON to finish writing the results on disk
+        while not os.path.exists(hdf5_file_name):
+            print ("Waiting for NEURON to finish writing to disk...")
+            time.sleep(1)
 
-            # test whether the output data archive has been created
-            # properly (sometimes it's just an empty archive, with no
-            # groups or datasets!)
-            simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+hdf5_file_name, shell=True))
+        # test whether the output data archive has been created
+        # properly (sometimes it's just an empty archive, with no
+        # groups or datasets!)
+        simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+hdf5_file_name, shell=True))
 
-            if simulation_trial_is_successful:
-                # copy results to main data folder
-                print "Moving "+ hdf5_file_name + " to " + point.data_folder_path
-                shutil.move(hdf5_file_name, point.data_folder_path)
-                # perform an additional check to see if the
-                # simulations results file has been successfully
-                # copied
-                simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+point.data_folder_path+'/'+sim_ref+'_.h5', shell=True))
-                if not simulation_trial_is_successful:
-                    print("WARNING: archive" + hdf5_file_name + "was not successfuly copied to " + point.data_folder_path + "! restarting simulation.")
-            else:
-                print ("WARNING: archive" + hdf5_file_name + "was not found to contain simulation results! restarting simulation.")
+        if simulation_trial_is_successful:
+            # copy results to main data folder
+            print "Moving "+ hdf5_file_name + " to " + point.data_folder_path
+            shutil.move(hdf5_file_name, point.data_folder_path)
+            # perform an additional check to see if the
+            # simulations results file has been successfully
+            # copied
+            simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+point.data_folder_path+'/'+sim_ref+'_.h5', shell=True))
+            if not simulation_trial_is_successful:
+                print("WARNING: archive" + hdf5_file_name + "was not successfuly copied to " + point.data_folder_path + "! restarting simulation.")
+        else:
+            print ("WARNING: archive" + hdf5_file_name + "was not found to contain simulation results! restarting simulation.")
 
-            # delete useless files left over by neuroConstruct
-            try:
-                shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
-            except OSError:
-                print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
+        # delete useless files left over by neuroConstruct
+        try:
+            shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+        except OSError:
+            print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 # remove temp directory and exit
 print('removing job-specific temporary directory %s' % temp_dir)
