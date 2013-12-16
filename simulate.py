@@ -121,6 +121,14 @@ for spn, sp in list(enumerate(stim_patterns))[my_stim_lower_bound: my_stim_upper
                 # copy results to main data folder
                 print "Moving "+ hdf5_file_name + " to " + point.data_folder_path
                 shutil.move(hdf5_file_name, point.data_folder_path)
+                # perform an additional check to see if the
+                # simulations results file has been successfully
+                # copied
+                simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+point.data_folder_path+'/'+sim_ref+'_.h5', shell=True))
+                if not simulation_trial_is_successful:
+                    print("WARNING: archive" + hdf5_file_name + "was not successfuly copied to " + point.data_folder_path + "! restarting simulation.")
+            else:
+                print ("WARNING: archive" + hdf5_file_name + "was not found to contain simulation results! restarting simulation.")
 
             # delete useless files left over by neuroConstruct
             try:
