@@ -7,7 +7,7 @@ import fileinput
 import random
 
 network_structures_dir = '/home/ucbtepi/code/network/data/network_structures'
-n_grc_dend_range = [1,2,3,4,5,6,7,8,9,10,20]
+n_grc_dend_range = [1,2,3,4,5,6,7,8,9,10,15,20]
 
 for n_grc_dend in n_grc_dend_range:
     current_dir = join(network_structures_dir,
