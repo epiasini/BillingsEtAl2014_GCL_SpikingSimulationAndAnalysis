@@ -2,11 +2,10 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 from matplotlib import pyplot as plt
-plt.ion()
 
-from utils.parameters import ParameterSpace
+from utils.parameters import ParameterSpace, ParameterSpacePoint
 from utils.parameters import PSlice as psl
-from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter
+from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter, RasterPlot
 
 #+++++debugging stuff+++++
 #import pdb
@@ -36,11 +35,11 @@ plot_mi_vs_dn_and_sparsity = False
 sim_duration = psl(150.0)
 min_mf_number = psl(6)
 grc_mf_ratio = psl(2.9)
-n_grc_dend = psl(4, 11, 2)
+n_grc_dend = psl(4, 11, 1)
 network_scale = psl(28.74)
-active_mf_fraction = psl(.1, 1., .2)
+active_mf_fraction = psl(.1,1.,.1)
 bias = psl(0)
-stim_rate_mu = psl(80)
+stim_rate_mu = psl(100)
 stim_rate_sigma = psl(10)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(10)
@@ -66,8 +65,28 @@ if plot_sparseness:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
-        rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        #print data_o
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/data/figures')
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/data/figures')
+
+        # use data extracted for input and output Hoyer sparseness to
+        # visualise 'amplification', defined as
+        # out_sparsity/in_sparsity
+        fig, ax = plt.subplots()
+        data = data_h_o/data_h_i
+        plot = ax.imshow(data,interpolation='none', cmap='coolwarm', origin='lower')
+        cbar = fig.colorbar(plot)
+        cbar.set_label('amplification')
+        ax.set_xticks(np.arange(data.shape[1]))
+        ax.set_yticks(np.arange(data.shape[0]))
+        ax.set_xticklabels([str(x) for x in np.arange(0.1, 1., 0.1)])
+        ax.set_yticklabels([str(x) for x in range(4,11)])
+        fig.savefig('amplification.png')
         plt.close(rhm.fig)
     
 

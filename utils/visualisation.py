@@ -232,9 +232,9 @@ class RectangularHeatmapPlotter(object):
         fig_title = 'param. coordinates: '+' '.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
         self.ax.set_title(fig_title)
         self.fig.canvas.draw()
-        return self.fig, self.ax
+        return self.fig, self.ax, plot_data
     def plot_and_save(self, heat_dim, base_dir=None, file_name=None):
-        self.plot(heat_dim)
+        fig, ax, data = self.plot(heat_dim)
         if not file_name:
             sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
             file_name = '_'.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
@@ -243,6 +243,7 @@ class RectangularHeatmapPlotter(object):
                 file_name = '/'.join([base_dir, file_name])
             print('saving heatmap to {}'.format(file_name))
         self.fig.savefig(file_name)
+        return fig, ax, data
 
 class InteractiveHeatmap(RectangularHeatmapPlotter):
     def __init__(self, space, alpha=0., hold=False, detail_corrections=('plugin', 'bootstrap', 'qe', 'pt', 'nsb')):
