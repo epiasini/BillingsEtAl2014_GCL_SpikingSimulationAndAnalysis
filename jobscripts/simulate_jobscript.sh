@@ -4,8 +4,8 @@
 #$ -cwd
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l h_vmem=3G
-#$ -l tmem=3G
+#$ -l h_vmem=5G
+#$ -l tmem=5G
 #$ -l h_rt=3:00:00
 #$ -l s_stack=10M
 #$ -l h_stack=15M
