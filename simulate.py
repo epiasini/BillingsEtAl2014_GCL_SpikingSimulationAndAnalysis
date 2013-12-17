@@ -29,12 +29,9 @@ stim_pattern_number = int(sys.argv[2])
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
-if os.environ.has_key('TMPDIR'):
-    # we're probably on Legion
-    machine = 'legion'
+if 'TMPDIR' in os.environ:
     sim_path = os.environ['TMPDIR']
 else:
-    machine = 'matlem'
     sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
@@ -135,10 +132,8 @@ for trial in range(point.n_trials):
         except OSError:
             print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
-# remove temp directory and exit
-if machine=='legion':
-    print("not bothering to remove temporary folder, as it's going to be removed by the system anyway.")
-else:
+if 'TMPDIR' not in os.environ:
+    # remove temp directory and exit
     print('removing job-specific temporary directory %s' % temp_dir)
     delete_attempts = 0
     while delete_attempts < 10:
@@ -150,4 +145,6 @@ else:
             delete_attempts += 1
             print('waiting and retrying to remove temporary directory')
             time.sleep(20)
+
+print("done simulating pattern number " + stim_pattern_number + ". closing job.")
 System.exit(0)
