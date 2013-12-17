@@ -9,6 +9,7 @@ import sys
 import tempfile
 import shutil
 import subprocess
+import os
 import os.path
 
 from java.lang import System, Float
@@ -28,7 +29,13 @@ stim_pattern_number = int(sys.argv[2])
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
-sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
+if os.environ.has_key('TMPDIR'):
+    # we're probably on Legion
+    machine = 'legion'
+    sim_path = os.environ['TMPDIR']
+else:
+    machine = 'matlem'
+    sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
@@ -129,15 +136,18 @@ for trial in range(point.n_trials):
             print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 # remove temp directory and exit
-print('removing job-specific temporary directory %s' % temp_dir)
-delete_attempts = 0
-while delete_attempts < 10:
-    try:
-        shutil.rmtree(temp_dir)
-        print('temporary directory removed')
-        break
-    except OSError:
-        delete_attempts += 1
-        print('waiting and retrying to remove temporary directory')
-        time.sleep(20)
+if machine=='legion':
+    print("not bothering to remove temporary folder, as it's going to be removed by the system anyway.")
+else:
+    print('removing job-specific temporary directory %s' % temp_dir)
+    delete_attempts = 0
+    while delete_attempts < 10:
+        try:
+            shutil.rmtree(temp_dir)
+            print('temporary directory removed')
+            break
+        except OSError:
+            delete_attempts += 1
+            print('waiting and retrying to remove temporary directory')
+            time.sleep(20)
 System.exit(0)

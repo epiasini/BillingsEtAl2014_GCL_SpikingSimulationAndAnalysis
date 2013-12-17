@@ -7,7 +7,6 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from sklearn.cluster import MiniBatchKMeans
 import pyentropy as pe
 
-import pymuvr
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
 from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, hoyer_sparseness, activity_sparseness
@@ -159,6 +158,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                         px_at_same_size_point = s.PX  
                     
             else:
+                import pymuvr
                 spikes = self.spikes_arch.get_spikes(cell_type='grc')
                 self.spikes_arch.load_attrs()
                 tr_spikes = [spikes[o] for o in train_idxs]

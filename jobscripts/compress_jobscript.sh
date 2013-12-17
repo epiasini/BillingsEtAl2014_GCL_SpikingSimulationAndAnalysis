@@ -6,10 +6,9 @@
 #$ -e $HOME/log/
 #$ -l h_vmem=4G
 #$ -l tmem=4G
-#$ -l h_rt=12:00:00
-#$ -l s_stack=128M
-#$ -l h_stack=128M
-##$ -l virtual_free=1024M
+#$ -l h_rt=3:00:00
+#$ -l s_stack=10M
+#$ -l h_stack=15M
 
 # "jobscripts" are things that should be passed to qsub.
 
@@ -20,4 +19,4 @@ echo $args_list
 hostname
 date
 
-/usr/bin/time /home/ucbtepi/bin/python compress.py $args_list
+/usr/bin/time python compress.py $args_list

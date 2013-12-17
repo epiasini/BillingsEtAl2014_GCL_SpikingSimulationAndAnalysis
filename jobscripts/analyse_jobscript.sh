@@ -8,7 +8,7 @@
 #$ -l h_stack=15M
 #$ -l h_vmem=6G
 #$ -l tmem=6G
-#$ -l h_rt=72:00:00
+#$ -l h_rt=10:00:00
 
 args_list=$@
 
@@ -17,4 +17,4 @@ echo $args_list
 hostname
 date
 
-/usr/bin/time /home/ucbtepi/bin/python analyse.py $args_list
+/usr/bin/time python analyse.py $args_list
