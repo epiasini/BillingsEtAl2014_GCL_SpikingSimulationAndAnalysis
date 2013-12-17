@@ -37,7 +37,7 @@ jobs for a given grid in parameter space on SGE.
     def _submit_job(self, qsub_argument_list):
         popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
         handle = Popen(popen_command, stdout=PIPE)
-        jid = handle.communicate()[0].partition('.')[0]
+        jid = handle.communicate()[0].partition('.')[0].rstrip('\n')
         if handle.returncode!=0:
             raise QueueError()
         print('Submitted job {jid}'.format(jid=jid))

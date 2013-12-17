@@ -146,5 +146,5 @@ if 'TMPDIR' not in os.environ:
             print('waiting and retrying to remove temporary directory')
             time.sleep(20)
 
-print("done simulating pattern number " + stim_pattern_number + ". closing job.")
+print("done simulating pattern number " + str(stim_pattern_number) + ". closing job.")
 System.exit(0)
