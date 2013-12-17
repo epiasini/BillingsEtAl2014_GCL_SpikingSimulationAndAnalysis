@@ -70,9 +70,14 @@ for spn, sp in enumerate(stim_patterns):
                 with h5py.File(sim_data_path) as spike_file:
                     target_data_group.create_dataset("mf_spiketimes", data=spike_file['MFs']['SPIKE_0'])
                     target_data_group.create_dataset("grc_spiketimes", data=spike_file['GrCs']['SPIKE_min40'])
+                break
             except KeyError as e:
                 compression_attempts += 1
                 print ("Missing dataset! retrying. Error was: {}".format(e))
+                # clean up
+                for group_name in ['mf_spiketimes', 'grc_spiketimes']:
+                    if group_name in target_data_group:
+                        del target_data_group[group_name]
                 time.sleep(10)
             except IOError as e:
                 compression_attempts += 1
