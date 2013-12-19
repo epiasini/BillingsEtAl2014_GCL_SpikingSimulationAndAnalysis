@@ -260,8 +260,20 @@ When doing this, we should keep in mind the ~40um figure for
 correlation of grc activity. Or rather +the inverse, ie+ the typical
 distance between two glomeruli which share a common output, /which is
 the same thing, right?/ (probably true for the mean values, but false,
-in general, for the shape of th distribution describing the falloff of
+in general, for the shape of the distribution describing the falloff of
 correlation with distance).
+
+We decided that we're going to do binary spatial tilings of the mossy
+fiber terminals set. A good idea might be to choose the size of these
+tilings in such a way that we can afford, say with 1024 patterns, to
+explore all possible binary combinations. This might be tricky,
+though, as we still need to vary p(MF) as an independent variable.
+*** TODO finalise a choice for input stimulation rates
+    In the paper, an input frequency range of about 10-50Hz was
+    mentioned when justifying the 30ms integration window
+    hypothesis. +My input patterns should live within that range as
+    well.+ Actually, we're probably going to go for something around
+    80Hz rather than 50Hz.
 *** TODO finalise a choice for the sparsity measure
     The best candidates at the moment are:
      - a properly normalised version of the Treves-Rolls sparsity
@@ -269,6 +281,8 @@ correlation with distance).
        sparsity measure as described in Hurley2009
      - what Willmore and Tolhurst (2001) call 'activity
        sparseness'.
+    <2013-12-19 Thu> /reverse Hoyer/ is looking good at the moment,
+    and that's what I'm using for most plots.
 *** Plan B: is there an easy way of integrating synaptic noise in our analysis?
 ** Technical upgrades needed 
 *** Simulation features
@@ -413,10 +427,6 @@ correlation with distance).
        [[file:fig/network_projected_randomised_gd4.png]]
 
 **** TODO Implement input correlations.
-     In the paper, an input frequncy range of about 10-50Hz was
-     mentioned when justifying the 30ms integration window
-     hypothesis. My input patterns should live within that range as
-     well.
 **** DONE Substitute Jython 2.5 with 2.7b1 in nC, test and make a pull request
      CLOSED: [2013-12-09 Mon 23:03]
      - CLOSING NOTE [2013-12-09 Mon 23:03] \\
@@ -426,7 +436,10 @@ correlation with distance).
        version, though, which would still be newer than the one we currently
        offer. I've made a pull request and there is [[https://github.com/NeuralEnsemble/neuroConstruct/issues/33][a discussion]] going on on
        github at the moment. We'll see what comes out of it.
-**** TODO Fix out of memory error for qstat poller
+**** DONE Fix out of memory error for qstat poller
+     CLOSED: [2013-12-19 Thu 13:44]
+     - CLOSING NOTE [2013-12-19 Thu 13:44] \\
+       The qsat poller has been entirely done away with since [[magit:~/phd/code/network/src/::commit@c93b5d3][commit #c93b5d3]].
      #+BEGIN_SRC sh
      SIM: 172 running, 68 waiting, 0 other jobs, 473 in the pre-queue
      Traceback (most recent call last):
@@ -486,6 +499,9 @@ correlation with distance).
      - CLOSING NOTE [2013-12-08 Sun 19:13] \\
        Done in
        [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
+**** TODO Reintroduce separation between training and testing data sets
+**** TODO Test decoder performance for convergence speed (performance vs size of training set)
+**** TODO Test decoder performance for rubustness against noise (performance vs size of testing set)
 ** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri> 
 *** Points for discussion
 1. *integration time window*: 
@@ -639,6 +655,15 @@ To do this we need:
 	raster plot implemented in [[magit:~/phd/code/network/src/::commit@a42cb02][commit #a42cb02]].
 ***** TODO graph-theoretical projection onto the set of GrCs showing the range of input sharing
 ***** TODO heatmap plot or efficient frontier plot where we actually make our point.
+** Meeting with Angus <2013-12-18 Wed>
+We decided it's probably a good idea to take out the noise on the
+input rates (ie the fact that at the moment the /on/ and /off/ rates
+are not fixed values, but rather distributions over rates) and to
+separate out again the simulated patterns into a /training/ and a
+/testing/ set for the clustering decoder. This way we can claim that
+the training phase represents some past activity, when the downstream
+network had the chance of tuning in an unsupervised manner to the
+typical classes of output of the granular layer.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -736,16 +761,29 @@ To do this we need:
     transmission, it looks like *the tissue model behaves very
     differently than the random bipartite graph*, especially at high
     p(MF).
+
+    <2013-12-19 Thu> Figures [[fig:MI_1024]] and [[fig:amp_1024]] show
+    information transmission and /amplification/ (analogous to
+    P(GC)/P(MF)) *for the tissuel model* with 1024 patterns, 50 trials
+    each and active mfs firing at 80Hz. They're incomplete because the
+    missing simulations are still running on the cluster.    
+
+    #+CAPTION: Mutual Information for 1024 patterns, 50 trials, 80Hz active mfs.
+    #+NAME: fig:MI_1024
+    #+ATTR_HTML: :width 60%
+    [[file:~/phd/code/network/data/figures/mi.png]]
+
+    #+CAPTION: Amplification for 1024 patterns, 50 trials, 80Hz active mfs. Axes are the same as in figure [[fig:MI_1024]].
+    #+NAME: fig:amp_1024
+    #+ATTR_HTML: :width 60%
+    [[file:amplification.png][file:~/phd/code/network/src/amplification.png]]
     
-* Other issues with the paper
-** Work out a better graph-theoretical characterisation of the differences between the tissue model and the random bipartite graph.
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
-of grcs following independent signals from the mfs, (see work by
-Mapelli?), then given the measurements of the length of the grc
-dendrites we should be able to test if the mf->grc connections are
-'randomly' (ie after some opportunely constrained maxent distribution)
-by predicting the correlation range and seeing if it matches with the
-experiments. An easier proxy for correlation could be some sort of
-LFP, given that we know the density of the grcs themselves.
+of grcs following signals from the mfs given with a known spatial
+correlation (see work by Mapelli?), then given the measurements of
+the length of the grc dendrites we should be able to test if the
+mf->grc connections are 'random' (ie after some opportunely
+constrained maxent distribution) by predicting the correlation range
+and seeing if it matches with the experiments.
