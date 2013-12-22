@@ -45,14 +45,19 @@ for n_grc_dend in n_grc_dend_range:
             g.node[node]['z'] = float(grc_pos[pos_index, 2])
     # project bipartite graph onto GrCs
     grc_nodes = set(n for n,d in g.nodes(data=True) if d['bipartite']==1)
-    h = bipartite.weighted_projected_graph(g, grc_nodes)
+    projected_gr = bipartite.weighted_projected_graph(g, grc_nodes)
+    # project bipartite graph onto MFs
+    mf_nodes = set(n for n,d in g.nodes(data=True) if d['bipartite']==0)
+    projected_mf = bipartite.weighted_projected_graph(g, mf_nodes)    
     # invert weight to give a correct 'heatmap' plot in Gephi
-    for u, v, data in h.edges(data=True):
+    for u, v, data in projected_gr.edges(data=True):
         data['weight'] = n_grc_dend - data['weight']
+    for u, v, data in projected_mf.edges(data=True):
+        data['weight'] =  float(len(projected_mf.neighbors(u)) + len(projected_mf.neighbors(v)))/2 - data['weight']
     # create randomised version of the same graph
     r = g.copy()
     r.remove_edges_from(g.edges())
-    mf_nodes = list(set(n for n,d in r.nodes(data=True) if d['bipartite']==0))
+    mf_nodes = list(mf_nodes)
     for n in grc_nodes:
         r.add_edges_from([(random.choice(mf_nodes), n) for each in range(n_grc_dend)])
     # project randomised graph onto GrCs and invert weights
@@ -62,6 +67,7 @@ for n_grc_dend in n_grc_dend_range:
     
     # export as graphml
     nx.write_graphml(g, join(current_dir, 'GCLconnectivity_full.graphml'))
-    nx.write_graphml(h, join(current_dir, 'GCLconnectivity_full_projected.graphml'))
+    nx.write_graphml(projected_gr, join(current_dir, 'GCLconnectivity_full_projected.graphml'))
+    nx.write_graphml(projected_mf, join(current_dir, 'GCLconnectivity_full_projected_mf.graphml'))
     nx.write_graphml(r, join(current_dir, 'GCLconnectivity_full_randomised.graphml'))
     nx.write_graphml(rh, join(current_dir, 'GCLconnectivity_full_randomised_projected.graphml'))
