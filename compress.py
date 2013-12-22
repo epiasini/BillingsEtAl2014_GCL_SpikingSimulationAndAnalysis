@@ -8,6 +8,7 @@ import glob
 import h5py
 import re
 import networkx
+import time
 import numpy as np
 
 from utils.parameters import ParameterSpacePoint
@@ -47,8 +48,7 @@ stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readl
 spf.close()
 
 # initialise sets for missing data
-missing_datasets = set()
-missing_directories = set()
+missing_patterns = set()
 
 for spn, sp in enumerate(stim_patterns):
     # load stimulus pattern from txt file and save it in the hdf5 file
@@ -63,18 +63,29 @@ for spn, sp in enumerate(stim_patterns):
         archive["%03d" % spn].create_group("%02d" % trial)
         target_data_group = archive["%03d" % spn]["%02d" % trial]
 
-        try:
-            spike_file = h5py.File(sim_data_path)
+        compression_attempts = 0
+        max_compression_attempts = 10
+        while compression_attempts < max_compression_attempts:
             try:
-                target_data_group.create_dataset("mf_spiketimes", data=spike_file['MFs']['SPIKE_0'])
-                target_data_group.create_dataset("grc_spiketimes", data=spike_file['GrCs']['SPIKE_min40'])
-            except KeyError:
-                print ("Missing dataset!")
-                missing_datasets.add(spn)
-            spike_file.close()
-        except IOError:
-            print ("Missing directory!")
-            missing_directories.add(spn)
+                with h5py.File(sim_data_path) as spike_file:
+                    target_data_group.create_dataset("mf_spiketimes", data=spike_file['MFs']['SPIKE_0'])
+                    target_data_group.create_dataset("grc_spiketimes", data=spike_file['GrCs']['SPIKE_min40'])
+                break
+            except KeyError as e:
+                compression_attempts += 1
+                print ("Missing dataset! retrying. Error was: {}".format(e))
+                # clean up
+                for group_name in ['mf_spiketimes', 'grc_spiketimes']:
+                    if group_name in target_data_group:
+                        del target_data_group[group_name]
+                time.sleep(10)
+            except IOError as e:
+                compression_attempts += 1
+                print ("Missing directory! retrying. Error was: {}".format(e))
+                time.sleep(10)
+        if compression_attempts == max_compression_attempts:
+            print("WARNING: giving up on compressing data for stim pattern number {}".format(spn))
+            missing_patterns.add(spn)
         
         # delete NEURON and neuroConstruct simulation files
         if clean_up:
@@ -85,7 +96,7 @@ for spn, sp in enumerate(stim_patterns):
                 print ("Error while cleaning up nC .h5 output files!")
 
 # remove all data relative to a stimulus pattern if at least one of its simulation trials wasn't recorded for some reason
-defective_datasets = list(missing_directories.union(missing_datasets))
+defective_datasets = list(missing_patterns)
 if defective_datasets:
     print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), point.n_stim_patterns))
     for spn in defective_datasets:

@@ -37,7 +37,7 @@ jobs for a given grid in parameter space on SGE.
     def _submit_job(self, qsub_argument_list):
         popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
         handle = Popen(popen_command, stdout=PIPE)
-        jid = handle.communicate()[0]
+        jid = handle.communicate()[0].partition('.')[0].rstrip('\n')
         if handle.returncode!=0:
             raise QueueError()
         print('Submitted job {jid}'.format(jid=jid))
@@ -58,7 +58,7 @@ jobs for a given grid in parameter space on SGE.
         if not os.path.exists(point.stim_pattern_filename):
             active_mf_number = int(round(n_mf*point.active_mf_fraction))
             stim_patterns = []
-            print('queue: {0}'.format(point.stim_pattern_filename))
+            print('creating stim file: {0}'.format(point.stim_pattern_filename))
             stim_pattern_file = open(point.stim_pattern_filename, "w")
             for spn in range(point.n_stim_patterns):
                 while True:
@@ -72,14 +72,14 @@ jobs for a given grid in parameter space on SGE.
             stim_pattern_file.close()
         if not os.path.exists(point.spikes_arch.path):
             # submit simulations to the queue as an array job
-            qsub_argument_list = ['-t 1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
+            qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
             # store id of array job for job dependency management
             self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point, force)
     def start_compression(self, clean_up=True):
-        for point in [p for p in self.parameter_space.flat if point.simple_representation() in self.sim_jids.keys()]:
+        for point in [p for p in self.parameter_space.flat if p.simple_representation() in self.sim_jids]:
             qsub_argument_list = ['-hold_jid',
                                   self.sim_jids[point.simple_representation()],
                                   'jobscripts/compress_jobscript.sh',
@@ -88,7 +88,7 @@ jobs for a given grid in parameter space on SGE.
             self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
     def start_analysis(self):
         for point in self.parameter_space.flat:
-            if repr(point) in self.compr_jids.keys():
+            if repr(point) in self.compr_jids:
                 # a compression job has been submitted for this
                 # parameter space point, so wait until it's done befre
                 # starting analysis

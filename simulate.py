@@ -25,22 +25,27 @@ from utils.network import generate_nC_network, generate_nC_saves, generate_nC_st
 
 point = eval(sys.argv[1])
 stim_pattern_number = int(sys.argv[2])
+hostname = sys.argv[3]
 
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
-if os.environ.has_key('TMPDIR'):
-    # we're probably on Legion
-    machine = 'legion'
+if 'matthau' in hostname or 'lemmon' in hostname or 'lum' in hostname:
+    # we're on matlem
+    sim_path = '/scratch0/ucbtepi/'+os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
+    temp_dir = sim_path
+    os.makedirs(temp_dir)
+elif 'TMPDIR' in os.environ:
+    # we're probably on legion
     sim_path = os.environ['TMPDIR']
+    temp_dir = sim_path
 else:
-    machine = 'matlem'
     sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
+    temp_dir = tempfile.mkdtemp(dir=sim_path)
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
 # copy nC project in temp folder
-temp_dir = tempfile.mkdtemp(dir=sim_path)
 shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
 shutil.copytree(project_path+"morphologies", temp_dir+"/morphologies")
 shutil.copytree(project_path+"cellMechanisms", temp_dir+"/cellMechanisms")
@@ -136,18 +141,17 @@ for trial in range(point.n_trials):
             print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 # remove temp directory and exit
-if machine=='legion':
-    print("not bothering to remove temporary folder, as it's going to be removed by the system anyway.")
-else:
-    print('removing job-specific temporary directory %s' % temp_dir)
-    delete_attempts = 0
-    while delete_attempts < 10:
-        try:
-            shutil.rmtree(temp_dir)
-            print('temporary directory removed')
-            break
-        except OSError:
-            delete_attempts += 1
-            print('waiting and retrying to remove temporary directory')
-            time.sleep(20)
+print('removing job-specific temporary directory %s' % temp_dir)
+delete_attempts = 0
+while delete_attempts < 10:
+    try:
+        shutil.rmtree(temp_dir)
+        print('temporary directory removed')
+        break
+    except OSError:
+        delete_attempts += 1
+        print('waiting and retrying to remove temporary directory')
+        time.sleep(20)
+
+print("done simulating pattern number " + str(stim_pattern_number) + ". closing job.")
 System.exit(0)
