@@ -74,9 +74,16 @@ def generate_nC_stimuli(point, project, sim_config, stim_pattern):
     # stimulation pattern
     for mf in range(point.n_mf):
         if mf in stim_pattern:
-            rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
+            if point.stim_rate_sigma > 0:
+                rate = max(0.1, random.gauss(point.stim_rate_mu, point.stim_rate_sigma))
+            else:
+                rate = point.stim_rate_mu
         else:
-            rate = max(0.1, random.gauss(point.noise_rate_mu, point.noise_rate_sigma))
+            if point.noise_rate_sigma > 0:
+                rate = max(0.1, random.gauss(point.noise_rate_mu, point.noise_rate_sigma))
+            else:
+                rate = point.noise_rate_mu
+
         rate_in_khz = rate/1000.
         stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
         project.elecInputInfo.addStim(stim)
