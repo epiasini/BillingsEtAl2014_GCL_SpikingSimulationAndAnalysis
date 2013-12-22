@@ -75,17 +75,30 @@ jobs for a given grid in parameter space on SGE.
             qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
             # store id of array job for job dependency management
             self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
+            return True
+        else:
+            return False
+    def _start_point_compression(self, point, clean_up):
+        qsub_argument_list = ['-hold_jid',
+                              self.sim_jids[point.simple_representation()],
+                              'jobscripts/compress_jobscript.sh',
+                              repr(point),
+                              str(clean_up)]
+        self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
+        
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
             self._start_point_simulation(point, force)
+
     def start_compression(self, clean_up=True):
         for point in [p for p in self.parameter_space.flat if p.simple_representation() in self.sim_jids]:
-            qsub_argument_list = ['-hold_jid',
-                                  self.sim_jids[point.simple_representation()],
-                                  'jobscripts/compress_jobscript.sh',
-                                  repr(point),
-                                  str(clean_up)]
-            self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
+            self._start_point_compression(point, _clean_up)
+
+    def start_simulation_and_compression(self, force=False, clean_up=True):
+        for point in self.parameter_space.flat:
+            if self._start_point_simulation(point, force):
+                self._start_point_compression(point, clean_up)
+                
     def start_analysis(self):
         for point in self.parameter_space.flat:
             if repr(point) in self.compr_jids:

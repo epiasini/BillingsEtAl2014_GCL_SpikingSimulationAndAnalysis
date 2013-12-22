@@ -25,17 +25,17 @@ clean_up_simulation_files = True
 sim_duration = psl(150.0)
 min_mf_number = psl(6)
 grc_mf_ratio = psl(2.9)
-n_grc_dend = psl(4)
+n_grc_dend = psl(4, 11, 1)
 network_scale = psl(28.74)
-active_mf_fraction = psl(.5)
+active_mf_fraction = psl(.1,1.,.1)
 bias = psl(0)
 stim_rate_mu = psl(80)
-stim_rate_sigma = psl(10)
+stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
-noise_rate_sigma = psl(10)
-n_stim_patterns = psl(1000) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+noise_rate_sigma = psl(0)
+n_stim_patterns = psl(128)
 n_trials = psl(50)
-training_size = psl(20) # must be < min(n_trials)
+training_size = psl(5) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
@@ -74,16 +74,12 @@ parameter_space = ParameterSpace(sim_duration,
 
 batch_manager = BatchManager(parameter_space)
 
-############################
-##====SIMULATION STAGE====##
-############################
-print("Submitting simulation array jobs")
-batch_manager.start_simulation(force=force_rerun_simulations)
-#############################
-##====COMPRESSION STAGE====##
-#############################
-print("Submitting compression jobs")
-batch_manager.start_compression(clean_up=clean_up_simulation_files)
+############################################
+##====SIMULATION AND COMPRESSION STAGE====##
+############################################
+print("Submitting simulation and compression jobs")
+batch_manager.start_simulation_and_compression(force=force_rerun_simulations,
+                                               clean_up=clean_up_simulation_files)
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################

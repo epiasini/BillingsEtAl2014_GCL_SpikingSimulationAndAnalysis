@@ -6,9 +6,10 @@
 #$ -e $HOME/log/
 #$ -l h_vmem=5G
 #$ -l tmem=5G
-#$ -l h_rt=1:29:00
+#$ -l h_rt=6:00:00
 #$ -l s_stack=10M
 #$ -l h_stack=15M
+#$ -p -1
 
 # "jobscripts" are things that should be passed to qsub.
 
