@@ -108,9 +108,9 @@ jobs for a given grid in parameter space on SGE.
                 qsub_argument_list = ['-hold_jid',
                                       self.compr_jids[repr(point)],
                                       'jobscripts/analyse_jobscript.sh',
-                                      repr(point)]
+                                      point.representation_without_commas()]
             else:
                 qsub_argument_list = ['jobscripts/analyse_jobscript.sh',
-                                      repr(point)]
+                                      point.representation_without_commas()]
             self._submit_job(qsub_argument_list)
         

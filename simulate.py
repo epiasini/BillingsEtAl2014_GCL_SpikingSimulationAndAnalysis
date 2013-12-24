@@ -23,7 +23,7 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 from utils.pure import SimpleParameterSpacePoint
 from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli
 
-point = eval(sys.argv[1])
+point = eval(sys.argv[1].replace('|', ','))
 stim_pattern_number = int(sys.argv[2])
 hostname = sys.argv[3]
 

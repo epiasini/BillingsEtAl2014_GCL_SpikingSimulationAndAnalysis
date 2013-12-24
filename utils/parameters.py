@@ -77,7 +77,13 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         return super(ParameterSpacePoint, self).__str__() + analysis_specific_repr
     def simple_representation(self):
         """Describe the point as if it were a SimpleParameterSpacePoint."""
-        return super(ParameterSpacePoint, self).__repr__()
+        return super(ParameterSpacePoint, self).representation_without_commas()
+    def representation_without_commas(self):
+        # sanitised version of the Point representation, with commas
+        # replaced by | signs. This is needed because of a known bug
+        # in Legion's version of JSV which freaks out when script
+        # arguments contain commas.
+        return self.__repr__().replace(',', '|')
     #-------------------
     # Simulation methods
     #-------------------

@@ -13,7 +13,7 @@ import numpy as np
 
 from utils.parameters import ParameterSpacePoint
 
-point = eval(sys.argv[1])
+point = eval(sys.argv[1].replace('|', ','))
 
 try:
     clean_up = bool(eval(sys.argv[2]))
