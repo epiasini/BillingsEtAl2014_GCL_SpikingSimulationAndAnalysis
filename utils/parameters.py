@@ -27,38 +27,38 @@ class PSlice(object):
 
 class ParameterSpacePoint(SimpleParameterSpacePoint):
     def __init__(self,
-                 sim_duration,
-                 min_mf_number,
-                 grc_mf_ratio,
                  n_grc_dend,
-                 network_scale,
+                 connectivity_rule,
+                 input_spatial_correlation_scale,
                  active_mf_fraction,
-                 bias,
+                 extra_tonic_inhibition,
                  stim_rate_mu,
                  stim_rate_sigma,
                  noise_rate_mu,
                  noise_rate_sigma,
                  n_stim_patterns,
                  n_trials,
+                 sim_duration,
+                 ana_duration,
                  training_size,
                  multineuron_metric_mixing,
                  linkage_method,
                  tau,
                  dt):
-        super(ParameterSpacePoint, self).__init__(sim_duration,
-                                                  min_mf_number,
-                                                  grc_mf_ratio,
-                                                  n_grc_dend,
-                                                  network_scale,
+        super(ParameterSpacePoint, self).__init__(n_grc_dend,
+                                                  connectivity_rule,
+                                                  input_spatial_correlation_scale,
                                                   active_mf_fraction,
-                                                  bias,
+                                                  extra_tonic_inhibition,
                                                   stim_rate_mu,
                                                   stim_rate_sigma,
                                                   noise_rate_mu,
                                                   noise_rate_sigma,
                                                   n_stim_patterns,
-                                                  n_trials)        
+                                                  n_trials,
+                                                  sim_duration)
         #--analysis-specific coordinates
+        self.ana_duration = ana_duration
         self.training_size = int(round(training_size))
         self.multineuron_metric_mixing = multineuron_metric_mixing
         self.linkage_method = int(round(linkage_method))
@@ -71,9 +71,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
     def __repr__(self):
         simple = self.simple_representation()
         simple_args = simple.split('(')[1].split(')')[0]
-        return('ParameterSpacePoint({0},{1},{2},{3},{4},{5})'.format(simple_args, self.training_size, self.multineuron_metric_mixing, self.linkage_method, self.tau, self.dt))
+        return('ParameterSpacePoint({0},{1},{2},{3},{4},{5},{6})'.format(simple_args, self.ana_duration, self.training_size, self.multineuron_metric_mixing, self.linkage_method, self.tau, self.dt))
     def __str__(self):
-        analysis_specific_repr = " |@| train: {0} | mix: {1} | link: {2} | tau: {3} | dt: {4}".format(self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
+        analysis_specific_repr = " |@| adur: {0} | train: {1} | mix: {2} | link: {3} | tau: {4} | dt: {5}".format(self.ana_duration, self.training_size, self.multineuron_metric_mixing, self.linkage_method_string[self.linkage_method], self.tau, self.dt)
         return super(ParameterSpacePoint, self).__str__() + analysis_specific_repr
     def simple_representation(self):
         """Describe the point as if it were a SimpleParameterSpacePoint."""
@@ -247,38 +247,38 @@ ParameterSpaceMesh = np.vectorize(ParameterSpacePoint)
 
 class ParameterSpace(np.ndarray):
     ABSOLUTE_DIDXS = [
-            'sim_duration',
-            'min_mf_number',
-            'grc_mf_ratio',
-            'n_grc_dend',
-            'network_scale',
-            'active_mf_fraction',
-            'bias',
-            'stim_rate_mu',
-            'stim_rate_sigma',
-            'noise_rate_mu',
-            'noise_rate_sigma',
-            'n_stim_patterns',
-            'n_trials',
-            'training_size',
-            'multineuron_metric_mixing',
-            'linkage_method',
-            'tau',
-            'dt']
+        'n_grc_dend',
+        'connectivity_rule',
+        'input_spatial_correlation_scale',
+        'active_mf_fraction',
+        'extra_tonic_inhibition',
+        'stim_rate_mu',
+        'stim_rate_sigma',
+        'noise_rate_mu',
+        'noise_rate_sigma',
+        'n_stim_patterns',
+        'n_trials',
+        'sim_duration',
+        'ana_duration',
+        'training_size',
+        'multineuron_metric_mixing',
+        'linkage_method',
+        'tau',
+        'dt']
     def __new__(cls,
-                sim_duration_slice,
-                min_mf_number_slice,
-                grc_mf_ratio_slice,
                 n_grc_dend_slice,
-                network_scale_slice,
+                connectivity_rule_slice,
+                input_spatial_correlation_scale_slice,
                 active_mf_fraction_slice,
-                bias_slice,
+                extra_tonic_inhibition_slice,
                 stim_rate_mu_slice,
                 stim_rate_sigma_slice,
                 noise_rate_mu_slice,
                 noise_rate_sigma_slice,
                 n_stim_patterns_slice,
                 n_trials_slice,
+                sim_duration_slice,
+                ana_duration_slice,
                 trainig_size_slice,
                 multineuron_metric_mixing_slice,
                 linkage_method_slice,
@@ -288,19 +288,19 @@ class ParameterSpace(np.ndarray):
         # ndarray input arguments.  This will call the standard
         # ndarray constructor, but return an object of our type.
         # It also triggers a call to ParamSpace.__array_finalize__
-        m = np.mgrid[sim_duration_slice,
-                     min_mf_number_slice,
-                     grc_mf_ratio_slice,
-                     n_grc_dend_slice,
-                     network_scale_slice,
+        m = np.mgrid[n_grc_dend_slice,
+                     connectivity_rule_slice,
+                     input_spatial_correlation_scale_slice,
                      active_mf_fraction_slice,
-                     bias_slice,
+                     extra_tonic_inhibition_slice,
                      stim_rate_mu_slice,
                      stim_rate_sigma_slice,
                      noise_rate_mu_slice,
                      noise_rate_sigma_slice,
                      n_stim_patterns_slice,
                      n_trials_slice,
+                     sim_duration_slice,
+                     ana_duration_slice,
                      trainig_size_slice,
                      multineuron_metric_mixing_slice,
                      linkage_method_slice,
@@ -310,17 +310,19 @@ class ParameterSpace(np.ndarray):
         # Dimensional InDeXS. Dictionary or list? I like the 'semantic' nature of a dictionary, but lists have a natural ordering and a natural way of updating when a dimension is added or removed.
         obj.DIDXS = list(ParameterSpace.ABSOLUTE_DIDXS)
         obj.ABBREVIATIONS = {
-            'grc_mf_ratio': 'gmr',
             'n_grc_dend': 'gd',
-            'network_scale': 's',
+            'connectivity_rule': 'cr',
+            'input_spatial_correlation_scale': 'iscs',
             'active_mf_fraction': 'mf',
-            'bias': 'b',
+            'extra_tonic_inhibition': 'b',
             'stim_rate_mu': 'sm',
             'stim_rate_sigma': 'ss',
             'noise_rate_mu': 'nm',
             'noise_rate_sigma': 'ns',
             'n_stim_patterns': 'sp',
             'n_trials': 't',
+            'sim_duration_slice': 'sdur',
+            'ana_duration_slice': 'adur',
             'training_size': 'tr'}
         # Finally, we must return the newly created object:
         return obj

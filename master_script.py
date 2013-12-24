@@ -7,34 +7,24 @@ from utils.queue import BatchManager
 from utils.parameters import ParameterSpace
 from utils.parameters import PSlice as psl
 
-#+++++Exceptions+++++
-class NetworkSizeError(Exception):
-    def __init__(self, value):
-        self.value = value
-    def __str__(self):
-        return repr(self.value)
-
-class TrainingSetSizeError(Exception):
-    pass
-
 #++++general controls+++++
 force_rerun_simulations = False
 clean_up_simulation_files = True
 
 #+++++parameter ranges+++++++++++++
-sim_duration = psl(150.0)
-min_mf_number = psl(6)
-grc_mf_ratio = psl(2.9)
 n_grc_dend = psl(4, 11, 1)
-network_scale = psl(28.74)
+connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
+input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
-bias = psl(0)
+extra_tonic_inhibition = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
 n_stim_patterns = psl(128)
 n_trials = psl(50)
+sim_duration = psl(150.0)
+ana_duration = psl(150.0) # must be < min(sim_duration)
 training_size = psl(5) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
@@ -42,15 +32,10 @@ tau = psl(5)
 dt = psl(2)
 
 #----parameter consistency check
-min_nmf = round((network_scale.start)*(min_mf_number.start))
-min_active_mf = round(min_nmf*(active_mf_fraction.start))
-max_active_mf = round(min_nmf*(active_mf_fraction.realstop))
-min_coding_inputs = min(min_active_mf, min_nmf - max_active_mf)
-if network_scale.start <= 5:
-    max_patterns_encoded = float(factorial(min_nmf))/(factorial(min_coding_inputs)*factorial(min_nmf - min_coding_inputs))
-    if n_stim_patterns.realstop > max_patterns_encoded:
-        raise NetworkSizeError("Network size inferior limit too small for chosen number of patterns! %d MFs can't represent %d patterns for at least one of the requested sparsity values." % (min_nmf, n_stim_patterns.realstop))
-
+if training_size.realstop > n_trials.start:
+    raise Exception("Decoder training set size must always be smaller than the number of trials!")
+if ana_duration.realstop > sim_duration.start:
+    raise Exception("Simulation length must always be greater than analysis time window!")
 
 #---parameter space creation
 parameter_space = ParameterSpace(sim_duration,

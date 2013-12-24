@@ -7,25 +7,22 @@ class SimpleParameterSpacePoint(object):
     #--class constants
     BASE_DIR = BASE_DIR
     def __init__(self,
-                 sim_duration,
-                 min_mf_number,
-                 grc_mf_ratio,
                  n_grc_dend,
-                 network_scale,
+                 connectivity_rule,
+                 input_spatial_correlation_scale,
                  active_mf_fraction,
-                 bias,
+                 extra_tonic_inhibition,
                  stim_rate_mu,
                  stim_rate_sigma,
                  noise_rate_mu,
                  noise_rate_sigma,
                  n_stim_patterns,
-                 n_trials):
+                 n_trials,
+                 sim_duration):
         #--parameter space coordinates
-        self.sim_duration = sim_duration
-        self.min_mf_number = int(round(min_mf_number))
-        self.grc_mf_ratio = grc_mf_ratio
         self.n_grc_dend = int(round(n_grc_dend))
-        self.network_scale = network_scale
+        self.connectivity_rule = int(round(connectivity_rule ))
+        self.input_spatial_correlation_scale = input_spatial_correlation_scale
         self.active_mf_fraction = active_mf_fraction
         self.bias = bias
         self.stim_rate_mu = stim_rate_mu
@@ -35,28 +32,25 @@ class SimpleParameterSpacePoint(object):
         self.n_stim_patterns = int(round(n_stim_patterns))
         self.SIZE_PER_SIMULATION = self.n_stim_patterns # TODO: rename this to something more sensible as "workers_per_parameter_space_point", or remove it altogether.
         self.n_trials = int(round(n_trials))
+        self.sim_duration = sim_duration
         #--relevant filenames
-        self.net_structure_folder_path = "%s/gmr%.02f/gd%d/s%.02f" % (self.BASE_DIR,
-                                                                      self.grc_mf_ratio,
-                                                                      self.n_grc_dend,
-                                                                      self.network_scale)
-        self.graphml_network_filename = "%s/gmr%.02f_gd%d_s%.02f.graphml" % (self.net_structure_folder_path,
-                                                                             self.grc_mf_ratio,
-                                                                             self.n_grc_dend,
-                                                                             self.network_scale)
-        self.stim_pattern_filename = "%s/f%.02f/gmr%.02f_gd%d_s%.02f_sp%d_stim.txt" % (self.net_structure_folder_path,
-                                                                                       self.active_mf_fraction,
-                                                                                       self.grc_mf_ratio,
-                                                                                       self.n_grc_dend,
-                                                                                       self.network_scale,
-                                                                                       self.n_stim_patterns)
-        self.data_folder_path = "%s/f%.02f/b%02d/sm%d/ss%d/nm%d/ns%d" % (self.net_structure_folder_path,
-                                                                         self.active_mf_fraction,
-                                                                         self.bias,
-                                                                         self.stim_rate_mu,
-                                                                         self.stim_rate_sigma,
-                                                                         self.noise_rate_mu,
-                                                                         self.noise_rate_sigma)
+        self.net_structure_folder_path = "%s/gd%d/cr%d" % (self.BASE_DIR,
+                                                           self.n_grc_dend,
+                                                           self.connectivity_rule)
+        self.graphml_network_filename = "%s/gd%d_cr%d.graphml" % (self.net_structure_folder_path,
+                                                                  self.n_grc_dend,
+                                                                  self.connectivity_rule)
+        self.stim_pattern_folder_path = "%s/iscs%.02f/f%.02f" % (self.net_structure_folder_path,
+                                                                 self.input_spatial_correlation_scale,
+                                                                 self.active_mf_fraction)
+        self.stim_pattern_filename = "%s/sp%d_stim.txt" % (self.stim_pattern_folder_path,
+                                                           self.n_stim_patterns)
+        self.data_folder_path = "%s/b%04d/sm%d/ss%d/nm%d/ns%d" % (self.stim_pattern_folder_path,
+                                                                  self.extra_tonic_inhibition,
+                                                                  self.stim_rate_mu,
+                                                                  self.stim_rate_sigma,
+                                                                  self.noise_rate_mu,
+                                                                  self.noise_rate_sigma)
         #--useful quantities
         self.network_graph = nx.read_graphml(self.graphml_network_filename,
                                              node_type=int)
@@ -67,9 +61,9 @@ class SimpleParameterSpacePoint(object):
         assert self.n_mf + self.n_grc == self.network_graph.number_of_nodes()
     def __repr__(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
-        return "SimpleParameterSpacePoint(%d,%d,%f,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d)" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+        return "SimpleParameterSpacePoint(%d,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def __str__(self):
-        return "sim_dur: %d | min_mf_n: %d | gmr: %.1f | gd: %d | scale: %.1f | mf: %.1f | bias: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d" % (self.sim_duration, self.min_mf_number, self.grc_mf_ratio, self.n_grc_dend, self.network_scale, self.active_mf_fraction, self.bias, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials)
+        return "gd: %d | mf: %.1f | b: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d | sdur: %d" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inhibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def get_simulation_reference(self, stimulus_pattern_index, trial):
         """
         Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.

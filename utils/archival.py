@@ -11,32 +11,36 @@ class Archive(object):
 class SpikesArchive(Archive):
     def __init__(self, *args, **kwargs):
         super(SpikesArchive, self).__init__(*args, **kwargs)
-        self.path = "{0}/sp{1}_t{2}.hdf5".format(self.point.data_folder_path,
-                                                 self.point.n_stim_patterns,
-                                                 self.point.n_trials)
+        self.path = "{0}/sp{1}_t{2}_sdur{3}.hdf5".format(self.point.data_folder_path,
+                                                         self.point.n_stim_patterns,
+                                                         self.point.n_trials,
+                                                         self.point.sim_duration)
     def open_hdf5_handle(self):
         return h5py.File(self.path)
     def load_attrs(self):
         with h5py.File(self.path) as hdf5_handle:
             self.attrs = dict(hdf5_handle.attrs)
     def get_spikes(self, cell_type='grc'):
-        # no need to lock the archive or to save the file handle, since we plan on using this
-        # in read-only mode.
-        # TODO: this actually needs to be revised, since ultimately we would like to use the
-        # SpikesArchive object also in the compress.py script, which means write-access as well.
+        # no need to lock the archive or to save the file handle,
+        # since we plan on using this in read-only mode.  TODO: this
+        # actually needs to be revised, since ultimately we would like
+        # to use the SpikesArchive object also in the compress.py
+        # script, which means write-access as well.
         self.load_attrs()
         n_cells = self.attrs['n_'+cell_type]
+        start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
         observation_list = [np.array(x[1]['{0}_spiketimes'.format(cell_type)]) for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
         hdf5_handle.close()
-        spikes = [[c[c>0].tolist() for c in o.transpose()] for o in observation_list]
+        spikes = [[c[c>start_time].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
     def get_spike_counts(self, cell_type='grc'):
         self.load_attrs()
         n_cells = self.attrs['n_'+cell_type]
+        start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
         observation_handles = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
-        spike_counts = np.array([[np.sum(c > 0) for c in np.array(o).transpose()] for o in observation_handles])
+        spike_counts = np.array([[np.sum(c > start_time) for c in np.array(o).transpose()] for o in observation_handles])
         if spike_counts.dtype == np.dtype('O'):
             # network was completely silent for at least one
             # observation. We need to carefully loop over all
@@ -46,7 +50,7 @@ class SpikesArchive(Archive):
             for n, oh in enumerate(observation_handles):
                 ob = np.array(oh)
                 if ob.size:
-                    spike_counts[n] = np.sum(ob > 0, axis=0)
+                    spike_counts[n] = np.sum(ob > start_time, axis=0)
         hdf5_handle.close()
         return spike_counts
 
@@ -86,9 +90,11 @@ class ResultsArchive(Archive):
         self._hdf5_handle = h5py.File(self.path)
         nspg = self._hdf5_handle.require_group('sp%d' % self.point.n_stim_patterns)
         ntrg = nspg.require_group('t%d' % self.point.n_trials)
-        mixg = ntrg.require_group('mix%.2f' % self.point.multineuron_metric_mixing)
-        trsg = mixg.require_group('train%d' % self.point.training_size)
-        clmg = trsg.require_group('method_%s' % self.point.linkage_method_string)
+        sdurg = ntrg.require_group('sdur%d' % self.point.sim_duration)
+        adurg = sdurg.require_group('adur%d' % self.point.ana_duration)
+        trsg = adurg.require_group('train%d' % self.point.training_size)
+        mixg = trsg.require_group('mix%.2f' % self.point.multineuron_metric_mixing)
+        clmg = mixg.require_group('method_%s' % self.point.linkage_method_string)
         target_group = clmg.require_group('tau%d' % self.point.tau)
         return target_group
     def _close(self):
