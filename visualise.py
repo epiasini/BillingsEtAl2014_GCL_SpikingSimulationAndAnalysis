@@ -32,22 +32,22 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-sim_duration = psl(150.0)
-min_mf_number = psl(6)
-grc_mf_ratio = psl(2.9)
 n_grc_dend = psl(4, 11, 1)
-network_scale = psl(28.74)
+connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
+input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
-bias = psl(0)
-stim_rate_mu = psl(100)
-stim_rate_sigma = psl(10)
+extra_tonic_inhibition = psl(0)
+stim_rate_mu = psl(80)
+stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
-noise_rate_sigma = psl(10)
-n_stim_patterns = psl(100) # must be > SimpleParameterPoint.SIZE_PER_SIMULATION
+noise_rate_sigma = psl(0)
+n_stim_patterns = psl(128)
 n_trials = psl(50)
-training_size = psl(20) # must be < min(n_trials)
+sim_duration = psl(150.0)
+ana_duration = psl(150.0) # must be < min(sim_duration)
+training_size = psl(5) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
-linkage_method = psl(1)
+linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
 dt = psl(2)
 
