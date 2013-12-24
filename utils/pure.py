@@ -25,7 +25,7 @@ class SimpleParameterSpacePoint(object):
         self.connectivity_rule = int(round(connectivity_rule ))
         self.input_spatial_correlation_scale = input_spatial_correlation_scale
         self.active_mf_fraction = active_mf_fraction
-        self.bias = bias
+        self.extra_tonic_inhibition = extra_tonic_inhibition
         self.stim_rate_mu = stim_rate_mu
         self.stim_rate_sigma = stim_rate_sigma
         self.noise_rate_mu = noise_rate_mu
