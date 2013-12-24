@@ -78,7 +78,7 @@ if plot_sparseness:
         # visualise 'amplification', defined as
         # out_sparsity/in_sparsity
         fig, ax = plt.subplots()
-        data = data_h_o/data_h_i
+        data = data_a_o/data_a_i
         plot = ax.imshow(data,interpolation='none', cmap='coolwarm', origin='lower')
         cbar = fig.colorbar(plot)
         cbar.set_label('amplification')
