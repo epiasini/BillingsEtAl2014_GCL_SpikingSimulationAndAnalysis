@@ -74,7 +74,7 @@ class SimpleParameterSpacePoint(object):
         self.n_mf = len(self.graph_mf_nodes)
         self.n_grc = len(self.graph_grc_nodes)
         assert self.n_mf + self.n_grc == self.network_graph.number_of_nodes()
-    def __repr__(self):
+    def representation(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
         return "SimpleParameterSpacePoint(%d,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def representation_without_commas(self):
@@ -82,7 +82,9 @@ class SimpleParameterSpacePoint(object):
         # replaced by | signs. This is needed because of a known bug
         # in Legion's version of JSV which freaks out when script
         # arguments contain commas.
-        return self.__repr__().replace(',', '|')
+        return self.representation().replace(',', '|')
+    def __repr__(self):
+        return self.representation()
     def __str__(self):
         return "gd: %d | mf: %.1f | b: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d | sdur: %d" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inhibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def get_simulation_reference(self, stimulus_pattern_index, trial):

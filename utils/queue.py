@@ -80,9 +80,9 @@ jobs for a given grid in parameter space on SGE.
             return False
     def _start_point_compression(self, point, clean_up):
         qsub_argument_list = ['-hold_jid',
-                              self.sim_jids[point.simple_representation()],
+                              self.sim_jids[point.simple_representation_without_commas()],
                               'jobscripts/compress_jobscript.sh',
-                              repr(point),
+                              point.simple_representation_without_commas(),
                               str(clean_up)]
         self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
         
@@ -91,7 +91,7 @@ jobs for a given grid in parameter space on SGE.
             self._start_point_simulation(point, force)
 
     def start_compression(self, clean_up=True):
-        for point in [p for p in self.parameter_space.flat if p.simple_representation() in self.sim_jids]:
+        for point in [p for p in self.parameter_space.flat if p.simple_representation_without_commas() in self.sim_jids]:
             self._start_point_compression(point, _clean_up)
 
     def start_simulation_and_compression(self, force=False, clean_up=True):
@@ -101,12 +101,12 @@ jobs for a given grid in parameter space on SGE.
                 
     def start_analysis(self):
         for point in self.parameter_space.flat:
-            if repr(point) in self.compr_jids:
+            if point.simple_representation_without_commas() in self.compr_jids:
                 # a compression job has been submitted for this
                 # parameter space point, so wait until it's done befre
                 # starting analysis
                 qsub_argument_list = ['-hold_jid',
-                                      self.compr_jids[repr(point)],
+                                      self.compr_jids[point.representation_without_commas()],
                                       'jobscripts/analyse_jobscript.sh',
                                       point.representation_without_commas()]
             else:
