@@ -85,7 +85,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         # replaced by | signs. This is needed because of a known bug
         # in Legion's version of JSV which freaks out when script
         # arguments contain commas.
-        return self.__repr__().replace(',', '|')
+        return self.__repr__().replace(',', '+')
 
     #-------------------
     # Simulation methods

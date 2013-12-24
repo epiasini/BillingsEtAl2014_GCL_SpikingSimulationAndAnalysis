@@ -76,13 +76,13 @@ class SimpleParameterSpacePoint(object):
         assert self.n_mf + self.n_grc == self.network_graph.number_of_nodes()
     def representation(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
-        return "SimpleParameterSpacePoint(%d,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
+        return "SimpleParameterSpacePoint(%d,%d,%f,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.connectivity_rule, self.input_spatial_correlation_scale, self.active_mf_fraction, self.extra_tonic_inhibition, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def representation_without_commas(self):
         # sanitised version of the Point representation, with commas
         # replaced by | signs. This is needed because of a known bug
         # in Legion's version of JSV which freaks out when script
         # arguments contain commas.
-        return self.representation().replace(',', '|')
+        return self.representation().replace(',', '+')
     def __repr__(self):
         return self.representation()
     def __str__(self):
