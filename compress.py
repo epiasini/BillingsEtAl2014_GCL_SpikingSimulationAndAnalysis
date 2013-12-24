@@ -27,6 +27,9 @@ archive = point.spikes_arch.open_hdf5_handle()
 archive.attrs['n_mf'] = point.n_mf
 archive.attrs['n_grc'] = point.n_grc
 archive.attrs['point_representation'] = repr(point)
+archive.attrs['n_stim_patterns'] = point.n_stim_patterns
+archive.attrs['n_trials'] = point.n_trials
+archive.attrs['sim_duration'] = point.sim_duration
 
 # load network description from graphml file and save it in the hdf5 file
 network_adjacency_matrix = networkx.to_numpy_matrix(point.network_graph)

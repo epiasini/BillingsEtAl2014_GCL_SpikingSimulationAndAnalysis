@@ -70,7 +70,7 @@ jobs for a given grid in parameter space on SGE.
                     stim_pattern_file.write(str(mf) + " ")
                 stim_pattern_file.write("\n")
             stim_pattern_file.close()
-        if not os.path.exists(point.spikes_arch.path):
+        if not point.get_existing_spike_archive_path():
             # submit simulations to the queue as an array job
             qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
             # store id of array job for job dependency management

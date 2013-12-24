@@ -11,10 +11,7 @@ class Archive(object):
 class SpikesArchive(Archive):
     def __init__(self, *args, **kwargs):
         super(SpikesArchive, self).__init__(*args, **kwargs)
-        self.path = "{0}/sp{1}_t{2}_sdur{3}.hdf5".format(self.point.data_folder_path,
-                                                         self.point.n_stim_patterns,
-                                                         self.point.n_trials,
-                                                         self.point.sim_duration)
+        self.path = self.point.spike_archive_path
     def open_hdf5_handle(self):
         return h5py.File(self.path)
     def load_attrs(self):
@@ -25,12 +22,12 @@ class SpikesArchive(Archive):
         # since we plan on using this in read-only mode.  TODO: this
         # actually needs to be revised, since ultimately we would like
         # to use the SpikesArchive object also in the compress.py
-        # script, which means write-access as well.
+        # script, which means write-access as well. 
         self.load_attrs()
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
-        observation_list = [np.array(x[1]['{0}_spiketimes'.format(cell_type)]) for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
+        observation_list = [np.array(hdf5_handle[spn][tn]['{0}_spiketimes'.format(cell_type)]) for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
         hdf5_handle.close()
         spikes = [[c[c>start_time].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
@@ -39,7 +36,7 @@ class SpikesArchive(Archive):
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
-        observation_handles = [x[1]['{0}_spiketimes'.format(cell_type)] for s in hdf5_handle.items() if isinstance(s[1], h5py.highlevel.Group) for x in s[1].items() if isinstance(x[1], h5py.highlevel.Group)]
+        observation_handles = [hdf5_handle[spn][tn]['{0}_spiketimes'.format(cell_type)] for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
         spike_counts = np.array([[np.sum(c > start_time) for c in np.array(o).transpose()] for o in observation_handles])
         if spike_counts.dtype == np.dtype('O'):
             # network was completely silent for at least one

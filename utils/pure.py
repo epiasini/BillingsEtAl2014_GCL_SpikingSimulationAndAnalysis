@@ -1,3 +1,4 @@
+import glob
 import networkx as nx
 
 BASE_DIR = "/home/ucbtepi/code/network/data"
@@ -51,6 +52,20 @@ class SimpleParameterSpacePoint(object):
                                                                   self.stim_rate_sigma,
                                                                   self.noise_rate_mu,
                                                                   self.noise_rate_sigma)
+        # the spike archive the point gets associated with can be an
+        # archive for a larger set of simulations. For example, if
+        # this point has n_stim_patterns=128, n_trials=50 and
+        # sim_duration=150 but an archive is available for a point
+        # which only differs from this one in having
+        # n_stim_patterns=1024, n_trials=100 and sim_duration=200, the
+        # larger archive will be reused to avoid rerunning the same
+        # simulations.
+        self.spike_archive_path = self.get_existing_spike_archive_path()
+        if not self.spike_archive_path:
+            self.spike_archive_path = "{0}/sp{1}_t{2}_sdur{3}.hdf5".format(self.data_folder_path,
+                                                                           self.n_stim_patterns,
+                                                                           self.n_trials,
+                                                                           self.sim_duration)
         #--useful quantities
         self.network_graph = nx.read_graphml(self.graphml_network_filename,
                                              node_type=int)
@@ -78,3 +93,17 @@ class SimpleParameterSpacePoint(object):
             return node - 1, 'MFs'
         else:
             return node - (self.n_mf + 1), 'GrCs'
+    def get_existing_spike_archive_path(self):
+        """If it exists, return the path of a spike archive for this
+        point. This means having all coordinates equal to the point
+        except the sim duration which can be longer and the number of
+        trials which can be larger. If no such archive exists, return
+        None.
+
+        """
+        candidate_archive_paths = glob.glob('%s/sp*_t*_sdur*.hdf5' % (self.data_folder_path))
+        compatible_archive_paths = sorted([path for path in candidate_archive_paths if float(path.rstrip('.hdf5').partition('sdur')[2])>=self.sim_duration and float(path.rpartition('_t')[2].partition('_sdur')[0])>=self.n_trials and float(path.rpartition('_t')[0].rpartition('sp')[2])>=self.n_stim_patterns])
+        if compatible_archive_paths:
+            return compatible_archive_paths[0]
+        else:
+            return None
