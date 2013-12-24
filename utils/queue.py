@@ -72,9 +72,9 @@ jobs for a given grid in parameter space on SGE.
             stim_pattern_file.close()
         if not point.get_existing_spike_archive_path():
             # submit simulations to the queue as an array job
-            qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation()]
+            qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation_without_commas()]
             # store id of array job for job dependency management
-            self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
+            self.sim_jids[point.simple_representation_without_commas()] = self._submit_job(qsub_argument_list)
             return True
         else:
             return False
@@ -84,7 +84,7 @@ jobs for a given grid in parameter space on SGE.
                               'jobscripts/compress_jobscript.sh',
                               point.simple_representation_without_commas(),
                               str(clean_up)]
-        self.compr_jids[repr(point)] = self._submit_job(qsub_argument_list)
+        self.compr_jids[point.simple_representation_without_commas()] = self._submit_job(qsub_argument_list)
         
     def start_simulation(self, force=False):
         for point in self.parameter_space.flat:
@@ -106,7 +106,7 @@ jobs for a given grid in parameter space on SGE.
                 # parameter space point, so wait until it's done befre
                 # starting analysis
                 qsub_argument_list = ['-hold_jid',
-                                      self.compr_jids[point.representation_without_commas()],
+                                      self.compr_jids[point.simple_representation_without_commas()],
                                       'jobscripts/analyse_jobscript.sh',
                                       point.representation_without_commas()]
             else:
