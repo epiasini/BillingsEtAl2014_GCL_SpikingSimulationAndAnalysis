@@ -283,6 +283,11 @@ though, as we still need to vary p(MF) as an independent variable.
        sparseness'.
     <2013-12-19 Thu> /reverse Hoyer/ is looking good at the moment,
     and that's what I'm using for most plots.
+
+    <2013-12-25 Wed> actually, after removing "rate noise" (see
+    [[magit:~/phd/code/network/src/::commit@87da7aa][commit #87da7aa]]) from the simulations, the /activity sparseness/
+    has the very nice property of matching my control parameter for
+    p(MF).
 *** Plan B: is there an easy way of integrating synaptic noise in our analysis?
 ** Technical upgrades needed 
 *** Simulation features
@@ -375,6 +380,9 @@ though, as we still need to vary p(MF) as an independent variable.
      - [X] Make sure nC garbage gets cleaned up before a simulation
        job exits.
 **** TODO Use ~bias~ parameter to control tonic GABA.
+     The parameter has been renamed to ~extra_tonic_inhibition~ in
+     [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. It still doesn't have any effect on the
+     simulations, though.
 **** DONE Fix csv export of glomerular positions in Guy's mathematica notebook.
      CLOSED: [2013-12-08 Sun 19:03]
      - CLOSING NOTE [2013-12-08 Sun 19:03] \\
@@ -471,6 +479,19 @@ though, as we still need to vary p(MF) as an independent variable.
      probing the queue status on a loop (qstat;wait;etc) and output to
      stdout. ~master_script~ should just 'poll the poller' by using
      its ~stdout~ attribute (see [[http://docs.python.org/2/library/subprocess.html#subprocess.Popen.stdout][the suprocess docs]]).
+**** DONE Enable reuse of larger dataset whenever they are available from previous simulation runs/parameter sweeps.
+     CLOSED: [2013-12-25 Wed 00:32]
+     - CLOSING NOTE [2013-12-25 Wed 00:32] \\
+       Done in [[magit:~/phd/code/network/src/::commit@cff5a71][commit #cff5a71]].
+     The use case here is the following: I have already simulated a
+     given parameter space point with 1024 patterns, 100 repetitions
+     and simulation length of 200ms, and now I want to simulate and
+     analyse another parameter space point which is the same but with
+     128 patterns, 50 repetitions and simulation length of 150ms. It's
+     a waste of time and disk quota to rerun new simulations and
+     create a new spike archive! what should happen is that the spike
+     trains that are needed for the analysis get loaded from the
+     existing archive.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -493,15 +514,29 @@ though, as we still need to vary p(MF) as an independent variable.
      CLOSED: [2013-12-08 Sun 19:08]
      - CLOSING NOTE [2013-12-08 Sun 19:08] \\
        Done in [[magit:~/phd/code/network/src/::commit@d239378][commit #d239378]].
-**** TODO Add dimension to analysis parameter space to represent integration window length.
+**** DONE Add dimension to analysis parameter space to represent integration window length.
+     CLOSED: [2013-12-25 Wed 00:18]
+     - CLOSING NOTE [2013-12-25 Wed 00:18] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. The size of both simulation and analysis
+       time windows are now parameters.
 **** DONE Remove saving of all rates to results archives before running with big network
      CLOSED: [2013-12-08 Sun 19:13]
      - CLOSING NOTE [2013-12-08 Sun 19:13] \\
        Done in
        [[magit:~/phd/code/network/src/::commit@8564526][commit #8564526]].
-**** TODO Reintroduce separation between training and testing data sets
+**** DONE Reintroduce separation between training and testing data sets
+     CLOSED: [2013-12-25 Wed 00:19]
+     - CLOSING NOTE [2013-12-25 Wed 00:19] \\
+       Done in [[magit:~/phd/code/network/src/::commit@3373e73][commit #3373e73]].
 **** TODO Test decoder performance for convergence speed (performance vs size of training set)
 **** TODO Test decoder performance for rubustness against noise (performance vs size of testing set)
+*** TODO Get the whole workflow to run on *Legion*.
+    <2013-12-25 Wed> Most things seem to work after properly
+    customising the jobscripts to the environment. The main problem at
+    the moment must be linked to some weird environment setting, and
+    NEURON having issues compiling mod files. This only happens for
+    jobs I submit into the queue, as everything seems to run smoothly
+    on the /user test nodes/.
 ** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri> 
 *** Points for discussion
 1. *integration time window*: 
@@ -568,13 +603,22 @@ though, as we still need to vary p(MF) as an independent variable.
     would probably shift the activity for high ~d~ well into
     saturation, thus helping us to make our point.
 *** Outcomes of the meeting
-**** TODO integration time window
+**** DONE integration time window
+     CLOSED: [2013-12-25 Wed 00:20]
+     - CLOSING NOTE [2013-12-25 Wed 00:20] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]].
 See above. Big simulations with a thousand of patterns should be run
 for a longer time, so that in case we have room for investigating the
 effect of shortening the time window. It needs to be
 promoted to being a parameter anyway.
-**** TODO Implement a discrete parameter to switch between random and anatomical graphs.
-**** TODO Implement a discrete parameter to switch between correlated and uncorrelated inputs.
+**** DONE Implement a discrete parameter to switch between random and anatomical graphs.
+     CLOSED: [2013-12-25 Wed 00:22]
+     - CLOSING NOTE [2013-12-25 Wed 00:22] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]].
+**** DONE Implement a discrete parameter to switch between correlated and uncorrelated inputs.
+     CLOSED: [2013-12-25 Wed 00:22]
+     - CLOSING NOTE [2013-12-25 Wed 00:22] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]].
 **** TODO I have to improve my plots, and in particular make some output sparsity vs input sparsity plots, which would make it easier to visualise ranges over which the network sparsifies.
 **** TODO If I've got time to do it, I would like to make some more quantitative analysis on the difference in structure between the random and spatial graphs.
 **** TODO Quantitative, numerical measure of sparsification
