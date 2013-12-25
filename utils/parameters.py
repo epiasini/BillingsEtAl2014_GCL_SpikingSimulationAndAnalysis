@@ -118,6 +118,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             test_idxs = [x for x in range(n_obs) if x not in train_idxs]
             n_tr_obs = len(train_idxs)
             n_ts_obs = len(test_idxs)
+            Ym = self.n_stim_patterns
+            Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
+            Xn = 1 # the output is effectively one-dimensional
             # initialize data structures for storage of results
             ts_decoded_mi_plugin = np.zeros(n_obs)
             ts_decoded_mi_bootstrap = np.zeros(n_obs)
@@ -141,16 +144,16 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             print('output sparseness: hoyer {:.2f}, activity {:.2f}'.format(o_sparseness_hoyer, o_sparseness_activity))
             if self.linkage_method_string == 'kmeans':
                 spike_counts = o_level_array
-                Ym = self.n_stim_patterns
-                Ny = np.array([self.n_trials for each in range(self.n_stim_patterns)])
-                Xn = 1 # the output is effectively one-dimensional
+                # divide spike count data in training and testing set
+                tr_spike_counts = np.array([spike_counts[o] for o in train_idxs])
+                ts_spike_counts = np.array([spike_counts[o] for o in test_idxs])
                 for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1, clusts_step):
                     clustering = MiniBatchKMeans(n_clusters=n_clusts,
-                                                 batch_size=self.n_stim_patterns*10)
-                    print('performing k-means clustering for k='+str(n_clusts))
-                    clustering.fit(spike_counts)
-                    print('using k-means clustering to classify data points')
-                    decoded_output = clustering.predict(spike_counts)
+                                                 batch_size=int(round(n_tr_obs/5.)))
+                    print('performing k-means clustering on training set (training the decoder) for k='+str(n_clusts))
+                    clustering.fit(tr_spike_counts)
+                    print('using the decoder trained with k-means clustering to classify data points in testing set')
+                    decoded_output = clustering.predict(ts_spike_counts)
                     # calculate MI
                     print('calculating MI')
                     Xm = n_clusts
@@ -186,9 +189,6 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 print("training the decoder and using it to calculate mi on test data")
 
                 tr_distances_square = np.square(tr_distances)
-                Ym = self.n_stim_patterns
-                Ny = np.array([n_ts_obs_per_sp for each in range(self.n_stim_patterns)])
-                Xn = 1 # the output is effectively one-dimensional
 
                 for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1):
                     # iterate over the number of clusters and, step by
