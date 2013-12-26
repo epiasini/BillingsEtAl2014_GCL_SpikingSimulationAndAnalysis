@@ -32,14 +32,17 @@ project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
 if 'matthau' in hostname or 'lemmon' in hostname or 'lum' in hostname:
     # we're on matlem
+    machine = 'matlem'
     sim_path = '/scratch0/ucbtepi/'+os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
     temp_dir = sim_path
     os.makedirs(temp_dir)
 elif 'TMPDIR' in os.environ:
     # we're probably on legion
+    machine = 'legion'
     sim_path = os.environ['TMPDIR']
     temp_dir = sim_path
 else:
+    machine = 'unknown'
     sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
     temp_dir = tempfile.mkdtemp(dir=sim_path)
 sim_config_name = 'Default Simulation Configuration'
@@ -141,17 +144,18 @@ for trial in range(point.n_trials):
             print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 # remove temp directory and exit
-print('removing job-specific temporary directory %s' % temp_dir)
-delete_attempts = 0
-while delete_attempts < 10:
-    try:
-        shutil.rmtree(temp_dir)
-        print('temporary directory removed')
-        break
-    except OSError:
-        delete_attempts += 1
-        print('waiting and retrying to remove temporary directory')
-        time.sleep(20)
+if machine is not 'legion':
+    print('removing job-specific temporary directory %s' % temp_dir)
+    delete_attempts = 0
+    while delete_attempts < 10:
+        try:
+            shutil.rmtree(temp_dir)
+            print('temporary directory removed')
+            break
+        except OSError:
+            delete_attempts += 1
+            print('waiting and retrying to remove temporary directory')
+            time.sleep(20)
 
 print("done simulating pattern number " + str(stim_pattern_number) + ". closing job.")
 System.exit(0)
