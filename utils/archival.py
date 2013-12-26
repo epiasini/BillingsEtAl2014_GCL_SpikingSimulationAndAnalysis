@@ -27,7 +27,7 @@ class SpikesArchive(Archive):
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
-        observation_list = [np.array(hdf5_handle[spn][tn]['{0}_spiketimes'.format(cell_type)]) for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
+        observation_list = [np.array(hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, tn, cell_type)]) for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
         hdf5_handle.close()
         spikes = [[c[c>start_time].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
@@ -36,7 +36,7 @@ class SpikesArchive(Archive):
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
-        observation_handles = [hdf5_handle[spn][tn]['{0}_spiketimes'.format(cell_type)] for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
+        observation_handles = [hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, tn, cell_type)] for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
         spike_counts = np.array([[np.sum(c > start_time) for c in np.array(o).transpose()] for o in observation_handles])
         if spike_counts.dtype == np.dtype('O'):
             # network was completely silent for at least one

@@ -110,7 +110,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # load data
             min_clusts_analysed = int(round(self.n_stim_patterns * 1.0))
             max_clusts_analysed = int(round(self.n_stim_patterns * 1.0))
-            clusts_step = int(round(self.n_stim_patterns * 0.05))
+            clusts_step = max(int(round(self.n_stim_patterns * 0.05)), 1)
             # choose training and testing set: trials are picked at random, but every stim pattern is represented equally (i.e., get the same number of trials) in both sets. Trials are ordered with respect to their stim pattern.
             n_tr_obs_per_sp = self.training_size
             n_ts_obs_per_sp = self.n_trials - n_tr_obs_per_sp

@@ -43,7 +43,6 @@ for node in point.network_graph.nodes():
 archive.create_dataset("network_adjacency_matrix", data=network_adjacency_matrix)
 archive.create_dataset("cell_positions_MFs", data=cell_positions['MFs'])
 archive.create_dataset("cell_positions_GrCs", data=cell_positions['GrCs'])
-archive.create_dataset("bias", data=point.bias)
 
 # load the file containing the stimulation patterns
 spf = open(point.stim_pattern_filename, "r")

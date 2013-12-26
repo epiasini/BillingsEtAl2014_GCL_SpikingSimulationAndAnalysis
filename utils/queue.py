@@ -72,41 +72,49 @@ jobs for a given grid in parameter space on SGE.
             stim_pattern_file.close()
         if not point.get_existing_spike_archive_path():
             # submit simulations to the queue as an array job
-            qsub_argument_list = ['-t', '1-'+str(point.n_stim_patterns), 'jobscripts/simulate_jobscript.sh', point.simple_representation_without_commas()]
+            qsub_argument_list = ['-t',
+                                  '1-'+str(point.n_stim_patterns),
+                                  'jobscripts/simulate_jobscript.sh',
+                                  point.simple_representation_without_commas()]
             # store id of array job for job dependency management
-            self.sim_jids[point.simple_representation_without_commas()] = self._submit_job(qsub_argument_list)
+            self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
             return True
         else:
             return False
     def _start_point_compression(self, point, clean_up):
         qsub_argument_list = ['-hold_jid',
-                              self.sim_jids[point.simple_representation_without_commas()],
+                              self.sim_jids[point.simple_representation()],
                               'jobscripts/compress_jobscript.sh',
-                              point.simple_representation_without_commas(),
+                              point.representation_without_commas(),
                               str(clean_up)]
-        self.compr_jids[point.simple_representation_without_commas()] = self._submit_job(qsub_argument_list)
+        # a compression job needs to know the 'full' representation of
+        # its parameter space point, but there is only one simulation
+        # and one compression job for all the parameter spac points
+        # sharing a simple ('simulation' space) representation. This
+        # is why it's best to build the compression job id dictionary
+        # with simple representations.
+        self.compr_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
         
-    def start_simulation(self, force=False):
-        for point in self.parameter_space.flat:
-            self._start_point_simulation(point, force)
-
-    def start_compression(self, clean_up=True):
-        for point in [p for p in self.parameter_space.flat if p.simple_representation_without_commas() in self.sim_jids]:
-            self._start_point_compression(point, _clean_up)
-
     def start_simulation_and_compression(self, force=False, clean_up=True):
-        for point in self.parameter_space.flat:
+        """ Start simulation and compression for all the points in the
+        parameter space. Take care to only run simulations once in
+        case several points are present with the same 'simple'
+        projection on simulation space (ie points which only differ in
+        'analysis' coordinates).
+        """
+        projection_on_simulation_space = set([p.simple_representation() for p in self.parameter_space.flat])
+        for point in [p for p in self.parameter_space.flat if p.simple_representation() in projection_on_simulation_space]:
             if self._start_point_simulation(point, force):
                 self._start_point_compression(point, clean_up)
                 
     def start_analysis(self):
         for point in self.parameter_space.flat:
-            if point.simple_representation_without_commas() in self.compr_jids:
+            if point.simple_representation() in self.compr_jids:
                 # a compression job has been submitted for this
                 # parameter space point, so wait until it's done befre
                 # starting analysis
                 qsub_argument_list = ['-hold_jid',
-                                      self.compr_jids[point.simple_representation_without_commas()],
+                                      self.compr_jids[point.simple_representation()],
                                       'jobscripts/analyse_jobscript.sh',
                                       point.representation_without_commas()]
             else:
