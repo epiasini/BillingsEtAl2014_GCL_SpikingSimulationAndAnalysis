@@ -530,7 +530,18 @@ though, as we still need to vary p(MF) as an independent variable.
        Done in [[magit:~/phd/code/network/src/::commit@3373e73][commit #3373e73]].
 **** TODO Test decoder performance for convergence speed (performance vs size of training set)
 **** TODO Test decoder performance for rubustness against noise (performance vs size of testing set)
-*** TODO Get the whole workflow to run on *Legion*.
+*** DONE Get the whole workflow to run on *Legion*.
+    CLOSED: [2013-12-26 Thu 00:37]
+    - CLOSING NOTE [2013-12-26 Thu 00:37] \\
+      Done but not committed for the time being, as I'm not sure how
+      to deal with jobscripts customised for different clusters from
+      the versioning standpoint. The issue was indeed linked to the
+      environment of the jobs sumbitted to the queue: I had to take
+      out the ~-V~ sge option to make JSV happy, and I forgot to make
+      up for it by changing the first line of the jobscripts from
+      ~#!\bin\bash\~ to ~#!\bin\bash\ -l~. This meant that my
+      ~.bashrc~ was not read by the jobs running on the compute nodes,
+      so that no module was being loaded (as in ~module load ...~).
     <2013-12-25 Wed> Most things seem to work after properly
     customising the jobscripts to the environment. The main problem at
     the moment must be linked to some weird environment setting, and
