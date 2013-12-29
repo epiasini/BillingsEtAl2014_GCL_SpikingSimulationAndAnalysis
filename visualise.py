@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 import numpy as np
+import matplotlib
 from matplotlib import pyplot as plt
 
 from utils.parameters import ParameterSpace, ParameterSpacePoint
@@ -32,7 +33,7 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(4, 11, 1)
+n_grc_dend = psl(1, 21, 1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
@@ -45,49 +46,86 @@ n_stim_patterns = psl(128)
 n_trials = psl(50)
 sim_duration = psl(150.0)
 ana_duration = psl(150.0) # must be < min(sim_duration)
-training_size = psl(5) # must be < min(n_trials)
+training_size = psl(30) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
 dt = psl(2)
 
-space = ParameterSpace(sim_duration,min_mf_number,grc_mf_ratio,n_grc_dend,network_scale,active_mf_fraction,bias,stim_rate_mu,stim_rate_sigma,noise_rate_mu,noise_rate_sigma,n_stim_patterns,n_trials,training_size,multineuron_metric_mixing,linkage_method,tau,dt)
+space = ParameterSpace(n_grc_dend,
+                       connectivity_rule,
+                       input_spatial_correlation_scale,
+                       active_mf_fraction,
+                       extra_tonic_inhibition,
+                       stim_rate_mu,
+                       stim_rate_sigma,
+                       noise_rate_mu,
+                       noise_rate_sigma,
+                       n_stim_patterns,
+                       n_trials,
+                       sim_duration,
+                       ana_duration,
+                       training_size,
+                       multineuron_metric_mixing,
+                       linkage_method,
+                       tau,
+                       dt)
 space.load_analysis_results()
 
 if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures')
         plt.close(rhm.fig)
 
 if plot_sparseness:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures')
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures')
         #print data_o
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/data/figures')
+        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
 
         # use data extracted for input and output Hoyer sparseness to
         # visualise 'amplification', defined as
         # out_sparsity/in_sparsity
         fig, ax = plt.subplots()
-        data = data_a_o/data_a_i
-        plot = ax.imshow(data,interpolation='none', cmap='coolwarm', origin='lower')
+        data_amp = data_a_o/data_a_i
+        plot = ax.imshow(data_amp, interpolation='none', cmap='coolwarm', origin='lower')
         cbar = fig.colorbar(plot)
         cbar.set_label('amplification')
-        ax.set_xticks(np.arange(data.shape[1]))
-        ax.set_yticks(np.arange(data.shape[0]))
-        ax.set_xticklabels([str(x) for x in np.arange(0.1, 1., 0.1)])
-        ax.set_yticklabels([str(x) for x in range(4,11)])
+        ax.set_xticks(ax_mi.get_xticks())
+        ax.set_yticks(ax_mi.get_yticks())
+        ax.set_xticklabels([l.get_text() for l in ax_mi.get_xticklabels()])
+        ax.set_yticklabels([l.get_text() for l in ax_mi.get_yticklabels()])
         fig.savefig('amplification.png')
         plt.close(rhm.fig)
+
+        # plot mi 'masked' to show only the region where the network
+        # sparsifies
+        fig, ax = plt.subplots()
+        data = data_mi/np.log2(n_stim_patterns.start)
+        data[data_amp>1] = np.NaN
+        cmap = matplotlib.cm.get_cmap('coolwarm')
+        cmap.set_bad('k', 1.)
+        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower')
+        cbar = fig.colorbar(plot)
+        cbar.set_label('MI / H(input)')
+        ax.set_xlabel('p(MF)')
+        ax.set_ylabel('GrC dendrites')
+        ax.set_xticks(ax_mi.get_xticks())
+        ax.set_yticks(ax_mi.get_yticks())
+        ax.set_xticklabels([l.get_text() for l in ax_mi.get_xticklabels()])
+        ax.set_yticklabels([l.get_text() for l in ax_mi.get_yticklabels()])
+        fig.savefig('mi_masked.png')
+        plt.close(rhm.fig)
+        
     
 
 if plot_mi_detail:
