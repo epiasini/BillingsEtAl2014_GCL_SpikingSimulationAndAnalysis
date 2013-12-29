@@ -817,21 +817,28 @@ typical classes of output of the granular layer.
     differently than the random bipartite graph*, especially at high
     p(MF).
 
-    <2013-12-19 Thu> Figures [[fig:MI_1024]] and [[fig:amp_1024]] show
-    information transmission and /amplification/ (analogous to
-    P(GC)/P(MF)) *for the tissuel model* with 1024 patterns, 50 trials
-    each and active mfs firing at 80Hz. They're incomplete because the
-    missing simulations are still running on the cluster.    
+    <2013-12-29 Sun> A wide parameter sweep for 128 patterns with the
+    tissue model and no rate noise (figures [[fig:MI_128]] and
+    [[fig:amp_128]]) shows no big surprises: networks with 4 (or
+    possibly 5) dendrites are the only ones which transmit most of the
+    information over a wide range of p(MF) while at the same time
+    sparsifying. In particular, it's useful to look at a 'masked' mi
+    heatmap (figure [[fig:MI_masked_128]], where we show the amount of
+    transmitted information over the region of parameter space where
+    we have sparsification.
 
-    #+CAPTION: Mutual Information for 1024 patterns, 50 trials, 80Hz active mfs.
-    #+NAME: fig:MI_1024
-    #+ATTR_HTML: :width 60%
-    [[file:~/phd/code/network/data/figures/mi.png]]
+    #+CAPTION: Mutual information for 128 patterns, 50 trials (30 for training), 80/10Hz.
+    #+NAME: fig:MI_128
+    [[file:fig/mi_128.png][file:fig/mi_128.png]]
 
-    #+CAPTION: Amplification for 1024 patterns, 50 trials, 80Hz active mfs. Axes are the same as in figure [[fig:MI_1024]].
-    #+NAME: fig:amp_1024
-    #+ATTR_HTML: :width 60%
-    [[file:amplification.png][file:~/phd/code/network/src/amplification.png]]
+    #+CAPTION: Amplification for 128 patterns, 50 trials, 80/10Hz.
+    #+NAME: fig:amp_128
+    [[file:fig/amp_128.png][file:fig/amp_128.png]]
+
+    #+CAPTION: 'Masked' mutual information over total input entropy for 128 patterns, 50 trials (30 for training), 80/10Hz. Only regions in parameter space where the network sparsifies are shown.
+    #+NAME: fig:MI_masked_128
+    [[file:fig/mi_masked_128.png][file:fig/mi_masked_128.png]]
+    
     
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
