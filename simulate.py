@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(150,6,2.90,4,28.74,0.5,0,50,10,10,10,100,50) 9 matthau
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(150,6,2.90,4,28.74,0.5,0,50,10,10,10,100,50) 9 matlem
 """
 import random
 import time
@@ -25,24 +25,22 @@ from utils.network import generate_nC_network, generate_nC_saves, generate_nC_st
 
 point = eval(sys.argv[1].replace('+', ','))
 stim_pattern_number = int(sys.argv[2])
-hostname = sys.argv[3]
+system = sys.argv[3]
 
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
-if 'matthau' in hostname or 'lemmon' in hostname or 'lum' in hostname:
+if system == 'matlem'
     # we're on matlem
-    machine = 'matlem'
     sim_path = '/scratch0/ucbtepi/'+os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
     temp_dir = sim_path
     os.makedirs(temp_dir)
-elif 'TMPDIR' in os.environ:
-    # we're probably on legion
-    machine = 'legion'
+elif system == 'legion':
+    # we're on legion
     sim_path = os.environ['TMPDIR']
     temp_dir = sim_path
 else:
-    machine = 'unknown'
+    # this normally means we're on crugiat
     sim_path = '/home/ucbtepi/nC_projects/if_gl/simulations'
     temp_dir = tempfile.mkdtemp(dir=sim_path)
 sim_config_name = 'Default Simulation Configuration'
@@ -144,7 +142,7 @@ for trial in range(point.n_trials):
             print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
 
 # remove temp directory and exit
-if machine is not 'legion':
+if system is not 'legion':
     print('removing job-specific temporary directory %s' % temp_dir)
     delete_attempts = 0
     while delete_attempts < 10:

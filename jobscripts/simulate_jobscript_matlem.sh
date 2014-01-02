@@ -11,7 +11,8 @@
 #$ -l h_stack=15M
 #$ -p -1
 
-# "jobscripts" are things that should be passed to qsub.
+# SGE submission script for matlem
+system=matlem
 
 # networkxj_dir should point to a copy of the networkxj package, This
 # is a fork of the last networkx version (1.2) made to be compatible
@@ -34,6 +35,6 @@ export JYTHONPATH="$networkxj_dir:$JYTHONPATH"
 hostname
 date
 cd $nC_dir
-/usr/bin/time ./nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number `hostname`
+/usr/bin/time ./nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number $system
 
 
