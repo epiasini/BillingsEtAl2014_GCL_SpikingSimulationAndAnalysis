@@ -7,7 +7,7 @@ from subprocess import Popen, PIPE
 class QueueError(Exception):
     pass
 
-class BatchManager(object):
+class BatchManager(object, system):
     """Helper class for submitting the simulation, compression and analysis
 jobs for a given grid in parameter space on SGE.
 
@@ -28,7 +28,15 @@ jobs for a given grid in parameter space on SGE.
     sumbitted. If this comes after compression, the execution of this
     job will be dependent on compression being over.
 
+    'system' specifies the cluster we're running on, and must be
+    either 'matlem' or 'legion'.
+
     """
+    self.system = system
+    self.simulate_jobscript = 'jobscripts/simulate_jobscript_{system}.sh'.format(system=self.system)
+    self.compress_jobscript = 'jobscripts/compress_jobscript_{system}.sh'.format(system=self.system)
+    self.analyse_jobscript = 'jobscripts/analyse_jobscript_{system}.sh'.format(system=self.system)
+
     def __init__(self, parameter_space):
         self.parameter_space = parameter_space
         self.sim_jids = {}
@@ -74,7 +82,7 @@ jobs for a given grid in parameter space on SGE.
             # submit simulations to the queue as an array job
             qsub_argument_list = ['-t',
                                   '1-'+str(point.n_stim_patterns),
-                                  'jobscripts/simulate_jobscript.sh',
+                                  self.simulate_jobscript,
                                   point.simple_representation_without_commas()]
             # store id of array job for job dependency management
             self.sim_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
@@ -84,7 +92,7 @@ jobs for a given grid in parameter space on SGE.
     def _start_point_compression(self, point, clean_up):
         qsub_argument_list = ['-hold_jid',
                               self.sim_jids[point.simple_representation()],
-                              'jobscripts/compress_jobscript.sh',
+                              self.compress_jobscript,
                               point.representation_without_commas(),
                               str(clean_up)]
         # a compression job needs to know the 'full' representation of
@@ -115,10 +123,10 @@ jobs for a given grid in parameter space on SGE.
                 # starting analysis
                 qsub_argument_list = ['-hold_jid',
                                       self.compr_jids[point.simple_representation()],
-                                      'jobscripts/analyse_jobscript.sh',
+                                      self.analyse_jobscript,
                                       point.representation_without_commas()]
             else:
-                qsub_argument_list = ['jobscripts/analyse_jobscript.sh',
+                qsub_argument_list = [self.analyse_jobscript,
                                       point.representation_without_commas()]
             self._submit_job(qsub_argument_list)
         

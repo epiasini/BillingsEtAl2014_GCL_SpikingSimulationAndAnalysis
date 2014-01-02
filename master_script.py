@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-import time
-from math import factorial
+import socket
 
 from utils.queue import BatchManager
 from utils.parameters import ParameterSpace
@@ -37,6 +36,15 @@ if training_size.realstop > n_trials.start:
 if ana_duration.realstop > sim_duration.start:
     raise Exception("Simulation length must always be greater than analysis time window!")
 
+#----determine which cluster we're runnning on
+hostname = socket.gethostname()
+if 'pryor' in hostname:
+    system = 'matlem'
+elif 'login' in hostname:
+    system = 'legion'
+else:
+    raise Exception("This script is designed to be used only on matlem or legion!")
+
 #---parameter space creation
 parameter_space = ParameterSpace(n_grc_dend,
                                  connectivity_rule,
@@ -57,7 +65,7 @@ parameter_space = ParameterSpace(n_grc_dend,
                                  tau,
                                  dt)
 
-batch_manager = BatchManager(parameter_space)
+batch_manager = BatchManager(parameter_space, system=system)
 
 ############################################
 ##====SIMULATION AND COMPRESSION STAGE====##
