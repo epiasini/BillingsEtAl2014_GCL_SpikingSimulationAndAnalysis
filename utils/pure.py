@@ -101,6 +101,16 @@ class SimpleParameterSpacePoint(object):
             return node - 1, 'MFs'
         else:
             return node - (self.n_mf + 1), 'GrCs'
+    def get_tar_simulation_archive_path(stimulus_pattern_index):
+        # temporary tar archive for storing simulation data for a
+        # pattern while the simulations are running. The
+        # information contained in these archives will be
+        # restructured later in the compression step.
+        return "{0}/sp{1}_t{2}_sdur{3}_spn{4}.tar".format(self.data_folder_path,
+                                                          self.n_stim_patterns,
+                                                          self.n_trials,
+                                                          self.sim_duration,
+                                                          stimulus_pattern_index)
     def get_existing_spike_archive_path(self):
         """If it exists, return the path of a spike archive for this
         point. This means having all coordinates equal to the point
