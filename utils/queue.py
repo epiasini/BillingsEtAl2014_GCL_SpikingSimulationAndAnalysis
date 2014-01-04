@@ -7,7 +7,7 @@ from subprocess import Popen, PIPE
 class QueueError(Exception):
     pass
 
-class BatchManager(object, system):
+class BatchManager(object):
     """Helper class for submitting the simulation, compression and analysis
 jobs for a given grid in parameter space on SGE.
 
@@ -32,15 +32,15 @@ jobs for a given grid in parameter space on SGE.
     either 'matlem' or 'legion'.
 
     """
-    self.system = system
-    self.simulate_jobscript = 'jobscripts/simulate_jobscript_{system}.sh'.format(system=self.system)
-    self.compress_jobscript = 'jobscripts/compress_jobscript_{system}.sh'.format(system=self.system)
-    self.analyse_jobscript = 'jobscripts/analyse_jobscript_{system}.sh'.format(system=self.system)
-
-    def __init__(self, parameter_space):
+    def __init__(self, parameter_space, system):
         self.parameter_space = parameter_space
         self.sim_jids = {}
         self.compr_jids = {}
+        self.system = system
+        self.simulate_jobscript = 'jobscripts/simulate_jobscript_{system}.sh'.format(system=self.system)
+        self.compress_jobscript = 'jobscripts/compress_jobscript_{system}.sh'.format(system=self.system)
+        self.analyse_jobscript = 'jobscripts/analyse_jobscript_{system}.sh'.format(system=self.system)
+
 
     def _submit_job(self, qsub_argument_list):
         popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
