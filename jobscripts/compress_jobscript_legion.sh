@@ -6,6 +6,7 @@
 #$ -l mem=8G
 #$ -l h_rt=24:00:00
 #$ -P gclayer13
+#$ -l tmpfs=15G
 
 # "jobscripts" are things that should be passed to qsub.
 
@@ -16,4 +17,4 @@ echo $args_list
 hostname
 date
 
-/usr/bin/time python compress.py $args_list
+/usr/bin/time python compress.py $args_list legion

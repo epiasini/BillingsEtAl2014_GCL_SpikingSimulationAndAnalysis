@@ -2,15 +2,9 @@ import numpy as np
 import h5py
 import fcntl
 
-from analysis import entropy
-
-class Archive(object):
-    def __init__(self, point):
+class SpikesArchive(object):
+    def __init__(self, point)
         self.point = point
-
-class SpikesArchive(Archive):
-    def __init__(self, *args, **kwargs):
-        super(SpikesArchive, self).__init__(*args, **kwargs)
         self.path = self.point.spike_archive_path
     def open_hdf5_handle(self):
         return h5py.File(self.path)
