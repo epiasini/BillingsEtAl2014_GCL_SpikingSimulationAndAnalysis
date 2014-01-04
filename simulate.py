@@ -6,7 +6,6 @@ To be used with something like this:
 import random
 import time
 import sys
-import tempfile
 import tarfile
 import shutil
 import subprocess
@@ -118,7 +117,7 @@ with ClusterSystem(sys.argv[3]) as system:
             if simulation_trial_is_successful:
                 # copy results to main data folder
                 print "Archiving "+ hdf5_file_name + " to temporary tar file"
-                tar_archive.add(hdf5_file_name)
+                tar_archive.add(hdf5_file_name, arcname=sim_ref+'_.h5')
             else:
                 print ("WARNING: archive" + hdf5_file_name + "was not found to contain simulation results! restarting simulation.")
 

@@ -101,7 +101,7 @@ class SimpleParameterSpacePoint(object):
             return node - 1, 'MFs'
         else:
             return node - (self.n_mf + 1), 'GrCs'
-    def get_tar_simulation_archive_path(stimulus_pattern_index):
+    def get_tar_simulation_archive_path(self, stimulus_pattern_index):
         # temporary tar archive for storing simulation data for a
         # pattern while the simulations are running. The
         # information contained in these archives will be

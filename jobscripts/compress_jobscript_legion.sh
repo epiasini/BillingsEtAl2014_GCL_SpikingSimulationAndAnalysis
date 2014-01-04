@@ -4,7 +4,7 @@
 #$ -o $HOME/log/
 #$ -e $HOME/log/
 #$ -l mem=8G
-#$ -l h_rt=24:00:00
+#$ -l h_rt=11:59:00
 #$ -P gclayer13
 #$ -l tmpfs=15G
 

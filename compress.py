@@ -3,9 +3,11 @@
 """Usage example: compress.py ParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200,40,0,5,2) [clean_up={0|1}] matlem"""
 import sys
 import os
+import shutil
+import time
+import tarfile
 import h5py
 import networkx
-import tarfile
 import numpy as np
 
 from utils.parameters import ParameterSpacePoint
@@ -20,6 +22,7 @@ except IndexError:
 
 with ClusterSystem(sys.argv[3]) as system:
     # override archive location to work in temporary directory
+    permanent_archive_path = point.spikes_arch.path
     point.spikes_arch.path = system.temp_dir + '/spikes_archive.hdf5'
     # open the hdf5 file
     archive = point.spikes_arch.open_hdf5_handle()
@@ -93,13 +96,13 @@ with ClusterSystem(sys.argv[3]) as system:
                 print("WARNING: giving up on compressing data for stim pattern number {}".format(spn))
                 missing_patterns.add(spn)
 
-            # delete NEURON and neuroConstruct simulation files
-            if clean_up:
-                print ("Removing everything except the compressed archives.")
-                try:
-                    os.remove(point.get_tar_simulation_archive_path(spn))
-                except OSError:
-                    print ("Error while cleaning up nC .h5 output files!")
+        # delete NEURON and neuroConstruct simulation files
+        if clean_up:
+            print ("Removing everything except the compressed archives.")
+            try:
+                os.remove(point.get_tar_simulation_archive_path(spn))
+            except OSError as e:
+                print ("Error while cleaning up nC .h5 output files! Error was {}".format(e))
 
     # remove all data relative to a stimulus pattern if at least one
     # of its simulation trials wasn't recorded for some reason
@@ -114,5 +117,7 @@ with ClusterSystem(sys.argv[3]) as system:
     archive.close()
 
     # move spikes archive from temporary directory to permanent data dir
-    shutil.move(archive.path,
-                point.spike_archive_path)
+    print("Moving spike archive from {} to {}".format(point.spikes_arch.path,
+                                                      permanent_archive_path))
+    shutil.move(point.spikes_arch.path,
+                permanent_archive_path)

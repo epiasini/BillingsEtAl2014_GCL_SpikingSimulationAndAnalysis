@@ -3,7 +3,7 @@ import h5py
 import fcntl
 
 class SpikesArchive(object):
-    def __init__(self, point)
+    def __init__(self, point):
         self.point = point
         self.path = self.point.spike_archive_path
     def open_hdf5_handle(self):
@@ -46,9 +46,9 @@ class SpikesArchive(object):
         return spike_counts
 
 
-class ResultsArchive(Archive):
-    def __init__(self, *args, **kwargs):
-        super(ResultsArchive, self).__init__(*args, **kwargs)
+class ResultsArchive(object):
+    def __init__(self, point):
+        self.point = point
         self.path = "{0}/mi.hdf5".format(self.point.data_folder_path)
         self.datasets = ['tr_indexes',
                          'tr_linkage',
@@ -98,15 +98,15 @@ class ResultsArchive(Archive):
             for ds in self.datasets:
                 setattr(self.point, ds, np.array(target_group[ds]))
             self._close()
-            self.point.decoder_precision = (1./self.point.tr_linkage)[:,2][::-1]
+            #self.point.decoder_precision = (1./self.point.tr_linkage)[:,2][::-1]
             self.point.point_mi_plugin = self.point.ts_decoded_mi_plugin[self.point.n_stim_patterns]
             self.point.point_mi_qe = self.point.ts_decoded_mi_qe[self.point.n_stim_patterns-1]
-            self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns]
+            #self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns-1]
             #self.point.o_level_entropy = entropy(self.point.o_level_hist_values/float(self.point.o_level_hist_values.sum()))
             #self.point.o_level_average_spiken = np.zeros(shape=(self.point.n_stim_patterns, self.point.n_grc))
             #self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
             #self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
-            self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]
+            #self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]
             return True
         else:
             # the hdf5 archive seems to be incomplete or missing
