@@ -268,13 +268,22 @@ fiber terminals set. A good idea might be to choose the size of these
 tilings in such a way that we can afford, say with 1024 patterns, to
 explore all possible binary combinations. This might be tricky,
 though, as we still need to vary p(MF) as an independent variable.
-*** TODO finalise a choice for input stimulation rates
+*** DONE finalise a choice for input stimulation rates
+    CLOSED: [2014-01-06 Mon 14:34]
+    - CLOSING NOTE [2014-01-06 Mon 14:34] \\
+      I think this has been settled, with 80Hz for the active MFs and 10Hz
+      for the inactive ones.
     In the paper, an input frequency range of about 10-50Hz was
     mentioned when justifying the 30ms integration window
     hypothesis. +My input patterns should live within that range as
     well.+ Actually, we're probably going to go for something around
     80Hz rather than 50Hz.
-*** TODO finalise a choice for the sparsity measure
+*** DONE finalise a choice for the sparsity measure
+    CLOSED: [2014-01-06 Mon 14:33]
+    - CLOSING NOTE [2014-01-06 Mon 14:33] \\
+      I'v settled for the /activity sparseness/ measure, which together with
+      deterministic input rates seems to give me a direct correspondence to
+      p(MF) and p(GC).
     The best candidates at the moment are:
      - a properly normalised version of the Treves-Rolls sparsity
        measure, or something along those lines; for example the Hoyer
@@ -631,8 +640,31 @@ promoted to being a parameter anyway.
      - CLOSING NOTE [2013-12-25 Wed 00:22] \\
        Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]].
 **** TODO I have to improve my plots, and in particular make some output sparsity vs input sparsity plots, which would make it easier to visualise ranges over which the network sparsifies.
-**** TODO If I've got time to do it, I would like to make some more quantitative analysis on the difference in structure between the random and spatial graphs.
-**** TODO Quantitative, numerical measure of sparsification
+**** DONE Some more quantitative analysis on the difference in structure between the random and spatial graphs.
+     CLOSED: [2014-01-06 Mon 14:02]
+     - CLOSING NOTE [2014-01-06 Mon 14:02] \\
+       Done in [[magit:~/phd/code/network/src/::commit@5c4cb66][commit #5c4cb66]]. A useful reference for statistics on
+       bipartite graphs is Latapy et al 2008, /Basic notions for the analysis
+       of large two-mode networks/. Various measures of clustering and
+       "bipartite redundancy" exist, but in the end I settled on the simplest
+       one (called Robins-Alexander clustering in networkx) which is just the
+       number of 4-cycles in the graph normalised by the maximum number that
+       would be allowed by the size of the two sets of nodes. Figure
+       [[fig:graph_clustering]] shows how the spatial structure of the tissue
+       model makes it more clustered than the random graph and how the
+       clustering measure increases with the number of dendrites for both
+       models.
+     #+NAME: fig:graph_clustering
+     #+CAPTION: Simple bipartite clustering measure for the tissue model and the random bipartite network.
+     [[file:fig/graph_clustering.png][file:fig/graph_clustering.png]]
+
+**** DONE Quantitative, numerical measure of sparsification
+     CLOSED: [2014-01-06 Mon 14:28]
+     - CLOSING NOTE [2014-01-06 Mon 14:28] \\
+       This has become less of a problem now that the input rates are
+       deterministic and that I'm using /activity sparseness/ to get a fairly
+       close analogue to p(MF) and p(GC). If the need arises, we can still
+       use the /amplification/ idea.
 At the moment, I am using /amplification/ (P(GC)/P(MF)) and Guy is
 using /sparsification/ (1-P(GC)/P(MF)). I like /amplification/ because
 it's not a negative (ie saying 'network A has lower sparsification
@@ -786,7 +818,8 @@ typical classes of output of the granular layer.
 
 *** 1/r benchmark as mentioned in the discussion?
 
-*** TODO Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
+*** DONE Once I have a sparsity measure, make some exploratory simulations (even with the random graph model for the network) to have a rough idea of the behaviour of the MI and the sparsity for the cases with, say, 4 and 20 dendrites.
+    CLOSED: [2014-01-06 Mon 14:32]
     <2013-12-03 Tue> Preliminary simulations indicate that, at least
     for the random bipartite graph and uncorrelated inputs, and for an
     initial fraction of active mossy fibers of 0.5, the results on
