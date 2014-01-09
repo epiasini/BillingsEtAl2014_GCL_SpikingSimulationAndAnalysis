@@ -392,6 +392,8 @@ though, as we still need to vary p(MF) as an independent variable.
      The parameter has been renamed to ~extra_tonic_inhibition~ in
      [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. It still doesn't have any effect on the
      simulations, though.
+**** TODO Implement DTA
+**** TODO Implement simple sinusoidally varying input
 **** DONE Fix csv export of glomerular positions in Guy's mathematica notebook.
      CLOSED: [2013-12-08 Sun 19:03]
      - CLOSING NOTE [2013-12-08 Sun 19:03] \\
@@ -501,6 +503,11 @@ though, as we still need to vary p(MF) as an independent variable.
      create a new spike archive! what should happen is that the spike
      trains that are needed for the analysis get loaded from the
      existing archive.
+**** TODO Don't simulate a given pattern if its corresponding tar archive is already on disk
+**** TODO Make sure all tar single-pattern archives are present before starting compression step
+     This, togheter with the previous item, should allow easy re-running
+     of specific patterns if something goes wrong during simulations and
+     not all patterns for a given data point reach completion.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -751,6 +758,63 @@ separate out again the simulated patterns into a /training/ and a
 the training phase represents some past activity, when the downstream
 network had the chance of tuning in an unsupervised manner to the
 typical classes of output of the granular layer.
+** Meeting with Angus and Guy <2014-01-08 Wed>
+   In the paper we already have 6 figures, on a budget of 8. We can
+   'spend' the two remaining figures to explain my work on the spiking
+   network. The idea underlying this part of the paper is that we can
+   get similar results to what has been shown until now if we start
+   from a bottom-up biophysically realistic model of the network.
+*** TODO [0/5] figure 7: presentation of the model.
+    The message we want to get across is that the model is tightly
+    constrained to experimental data, and it is way more 'biological'
+    than the binary network. This figure (together with the results,
+    of course) should be key in addressing the concerns expressed by
+    reviewer 2 and 3 that the binary model is too far removed from the
+    biology and not different enough from what had been used in
+    previous works on cerebellar function, and that the typical Neuron
+    readership could find it difficult to relate to the methods we
+    use. The figure should contain:
+    - [ ] f/f curve for cell model with (optionally) experimental data
+      for comparison
+    - [ ] example voltage trace
+    - [ ] example of synaptic dynamics with fit to experimental data
+    - [ ] 3D visualisation of network structure with input and output
+      raster plots
+    - [ ] cartoon explanation of MI and data analysis (spike counting
+      and clustering)
+*** TODO [0/2] figure 8: results. 
+    This should contain:
+    - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
+      show qualitative match to figure 3A in the simplest possible
+      case (with fixed inhibition). We should either spend some words
+      to address the fact that 1024 is a very small number compared to
+      1 billion patterns, by claiming that increasing the number of
+      patterns should only make the reduction of encodable range
+      stronger, or show this result alongside a version of figure 3A
+      opportunely scaled down to 1024 patterns.
+    - [ ] global results in form of an 'efficient frontier' kind of
+      plot, populated with data from at least 2-3 DTA
+      settings. Because of our constraints in time and computational
+      resources, this will have to be done with a smaller number of
+      patterns than the previous figure (128 patterns should be
+      feasible).
+*** TODO Mockup of figures 7 and 8
+    Angus need this as soon as possible to start writing.
+*** TODO Proof-of-principle figure with sinusoidally varying input rate
+    This should go in the supplementary material, and it will be used
+    to show that our ideas still hold in case of sinusoidally varying
+    input, at least for the simplest analysis possible. In particular,
+    having an oscillating input will show that having the STP dynamics
+    doing something a bit more interesting desn't compromise the big
+    picture. This figure will also be key to (at least partially)
+    address some of reviewer 1's comments on the role of cerebellar
+    oscillations. The main idea is to have, instead of a fixed 80Hz
+    rate for the 'on' mossy fibre terminals, an inhomogeneous Poisson
+    process that will average at 80Hz but whose intensity will
+    oscillate at some carrier frequency (10Hz? it might be too slow
+    for our short time window). Background activity from 'off' fibers
+    will not be modulated.
+*** TODO Detailed check/proofread of the Appendix to the supplementary material.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -872,7 +936,32 @@ typical classes of output of the granular layer.
     #+NAME: fig:MI_masked_128
     [[file:fig/mi_masked_128.png][file:fig/mi_masked_128.png]]
     
-    
+* Controls for supplementary information
+** TODO Fix crash that happens when trying to analyse more than about 1024 (patterns) * 70 (trials) observations
+Is this some sort of memory issue?
+#+BEGIN_SRC
+Traceback (most recent call last):
+  File "analyse.py", line 9, in <module>
+    point.run_analysis()
+  File "/home/ucbtepi/code/network/src/utils/parameters.py", line 136, in run_analysis
+    i_level_array = self.spikes_arch.get_spike_counts(cell_type='mf')
+  File "/home/ucbtepi/code/network/src/utils/archival.py", line 34, in get_spike_counts
+    spike_counts = np.array([[np.sum(c > start_time) for c in np.array(o).transpose()] for o in observation_handles])
+  File "/home/ucbtepi/virtualenv/lib/python2.7/site-packages/h5py/_hl/dataset.py", line 609, in __array__
+    self.read_direct(arr)
+  File "/home/ucbtepi/virtualenv/lib/python2.7/site-packages/h5py/_hl/dataset.py", line 574, in read_direct
+    self.id.read(mspace, fspace, dest)
+  File "h5d.pyx", line 179, in h5py.h5d.DatasetID.read (h5py/h5d.c:2655)
+  File "_proxy.pyx", line 118, in h5py._proxy.dset_rw (h5py/_proxy.c:1487)
+  File "_proxy.pyx", line 84, in h5py._proxy.H5PY_H5Dread (h5py/_proxy.c:1237)
+IOError: can't read data (Dataset: Read failed)
+Command exited with non-zero status 1
+647.71user 4.11system 33:52.91elapsed 32%CPU (0avgtext+0avgdata 12994880maxresident)k
+0inputs+0outputs (1major+831036minor)pagefaults 0swaps
+#+END_SRC
+** TODO Bias: MI vs size of testing set or number of clusters
+** TODO Decoder performance: MI vs size of training set
+** TODO Sparse encodable range vs integration window length
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
