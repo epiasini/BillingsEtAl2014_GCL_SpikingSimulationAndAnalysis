@@ -284,24 +284,56 @@ class RasterPlot(object):
     def __init__(self, point, alpha=1):
         self.point = point
         self.alpha = alpha
-        observation = random.randint(0, point.n_trials*point.n_stim_patterns)
-        print(observation)
-        self.grc_spikes = self.point.spikes_arch.get_spikes(cell_type='grc')[observation]
+        nsp = random.randint(0, point.n_stim_patterns)
+        trial = random.randint(0, point.n_trials)
+        observation = nsp * point.n_trials + trial
+        print("Raster plot for pattern {}, trial {}".format(nsp, trial))
+        self.pattern = self.point.spikes_arch.get_stim_pattern(nsp)
+        self.binary_pattern = np.zeros(shape=(self.point.n_mf,1))
+        self.binary_pattern[self.pattern] = 1
         self.mf_spikes = self.point.spikes_arch.get_spikes(cell_type='mf')[observation]
+        self.grc_spikes = self.point.spikes_arch.get_spikes(cell_type='grc')[observation]
+        self.spike_counts = [self.point.spikes_arch.get_spike_counts(cell_type='mf')[observation], self.point.spikes_arch.get_spike_counts(cell_type='grc')[observation]]
     def plot_raster(self):
-        out = []
+        figs = []
         for cell_type, spikes in enumerate([self.mf_spikes, self.grc_spikes]):
             color = ['r', 'b'][cell_type]
-            fig, ax = plt.subplots()
+            cmap = ['Reds', 'Blues'][cell_type]
+            fig = plt.figure()
+            figs.append(fig)
+            ax_raster = fig.add_axes([0.15, 0.10, 0.75, 0.75])
+            ax_rates = fig.add_axes([0.90, 0.10, 0.05, 0.75])
             fig.patch.set_alpha(self.alpha)
             for cell, cell_times in enumerate(spikes):
-                ax.scatter(cell_times,
-                           np.zeros_like(cell_times)+cell,
-                           c=color,
-                           marker='|')
-            ax.set_xlabel('time (ms)', fontsize=16)
-            ax.set_ylabel('cell index', fontsize=16)
+                ax_raster.scatter(cell_times,
+                                  np.zeros_like(cell_times)+cell,
+                                  c=color,
+                                  marker='|')
+            ax_rates.imshow(self.spike_counts[cell_type].reshape((-1,1)),
+                            interpolation='none',
+                            cmap=cmap,
+                            aspect='auto',
+                            origin='lower')
+            ax_rates.axes.get_xaxis().set_ticks([])
+            ax_rates.axes.get_yaxis().set_ticks([])
+            ax_raster.set_xlabel('time (ms)', fontsize=16)
+            ax_raster.set_xlim(-5, self.point.sim_duration+5)
+            ax_raster.set_ylim(0, len(spikes))
+            if cell_type == 1:
+                ax_raster.set_ylabel('cell index', fontsize=16)
+            elif cell_type == 0:
+                ax_pattern = fig.add_axes([0.10, 0.10, 0.05, 0.75])
+                ax_pattern.imshow(self.binary_pattern,
+                                  interpolation='none',
+                                  cmap='binary',
+                                  aspect='auto',
+                                  origin='lower')
+                ax_pattern.axes.get_xaxis().set_ticks([])
+                ax_rates.axes.get_yaxis().set_ticks([])
+                ax_raster.axes.get_yaxis().set_ticks([])
+                ax_pattern.set_ylabel('cell index', fontsize=16)
+        return figs
     def plot(self):
-        self.plot_raster()
+        figs = self.plot_raster()
         plt.show()
 

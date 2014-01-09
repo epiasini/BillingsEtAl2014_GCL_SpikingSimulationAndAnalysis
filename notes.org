@@ -811,8 +811,8 @@ typical classes of output of the granular layer.
     oscillations. The main idea is to have, instead of a fixed 80Hz
     rate for the 'on' mossy fibre terminals, an inhomogeneous Poisson
     process that will average at 80Hz but whose intensity will
-    oscillate at some carrier frequency (10Hz? it might be too slow
-    for our short time window). Background activity from 'off' fibers
+    oscillate at some carrier frequency (50% modulation at 8Hz is what
+    we're going for). Background activity from 'off' fibers
     will not be modulated.
 *** TODO Detailed check/proofread of the Appendix to the supplementary material.
 * Questions to be addressed with the model after we're sure it works

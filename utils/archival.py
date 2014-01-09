@@ -45,7 +45,13 @@ class SpikesArchive(object):
         hdf5_handle.close()
         return spike_counts
 
-
+    def get_stim_pattern(self, stim_pattern_number):
+        self.load_attrs()
+        hdf5_handle = self.open_hdf5_handle()
+        pattern = np.asarray(hdf5_handle['/{0:03d}/stim_pattern'.format(stim_pattern_number)])
+        hdf5_handle.close()
+        return pattern
+        
 class ResultsArchive(object):
     def __init__(self, point):
         self.point = point
