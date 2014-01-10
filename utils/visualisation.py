@@ -286,11 +286,11 @@ class RasterPlot(object):
     def __init__(self, point, alpha=1):
         self.point = point
         self.alpha = alpha
-        nsp = random.randint(0, point.n_stim_patterns)
-        trial = random.randint(0, point.n_trials)
-        observation = nsp * point.n_trials + trial
-        print("Raster plot for pattern {}, trial {}".format(nsp, trial))
-        self.pattern = self.point.spikes_arch.get_stim_pattern(nsp)
+        self.nsp = random.randint(0, point.n_stim_patterns)
+        self.trial = random.randint(0, point.n_trials)
+        self.observation = self.nsp * point.n_trials + self.trial
+        print("Raster plot for pattern {}, trial {}".format(self.nsp, self.trial))
+        self.pattern = self.point.spikes_arch.get_stim_pattern(self.nsp)
         self.binary_pattern = np.zeros(shape=(self.point.n_mf,1))
         self.binary_pattern[self.pattern] = 1
         self.mf_spikes = self.point.spikes_arch.get_spikes(cell_type='mf')[observation]
@@ -335,7 +335,78 @@ class RasterPlot(object):
                 ax_raster.axes.get_yaxis().set_ticks([])
                 ax_pattern.set_ylabel('cell index', fontsize=16)
         return figs
+
     def plot(self):
         figs = self.plot_raster()
-        plt.show()
+        return figs
 
+class BarcodePlot(object):
+    def __init__(self, point, n_stim_patterns=4, n_trials=50, alpha=1):
+        self.point = point
+        self.alpha = alpha
+        self.n_stim_patterns = n_stim_patterns
+        self.n_trials = n_trials
+        self.nsps = np.array([random.randint(0, point.n_stim_patterns) for each in range(n_stim_patterns)])
+        self.observations = np.array([nsp*point.n_trials + np.array([random.randint(0, point.n_trials) for each in range(n_trials)]) for nsp in self.nsps]).flatten()
+        self.rate_profiles = self.point.spikes_arch.get_spike_counts(cell_type='grc')[self.observations]
+    def barcode_figure(self, rate_profiles, axes_width=0.75, data_cmap='Blues', centroid_cmap='binary', centroid_indexes=[]):
+        fig = plt.figure()
+        n_centroids = len(centroid_indexes)
+        n_data_points = rate_profiles.shape[0] - n_centroids
+        data_barcode_width = axes_width / (n_data_points + 4 * n_centroids)
+        centroid_barcode_width = 4*data_barcode_width
+        axes = []
+        ax_x_position = 0.15
+        for k, rate_profile in enumerate(rate_profiles):
+            if k in centroid_indexes:
+                cmap = centroid_cmap
+                barcode_width = centroid_barcode_width
+            else:
+                cmap = data_cmap
+                barcode_width = data_barcode_width
+            if k==0:
+                ax_x_position = 0.15
+            else:
+                ax_x_position = axes[-1].get_position().get_points()[1,0]
+
+            ax = fig.add_axes([ax_x_position, 0.10, barcode_width, 0.75])
+            axes.append(ax)
+            ax.imshow(rate_profile.reshape((-1,1)),
+                      interpolation='none',
+                      cmap=cmap,
+                      aspect='auto',
+                      origin='lower')
+            ax.axes.get_xaxis().set_ticks([])
+            
+            if k<rate_profiles.shape[0]-1:
+                ax.spines['right'].set_color('none')
+                
+            if k==0:
+                ax.set_ylabel('cell index', fontsize=16)
+                ax.yaxis.set_ticks_position('left')
+            else:
+                ax.axes.get_yaxis().set_ticks([])
+                ax.spines['left'].set_color('none')
+
+        return fig
+
+    def plot_barcode(self):
+        shuffled_profiles = np.array(self.rate_profiles)
+        np.random.shuffle(shuffled_profiles)
+        fig = self.barcode_figure(shuffled_profiles)
+        return fig
+
+    def plot_centroids(self):
+        from sklearn.cluster import MiniBatchKMeans
+        clustering = MiniBatchKMeans(n_clusters=self.n_stim_patterns,
+                                     batch_size=self.n_trials)
+        labeling = clustering.fit_predict(self.rate_profiles)
+        centroids = clustering.cluster_centers_
+        centroid_indexes = np.cumsum([np.sum(labeling==k)+1 for k in range(len(centroids))]) - 1
+        data_with_centroids = np.vstack([np.vstack([self.rate_profiles[labeling==k], centroid]) for k, centroid in enumerate(centroids)])
+        
+        fig = self.barcode_figure(data_with_centroids, centroid_indexes=centroid_indexes)
+        return fig
+        
+        
+        
