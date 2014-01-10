@@ -288,7 +288,7 @@ class RasterPlot(object):
         self.alpha = alpha
         self.nsp = random.randint(0, point.n_stim_patterns)
         self.trial = random.randint(0, point.n_trials)
-        self.observation = self.nsp * point.n_trials + self.trial
+        observation = self.nsp * point.n_trials + self.trial
         print("Raster plot for pattern {}, trial {}".format(self.nsp, self.trial))
         self.pattern = self.point.spikes_arch.get_stim_pattern(self.nsp)
         self.binary_pattern = np.zeros(shape=(self.point.n_mf,1))
@@ -299,12 +299,12 @@ class RasterPlot(object):
     def plot_raster(self):
         figs = []
         for cell_type, spikes in enumerate([self.mf_spikes, self.grc_spikes]):
-            color = ['r', 'b'][cell_type]
-            cmap = ['Reds', 'Blues'][cell_type]
-            fig = plt.figure()
+            color = ['b', 'r'][cell_type]
+            cmap = ['Blues', 'Reds'][cell_type]
+            fig = plt.figure(figsize=(4,5))
             figs.append(fig)
-            ax_raster = fig.add_axes([0.15, 0.10, 0.75, 0.75])
-            ax_rates = fig.add_axes([0.90, 0.10, 0.05, 0.75])
+            ax_raster = fig.add_axes([0.19, 0.10, 0.75, 0.75])
+            ax_rates = fig.add_axes([0.94, 0.10, 0.05, 0.75])
             fig.patch.set_alpha(self.alpha)
             for cell, cell_times in enumerate(spikes):
                 ax_raster.scatter(cell_times,
@@ -324,7 +324,7 @@ class RasterPlot(object):
             if cell_type == 1:
                 ax_raster.set_ylabel('cell index', fontsize=16)
             elif cell_type == 0:
-                ax_pattern = fig.add_axes([0.10, 0.10, 0.05, 0.75])
+                ax_pattern = fig.add_axes([0.14, 0.10, 0.05, 0.75])
                 ax_pattern.imshow(self.binary_pattern,
                                   interpolation='none',
                                   cmap='binary',
@@ -341,17 +341,18 @@ class RasterPlot(object):
         return figs
 
 class BarcodePlot(object):
-    def __init__(self, point, n_stim_patterns=2, n_trials=50, alpha=1):
+    def __init__(self, point, n_stim_patterns=4, n_trials=50, alpha=1, figsize=(4,5)):
         self.point = point
         self.alpha = alpha
+        self.figsize = figsize
         self.n_stim_patterns = n_stim_patterns
         self.n_trials = n_trials
         self.nsps = np.array([random.randint(0, point.n_stim_patterns) for each in range(n_stim_patterns)])
         self.observations = np.array([nsp*point.n_trials + np.array([random.randint(0, point.n_trials) for each in range(n_trials)]) for nsp in self.nsps]).flatten()
         self.rate_profiles = self.point.spikes_arch.get_spike_counts(cell_type='grc')[self.observations]
-    def barcode_figure(self, rate_profiles, fig=None, base_ax=None, axes_width=0.75, data_cmap='Blues', centroid_cmap='binary', centroid_indexes=[]):
+    def barcode_figure(self, rate_profiles, fig=None, base_ax=None, axes_width=0.75, data_cmap='Reds', centroid_cmap='binary', centroid_indexes=[]):
         if not fig:
-            fig = plt.figure()
+            fig = plt.figure(figsize=self.figsize)
         n_centroids = len(centroid_indexes)
         n_data_points = rate_profiles.shape[0] - n_centroids
         data_barcode_width = axes_width / (n_data_points + 4 * n_centroids)
@@ -382,7 +383,6 @@ class BarcodePlot(object):
                       cmap=cmap,
                       aspect='auto',
                       origin='lower')
-            ax.axes.get_xaxis().set_ticks([])
             
             if k<rate_profiles.shape[0]-1:
                 ax.spines['right'].set_color('none')
@@ -394,6 +394,15 @@ class BarcodePlot(object):
                 ax.axes.get_yaxis().set_ticks([])
                 ax.spines['left'].set_color('none')
 
+            if k in range(self.n_trials, len(rate_profiles)+1, self.n_trials):
+                ax.axes.get_xaxis().set_ticks([0])
+                ax.set_xticklabels([k])
+            else:
+                ax.axes.get_xaxis().set_ticks([])
+
+
+        axes[len(rate_profiles)/2].set_xlabel('events', fontsize=16)
+
         return fig
 
     def plot_barcode(self):
@@ -404,23 +413,25 @@ class BarcodePlot(object):
 
     def plot_barcodes_with_centroids(self):
         from sklearn.cluster import MiniBatchKMeans
-        cmap='Blues'
+        cmap='Reds'
         clustering = MiniBatchKMeans(n_clusters=self.n_stim_patterns,
                                      batch_size=self.n_trials)
         labeling = clustering.fit_predict(self.rate_profiles)
         centroids = clustering.cluster_centers_
-        fig, axes = plt.subplots(ncols=len(centroids), nrows=1)
+        fig, axes = plt.subplots(figsize=self.figsize,
+                                 ncols=len(centroids),
+                                 nrows=1)
         for k, centroid in enumerate(centroids):
             axes[k].imshow(self.rate_profiles[labeling==k].transpose(),
                            interpolation='none',
-                           cmap='Blues',
+                           cmap='Reds',
                            aspect='auto',
                            origin='lower')
             data_position = axes[k].get_position().get_points()
             
             centroid_ax = fig.add_axes([data_position[1,0],
                                         data_position[0,1],
-                                        0.015,
+                                        0.025,
                                         data_position[1,1] - data_position[0,1]])
             centroid_ax.imshow(centroid.reshape(-1,1),
                                interpolation='none',
@@ -429,14 +440,16 @@ class BarcodePlot(object):
                                origin='lower')
 
             axes[k].yaxis.set_ticks_position('left')
-            axes[k].axes.get_xaxis().set_ticks([])
+            axes[k].axes.get_xaxis().set_ticks([20, 40])
+            axes[k].set_title('cluster {}'.format(k+1), fontsize=12)
             if k>0:
                 axes[k].axes.get_yaxis().set_ticks([])
 
             centroid_ax.axes.get_xaxis().set_ticks([])
             centroid_ax.axes.get_yaxis().set_ticks([])
-        axes[0].set_ylabel('cell index')
-        axes[0].set_xlabel('events')
+
+        axes[0].set_xlabel('events', fontsize=16)
+        axes[0].set_ylabel('cell index', fontsize=16)
         return fig
         
         
