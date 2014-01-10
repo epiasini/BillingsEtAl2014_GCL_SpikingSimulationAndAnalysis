@@ -341,7 +341,7 @@ class RasterPlot(object):
         return figs
 
 class BarcodePlot(object):
-    def __init__(self, point, n_stim_patterns=4, n_trials=50, alpha=1):
+    def __init__(self, point, n_stim_patterns=2, n_trials=50, alpha=1):
         self.point = point
         self.alpha = alpha
         self.n_stim_patterns = n_stim_patterns
@@ -349,14 +349,14 @@ class BarcodePlot(object):
         self.nsps = np.array([random.randint(0, point.n_stim_patterns) for each in range(n_stim_patterns)])
         self.observations = np.array([nsp*point.n_trials + np.array([random.randint(0, point.n_trials) for each in range(n_trials)]) for nsp in self.nsps]).flatten()
         self.rate_profiles = self.point.spikes_arch.get_spike_counts(cell_type='grc')[self.observations]
-    def barcode_figure(self, rate_profiles, axes_width=0.75, data_cmap='Blues', centroid_cmap='binary', centroid_indexes=[]):
-        fig = plt.figure()
+    def barcode_figure(self, rate_profiles, fig=None, base_ax=None, axes_width=0.75, data_cmap='Blues', centroid_cmap='binary', centroid_indexes=[]):
+        if not fig:
+            fig = plt.figure()
         n_centroids = len(centroid_indexes)
         n_data_points = rate_profiles.shape[0] - n_centroids
         data_barcode_width = axes_width / (n_data_points + 4 * n_centroids)
         centroid_barcode_width = 4*data_barcode_width
         axes = []
-        ax_x_position = 0.15
         for k, rate_profile in enumerate(rate_profiles):
             if k in centroid_indexes:
                 cmap = centroid_cmap
@@ -365,11 +365,17 @@ class BarcodePlot(object):
                 cmap = data_cmap
                 barcode_width = data_barcode_width
             if k==0:
-                ax_x_position = 0.15
+                if not base_ax:
+                    ax_x_position = 0.15
+                else:
+                    ax_x_position = base_ax.get_position().get_points()[1,0]
             else:
                 ax_x_position = axes[-1].get_position().get_points()[1,0]
-
-            ax = fig.add_axes([ax_x_position, 0.10, barcode_width, 0.75])
+            
+            if base_ax and k==0:
+                ax = base_ax
+            else:
+                ax = fig.add_axes([ax_x_position, 0.10, barcode_width, 0.75])
             axes.append(ax)
             ax.imshow(rate_profile.reshape((-1,1)),
                       interpolation='none',
@@ -396,16 +402,41 @@ class BarcodePlot(object):
         fig = self.barcode_figure(shuffled_profiles)
         return fig
 
-    def plot_centroids(self):
+    def plot_barcodes_with_centroids(self):
         from sklearn.cluster import MiniBatchKMeans
+        cmap='Blues'
         clustering = MiniBatchKMeans(n_clusters=self.n_stim_patterns,
                                      batch_size=self.n_trials)
         labeling = clustering.fit_predict(self.rate_profiles)
         centroids = clustering.cluster_centers_
-        centroid_indexes = np.cumsum([np.sum(labeling==k)+1 for k in range(len(centroids))]) - 1
-        data_with_centroids = np.vstack([np.vstack([self.rate_profiles[labeling==k], centroid]) for k, centroid in enumerate(centroids)])
-        
-        fig = self.barcode_figure(data_with_centroids, centroid_indexes=centroid_indexes)
+        fig, axes = plt.subplots(ncols=len(centroids), nrows=1)
+        for k, centroid in enumerate(centroids):
+            axes[k].imshow(self.rate_profiles[labeling==k].transpose(),
+                           interpolation='none',
+                           cmap='Blues',
+                           aspect='auto',
+                           origin='lower')
+            data_position = axes[k].get_position().get_points()
+            
+            centroid_ax = fig.add_axes([data_position[1,0],
+                                        data_position[0,1],
+                                        0.015,
+                                        data_position[1,1] - data_position[0,1]])
+            centroid_ax.imshow(centroid.reshape(-1,1),
+                               interpolation='none',
+                               cmap='binary',
+                               aspect='auto',
+                               origin='lower')
+
+            axes[k].yaxis.set_ticks_position('left')
+            axes[k].axes.get_xaxis().set_ticks([])
+            if k>0:
+                axes[k].axes.get_yaxis().set_ticks([])
+
+            centroid_ax.axes.get_xaxis().set_ticks([])
+            centroid_ax.axes.get_yaxis().set_ticks([])
+        axes[0].set_ylabel('cell index')
+        axes[0].set_xlabel('events')
         return fig
         
         
