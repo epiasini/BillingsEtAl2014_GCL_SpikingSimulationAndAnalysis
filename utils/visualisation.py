@@ -235,12 +235,14 @@ class RectangularHeatmapPlotter(object):
         self.ax.set_title(fig_title)
         self.fig.canvas.draw()
         return self.fig, self.ax, plot_data
-    def plot_and_save(self, heat_dim, base_dir=None, file_name=None):
+    def plot_and_save(self, heat_dim, base_dir=None, file_name=None, file_extension=None):
         fig, ax, data = self.plot(heat_dim)
+        if not file_extension:
+            file_extension = "png"
         if not file_name:
             sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
             file_name = '_'.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
-            file_name = '{0}_{1}.png'.format(heat_dim, file_name)
+            file_name = '{0}_{1}.{2}'.format(heat_dim, file_name, file_extension)
             if base_dir:
                 file_name = '/'.join([base_dir, file_name])
             print('saving heatmap to {}'.format(file_name))
