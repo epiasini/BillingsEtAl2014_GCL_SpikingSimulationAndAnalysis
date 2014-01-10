@@ -776,22 +776,26 @@ typical classes of output of the granular layer.
     use. The figure should contain:
     - [ ] f/f curve for cell model with (optionally) experimental data
       for comparison
-    - [ ] example voltage trace
+    - [ ] example voltage trace, possibly with a cartoon showing the
+      granule cell with its 4 inputs and the conductance trains being
+      injected. Tonic GABA, as well, should be shown for comparison.
     - [ ] example of synaptic dynamics with fit to experimental data
     - [ ] 3D visualisation of network structure with input and output
       raster plots
     - [ ] cartoon explanation of MI and data analysis (spike counting
       and clustering)
-*** TODO [0/2] figure 8: results. 
+*** TODO [0/3] figure 8: results. 
     This should contain:
     - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
       show qualitative match to figure 3A in the simplest possible
-      case (with fixed inhibition). We should either spend some words
-      to address the fact that 1024 is a very small number compared to
-      1 billion patterns, by claiming that increasing the number of
-      patterns should only make the reduction of encodable range
-      stronger, or show this result alongside a version of figure 3A
-      opportunely scaled down to 1024 patterns.
+      case (with fixed inhibition). In the heatmap, we should indicate
+      the region where amplification is less than 1. We should either
+      spend some words to address the fact that 1024 is a very small
+      number compared to 1 billion patterns, by claiming that
+      increasing the number of patterns should only make the reduction
+      of encodable range stronger, or show this result alongside a
+      version of figure 3A opportunely scaled down to 1024 patterns.
+    - [ ] sparsification heatmap.
     - [ ] global results in form of an 'efficient frontier' kind of
       plot, populated with data from at least 2-3 DTA
       settings. Because of our constraints in time and computational
@@ -800,6 +804,7 @@ typical classes of output of the granular layer.
       feasible).
 *** TODO Mockup of figures 7 and 8
     Angus need this as soon as possible to start writing.
+*** TODO Change color code: blue should be input and red should be output.
 *** TODO Proof-of-principle figure with sinusoidally varying input rate
     This should go in the supplementary material, and it will be used
     to show that our ideas still hold in case of sinusoidally varying
@@ -814,6 +819,10 @@ typical classes of output of the granular layer.
     oscillate at some carrier frequency (50% modulation at 8Hz is what
     we're going for). Background activity from 'off' fibers
     will not be modulated.
+    
+    It would be nice to have a representation of what kind of input
+    we're playing into the network in this case as well. something
+    like a raster plot or a visualisation of the conductance trains.
 *** TODO Detailed check/proofread of the Appendix to the supplementary material.
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
