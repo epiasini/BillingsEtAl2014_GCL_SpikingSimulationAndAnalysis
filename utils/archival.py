@@ -30,18 +30,13 @@ class SpikesArchive(object):
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
         hdf5_handle = self.open_hdf5_handle()
-        observation_handles = [hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, tn, cell_type)] for spn in range(self.point.n_stim_patterns) for tn in range(self.point.n_trials)]
-        spike_counts = np.array([[np.sum(c > start_time) for c in np.array(o).transpose()] for o in observation_handles])
-        if spike_counts.dtype == np.dtype('O'):
-            # network was completely silent for at least one
-            # observation. We need to carefully loop over all
-            # observations to avoid the problematic case
-            print("archive {0}: found at least one completely silent observation.".format(self.path))
-            spike_counts = np.zeros(shape=(len(observation_handles), n_cells))
-            for n, oh in enumerate(observation_handles):
-                ob = np.array(oh)
-                if ob.size:
-                    spike_counts[n] = np.sum(ob > start_time, axis=0)
+        spike_counts = np.zeros((self.point.n_stim_patterns * self.point.n_trials, n_cells))
+        for spn in range(self.point.n_stim_patterns):
+            for trial in range(self.point.n_trials):
+                spikes = np.array(hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, trial, cell_type)])
+                if spikes.size:
+                    # that is, if the network was not completely silent in this observation
+                    spike_counts[spn*self.point.n_trials + trial] = np.sum(spikes > start_time, axis=0)
         hdf5_handle.close()
         return spike_counts
 
