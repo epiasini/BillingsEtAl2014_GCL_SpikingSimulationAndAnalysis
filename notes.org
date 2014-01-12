@@ -503,8 +503,20 @@ though, as we still need to vary p(MF) as an independent variable.
      create a new spike archive! what should happen is that the spike
      trains that are needed for the analysis get loaded from the
      existing archive.
-**** TODO Don't simulate a given pattern if its corresponding tar archive is already on disk
-**** TODO Make sure all tar single-pattern archives are present before starting compression step
+**** DONE +Don't simulate a given pattern if its corresponding tar archive is already on disk+
+     CLOSED: [2014-01-12 Sun 18:17]
+     - CLOSING NOTE [2014-01-12 Sun 18:16] \\
+       This additional robustness measure shouldn't be necessary after
+       implementing BLCR checkpointing in [[magit:~/phd/code/network/src/::commit@e3fd535][commit #e3fd535]].
+**** DONE +Make sure all tar single-pattern archives are present before starting compression step+
+     CLOSED: [2014-01-12 Sun 18:17]
+     - CLOSING NOTE [2014-01-12 Sun 18:17] \\
+       After implementing BLCR checkpointing in [[magit:~/phd/code/network/src/::commit@e3fd535][commit #e3fd535]], simulation
+       jobs should complete successfully even in case of poor harware
+       performance on the first node they're submitted to. This means we can
+       rely on the .tar archives being there. If they're not, it's ok to
+       keep the current behaviour: remove all the tar files up to the missing
+       one, and then raise an exception.
      This, togheter with the previous item, should allow easy re-running
      of specific patterns if something goes wrong during simulations and
      not all patterns for a given data point reach completion.
@@ -764,7 +776,7 @@ typical classes of output of the granular layer.
    network. The idea underlying this part of the paper is that we can
    get similar results to what has been shown until now if we start
    from a bottom-up biophysically realistic model of the network.
-*** TODO [0/5] figure 7: presentation of the model.
+*** TODO [4/5] figure 7: presentation of the model.
     The message we want to get across is that the model is tightly
     constrained to experimental data, and it is way more 'biological'
     than the binary network. This figure (together with the results,
@@ -774,16 +786,18 @@ typical classes of output of the granular layer.
     previous works on cerebellar function, and that the typical Neuron
     readership could find it difficult to relate to the methods we
     use. The figure should contain:
-    - [ ] f/f curve for cell model with (optionally) experimental data
+    - [X] f/f curve for cell model with (optionally) experimental data
       for comparison
-    - [ ] example voltage trace, possibly with a cartoon showing the
+    - [X] example voltage trace, possibly with a cartoon showing the
       granule cell with its 4 inputs and the conductance trains being
       injected. Tonic GABA, as well, should be shown for comparison.
-    - [ ] example of synaptic dynamics with fit to experimental data
-    - [ ] 3D visualisation of network structure with input and output
+    - [X] example of synaptic dynamics with fit to experimental data
+    - [X] +3D visualisation of network structure with+ input and output
       raster plots
     - [ ] cartoon explanation of MI and data analysis (spike counting
       and clustering)
+      - [ ] make sure resolution of plot with clustered barcodes
+        matches the plot where the barcodes are shuffled.
 *** TODO [0/3] figure 8: results. 
     This should contain:
     - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
@@ -802,9 +816,9 @@ typical classes of output of the granular layer.
       resources, this will have to be done with a smaller number of
       patterns than the previous figure (128 patterns should be
       feasible).
-*** TODO Mockup of figures 7 and 8
+*** DONE Mockup of figures 7 and 8
+    CLOSED: [2014-01-12 Sun 18:23]
     Angus need this as soon as possible to start writing.
-*** TODO Change color code: blue should be input and red should be output.
 *** TODO Proof-of-principle figure with sinusoidally varying input rate
     This should go in the supplementary material, and it will be used
     to show that our ideas still hold in case of sinusoidally varying
@@ -946,7 +960,11 @@ typical classes of output of the granular layer.
     [[file:fig/mi_masked_128.png][file:fig/mi_masked_128.png]]
     
 * Controls for supplementary information
-** TODO Fix crash that happens when trying to analyse more than about 1024 (patterns) * 70 (trials) observations
+** DONE Fix crash that happens when trying to analyse more than about 1024 (patterns) * 70 (trials) observations
+   CLOSED: [2014-01-12 Sun 18:26]
+   - CLOSING NOTE [2014-01-12 Sun 18:26] \\
+     I believe this was due to excessive memory usage when counting
+     spikes. [[magit:~/phd/code/network/src/::commit@68226f5][commit #68226f5]] should have fixed that.
 Is this some sort of memory issue?
 #+BEGIN_SRC
 Traceback (most recent call last):
