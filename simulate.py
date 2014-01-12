@@ -21,7 +21,7 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils.cluster_system import ClusterSystem
 from utils.pure import SimpleParameterSpacePoint
-from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli
+from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli, set_tonic_GABA
 
 point = eval(sys.argv[1].replace('+', ','))
 stim_pattern_number = int(sys.argv[2])
@@ -42,6 +42,9 @@ with ClusterSystem(sys.argv[3]) as system:
     # prepare temporary tar archive for simulation data
     tar_archive_path = temp_dir+'/temporary_archive.tar'
     tar_archive = tarfile.open(tar_archive_path, 'w')
+
+    # set level of inhibition by modifying GrC model
+    set_tonic_GABA(temp_dir, point.extra_tonic_inhibition)
 
     # load project and initialise
     project_file = java.io.File(temp_dir + "/" + project_filename)
