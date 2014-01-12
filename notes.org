@@ -388,7 +388,11 @@ though, as we still need to vary p(MF) as an independent variable.
        this is enough.
      - [X] Make sure nC garbage gets cleaned up before a simulation
        job exits.
-**** TODO Use ~bias~ parameter to control tonic GABA.
+**** DONE Use ~bias~ parameter to control tonic GABA.
+     CLOSED: [2014-01-12 Sun 22:21]
+     - CLOSING NOTE [2014-01-12 Sun 22:21] \\
+       Done in [[magit:~/phd/code/network/src/::commit@0944195][commit #0944195]]. The name of the parameter is not ~bias~,
+       though, but ~extra_tonic_inhibition~.
      The parameter has been renamed to ~extra_tonic_inhibition~ in
      [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. It still doesn't have any effect on the
      simulations, though.
