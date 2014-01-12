@@ -10,7 +10,9 @@ class ClusterSystem(object):
         if self.name == 'matlem':
             self.sim_path = '/scratch0/ucbtepi/'+os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
         elif self.name == 'legion':
-            self.sim_path = os.environ['TMPDIR']
+            # on Legion, only files in the $TMPDIR/saveme directory
+            # get checkpointed by BLCR
+            self.sim_path = os.environ['TMPDIR']+'/saveme'
         else:
             # this normally means we're on crugiat
             self.sim_path = '/tmp'
@@ -21,6 +23,7 @@ class ClusterSystem(object):
             os.makedirs(self.temp_dir)
         elif self.name == 'legion':
             self.temp_dir = self.sim_path
+            os.makedirs(self.temp_dir)
         else:            
             self.temp_dir = tempfile.mkdtemp(dir=self.sim_path)
         return self
