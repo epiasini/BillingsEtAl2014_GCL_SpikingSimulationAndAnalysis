@@ -299,9 +299,9 @@ class RasterPlot(object):
     def plot_raster(self):
         figs = []
         for cell_type, spikes in enumerate([self.mf_spikes, self.grc_spikes]):
-            color = ['b', 'r'][cell_type]
-            cmap = ['Blues', 'Reds'][cell_type]
-            fig = plt.figure(figsize=(4,5))
+            color = ['r', 'b'][cell_type]
+            cmap = ['Reds', 'Blues'][cell_type]
+            fig = plt.figure()
             figs.append(fig)
             ax_raster = fig.add_axes([0.19, 0.10, 0.75, 0.75])
             ax_rates = fig.add_axes([0.94, 0.10, 0.05, 0.75])
@@ -341,18 +341,17 @@ class RasterPlot(object):
         return figs
 
 class BarcodePlot(object):
-    def __init__(self, point, n_stim_patterns=4, n_trials=50, alpha=1, figsize=(4,5)):
+    def __init__(self, point, n_stim_patterns=4, n_trials=50, alpha=1):
         self.point = point
         self.alpha = alpha
-        self.figsize = figsize
         self.n_stim_patterns = n_stim_patterns
         self.n_trials = n_trials
         self.nsps = np.array([random.randint(0, point.n_stim_patterns) for each in range(n_stim_patterns)])
         self.observations = np.array([nsp*point.n_trials + np.array([random.randint(0, point.n_trials) for each in range(n_trials)]) for nsp in self.nsps]).flatten()
         self.rate_profiles = self.point.spikes_arch.get_spike_counts(cell_type='grc')[self.observations]
-    def barcode_figure(self, rate_profiles, fig=None, base_ax=None, axes_width=0.75, data_cmap='Reds', centroid_cmap='binary', centroid_indexes=[]):
+    def barcode_figure(self, rate_profiles, fig=None, base_ax=None, axes_width=0.75, data_cmap='Blues', centroid_cmap='binary', centroid_indexes=[]):
         if not fig:
-            fig = plt.figure(figsize=self.figsize)
+            fig = plt.figure()
         n_centroids = len(centroid_indexes)
         n_data_points = rate_profiles.shape[0] - n_centroids
         data_barcode_width = axes_width / (n_data_points + 4 * n_centroids)
@@ -413,18 +412,16 @@ class BarcodePlot(object):
 
     def plot_barcodes_with_centroids(self):
         from sklearn.cluster import MiniBatchKMeans
-        cmap='Reds'
         clustering = MiniBatchKMeans(n_clusters=self.n_stim_patterns,
                                      batch_size=self.n_trials)
         labeling = clustering.fit_predict(self.rate_profiles)
         centroids = clustering.cluster_centers_
-        fig, axes = plt.subplots(figsize=self.figsize,
-                                 ncols=len(centroids),
+        fig, axes = plt.subplots(ncols=len(centroids),
                                  nrows=1)
         for k, centroid in enumerate(centroids):
             axes[k].imshow(self.rate_profiles[labeling==k].transpose(),
                            interpolation='none',
-                           cmap='Reds',
+                           cmap='Blues',
                            aspect='auto',
                            origin='lower')
             data_position = axes[k].get_position().get_points()
