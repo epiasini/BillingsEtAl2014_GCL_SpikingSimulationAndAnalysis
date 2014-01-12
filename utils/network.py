@@ -69,8 +69,6 @@ def generate_nC_stimuli(point, project, sim_config, stim_pattern):
     project.generatedElecInputs.reset()
     project.elecInputInfo.deleteAllStims()
     sim_config.setInputs(ArrayList())
-    # include variable tonic GABA
-    
     # generate set firing rates for stimuli according to the current
     # stimulation pattern
     for mf in range(point.n_mf):
@@ -91,21 +89,22 @@ def generate_nC_stimuli(point, project, sim_config, stim_pattern):
         sim_config.addInput(stim.getReference())
         project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
 
-def set_tonic_GABA(project_dir, extra_conductance, reversal_potential=-79.1):
+def set_tonic_GABA(project_dir, extra_conductance_in_nS, reversal_potential=-79.1):
     """
     Modify the IaF_GrC.nml file in the working copy of the nC project
     to change the level of tonic GABA from what is originally set in
     the model.
 
     """
+    ET.register_namespace('', 'http://www.neuroml.org/schema/neuroml2')
     filename = project_dir + "/cellMechanisms/IaF_GrC/IaF_GrC.nml"
     tree = ET.parse(filename)
     root = tree.getroot()
     cell = root.find("{http://www.neuroml.org/schema/neuroml2}iafRefCell")
     old_conductance = float(cell.get('leakConductance').rstrip('nS'))
     old_reversal_potential = float(cell.get('leakReversal').rstrip('mV'))
-    new_conductance = old_conductance + extra_conductance
-    new_reversal_potential = (old_conductance * old_reversal_potential + extra_conductance * reversal_potential)/new_conductance
+    new_conductance = old_conductance + extra_conductance_in_nS
+    new_reversal_potential = (old_conductance * old_reversal_potential + extra_conductance_in_nS * reversal_potential)/new_conductance
     cell.set('leakConductance', '{}nS'.format(new_conductance))
     cell.set('leakReversal', '{}mV'.format(new_reversal_potential))
     tree.write(filename, encoding="UTF-8", xml_declaration=True)

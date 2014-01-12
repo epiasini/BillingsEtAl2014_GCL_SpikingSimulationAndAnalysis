@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(150,6,2.90,4,28.74,0.5,0,50,10,10,10,100,50) 9 matlem
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+0+80+0+10+0+128+50+200) 0 matlem
 """
 import random
 import time
@@ -44,7 +44,8 @@ with ClusterSystem(sys.argv[3]) as system:
     tar_archive = tarfile.open(tar_archive_path, 'w')
 
     # set level of inhibition by modifying GrC model
-    set_tonic_GABA(temp_dir, point.extra_tonic_inhibition)
+    extra_tonic_inhibition_in_nS = float(point.extra_tonic_inhibition) / 1000
+    set_tonic_GABA(temp_dir, extra_tonic_inhibition_in_nS)
 
     # load project and initialise
     project_file = java.io.File(temp_dir + "/" + project_filename)
