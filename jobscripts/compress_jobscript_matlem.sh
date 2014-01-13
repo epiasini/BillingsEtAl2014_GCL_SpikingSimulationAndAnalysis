@@ -13,11 +13,14 @@
 
 # "jobscripts" are things that should be passed to qsub.
 
+# point TMPDIR to local scratch space
+export TMPDIR="/scratch0/ucbtepi"
+
 args_list=$@
 
 echo $args_list
 
 hostname
 date
-
-/usr/bin/time python compress.py $args_list matlem
+echo "Working in local scratch space $TMPDIR"
+/usr/bin/time python compress.py $args_list

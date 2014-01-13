@@ -13,5 +13,5 @@ echo $args_list
 
 hostname
 date
-
+echo "Working in local scratch space $TMPDIR"
 /usr/bin/time python analyse.py $args_list

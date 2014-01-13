@@ -12,7 +12,9 @@
 #$ -p -1
 
 # SGE submission script for matlem
-system=matlem
+
+# point TMPDIR to local scratch space
+export TMPDIR="/scratch0/ucbtepi"
 
 # networkxj_dir should point to a copy of the networkxj package, This
 # is a fork of the last networkx version (1.2) made to be compatible
@@ -34,7 +36,8 @@ export JYTHONPATH="$networkxj_dir:$JYTHONPATH"
 
 hostname
 date
+echo "Working in local scratch space $TMPDIR"
 cd $nC_dir
-/usr/bin/time ./nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number $system
+/usr/bin/time ./nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number
 
 

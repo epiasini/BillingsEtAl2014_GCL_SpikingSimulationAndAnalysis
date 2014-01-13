@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+0+80+0+10+0+128+50+200) 0 matlem
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+0+80+0+10+0+128+50+200) 0
 """
 import random
 import time
@@ -32,23 +32,23 @@ project_filename = 'if_gl.ncx' # neuroConstruct project file name
 sim_config_name = 'Default Simulation Configuration'
 nC_seed = 1234
 
-with ClusterSystem(sys.argv[3]) as system:
-    temp_dir = system.temp_dir
+with ClusterSystem() as system:
+    work_dir = system.work_dir
     # copy nC project in temp folder
-    shutil.copy2(project_path+project_filename, temp_dir+"/"+project_filename)
-    shutil.copytree(project_path+"morphologies", temp_dir+"/morphologies")
-    shutil.copytree(project_path+"cellMechanisms", temp_dir+"/cellMechanisms")
+    shutil.copy2(project_path+project_filename, work_dir+"/"+project_filename)
+    shutil.copytree(project_path+"morphologies", work_dir+"/morphologies")
+    shutil.copytree(project_path+"cellMechanisms", work_dir+"/cellMechanisms")
 
     # prepare temporary tar archive for simulation data
-    tar_archive_path = temp_dir+'/temporary_archive.tar'
+    tar_archive_path = work_dir+'/temporary_archive.tar'
     tar_archive = tarfile.open(tar_archive_path, 'w')
 
     # set level of inhibition by modifying GrC model
     extra_tonic_inhibition_in_nS = float(point.extra_tonic_inhibition) / 1000
-    set_tonic_GABA(temp_dir, extra_tonic_inhibition_in_nS)
+    set_tonic_GABA(work_dir, extra_tonic_inhibition_in_nS)
 
     # load project and initialise
-    project_file = java.io.File(temp_dir + "/" + project_filename)
+    project_file = java.io.File(work_dir + "/" + project_filename)
     print ('Loading project from file: ' + project_file.getAbsolutePath() + ", exists: " + str(project_file.exists()))
     pm = ProjectManager(None, None)
     project = pm.loadProject(project_file)
@@ -101,12 +101,12 @@ with ClusterSystem(sys.argv[3]) as system:
                 print "...success."
                 print "Simulating: simulation reference %s" % str(sim_ref)
                 pm.doRunNeuron(sim_config)
-                timefile_path = temp_dir+"/simulations/"+sim_ref+"/time.dat"
+                timefile_path = work_dir+"/simulations/"+sim_ref+"/time.dat"
                 print "NEURON should have started the simulation. Waiting for timefile to appear at "+timefile_path
                 while os.path.exists(timefile_path)==0:
                     time.sleep(2)
 
-            hdf5_file_name = temp_dir+'/simulations/'+sim_ref+'/'+sim_ref+'_.h5'
+            hdf5_file_name = work_dir+'/simulations/'+sim_ref+'/'+sim_ref+'_.h5'
 
             # wait for NEURON to finish writing the results on disk
             while not os.path.exists(hdf5_file_name):
@@ -127,9 +127,9 @@ with ClusterSystem(sys.argv[3]) as system:
 
             # delete useless files left over by neuroConstruct
             try:
-                shutil.rmtree(temp_dir+'/simulations/'+sim_ref)
+                shutil.rmtree(work_dir+'/simulations/'+sim_ref)
             except OSError:
-                print('Unable to delete %s' % temp_dir+'/simulations/'+sim_ref)
+                print('Unable to delete %s' % work_dir+'/simulations/'+sim_ref)
 
     # move tar archive to main data directory
     tar_archive.close()

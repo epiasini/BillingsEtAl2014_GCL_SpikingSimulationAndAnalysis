@@ -5,40 +5,37 @@ import shutil
 import tempfile
 
 class ClusterSystem(object):
-    def __init__(self, name):
-        self.name = name
-        if self.name == 'matlem':
-            self.sim_path = '/scratch0/ucbtepi/'+os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
-        elif self.name == 'legion':
-            # on Legion, only files in the $TMPDIR/saveme directory
-            # get checkpointed by BLCR
-            self.sim_path = os.environ['TMPDIR']+'/saveme'
-        else:
-            # this normally means we're on crugiat
-            self.sim_path = '/tmp'
+    def __init__(self):
+        # temp_dir is meant to point to a location on a scratch
+        # filesystem. We do not rely on this directory to be unique to
+        # the current job.
+        self.temp_dir = os.environ['TMPDIR']
+        if not self.temp_dir:
+            # this normally means we're on crugiat, or somewhere else
+            # where TMPDIR is not set
+            self.temp_dir = '/tmp'
             
     def __enter__(self):
-        if self.name == 'matlem':
-            self.temp_dir = self.sim_path
-            os.makedirs(self.temp_dir)
-        elif self.name == 'legion':
-            self.temp_dir = self.sim_path
-            os.makedirs(self.temp_dir)
-        else:            
-            self.temp_dir = tempfile.mkdtemp(dir=self.sim_path)
+        # work_dir is a temporary directory in scratch space that is
+        # meant to be unique to the current job.
+        if 'JOB_ID' in os.environ and 'SGE_TASK_ID' in os.environ:
+            prefix = os.environ['JOB_ID']+'.'+os.environ['SGE_TASK_ID']
+        else:
+            prefix = 'tmp'
+        self.work_dir = tempfile.mkdtemp(prefix=prefix,
+                                         dir=self.temp_dir)
         return self
 
     def __exit__(self, exc_type, exc_value, traceback):
-        if self.name != 'legion':
-            print('removing job-specific temporary directory {}'.format(self.temp_dir))
-            delete_attempts = 0
-            while delete_attempts < 10:
-                try:
-                    shutil.rmtree(self.temp_dir)
-                    print('temporary directory removed')
-                    break
-                except OSError:
-                    delete_attempts += 1
-                    print('waiting and retrying to remove temporary directory')
-                    time.sleep(20)
+        print('removing job-specific temporary working directory {}'.format(self.work_dir))
+        delete_attempts = 0
+        while delete_attempts < 10:
+            try:
+                shutil.rmtree(self.work_dir)
+                print('temporary directory removed')
+                break
+            except OSError:
+                delete_attempts += 1
+                print('waiting and retrying to remove temporary directory')
+                time.sleep(20)
         return False

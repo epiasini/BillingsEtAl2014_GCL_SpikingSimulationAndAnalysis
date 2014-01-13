@@ -16,5 +16,5 @@ echo $args_list
 
 hostname
 date
-
-/usr/bin/time python compress.py $args_list legion
+echo "Working in local scratch space $TMPDIR"
+/usr/bin/time python compress.py $args_list

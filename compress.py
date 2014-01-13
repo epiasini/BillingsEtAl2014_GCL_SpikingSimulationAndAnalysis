@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage example: compress.py ParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200,40,0,5,2) [clean_up={0|1}] matlem"""
+"""Usage example: compress.py ParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200,40,0,5,2) [clean_up={0|1}]"""
 import sys
 import os
 import shutil
@@ -20,10 +20,10 @@ try:
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
 
-with ClusterSystem(sys.argv[3]) as system:
+with ClusterSystem() as system:
     # override archive location to work in temporary directory
     permanent_archive_path = point.spikes_arch.path
-    point.spikes_arch.path = system.temp_dir + '/spikes_archive.hdf5'
+    point.spikes_arch.path = system.work_dir + '/spikes_archive.hdf5'
     # open the hdf5 file
     archive = point.spikes_arch.open_hdf5_handle()
     archive.attrs['n_mf'] = point.n_mf
@@ -62,13 +62,13 @@ with ClusterSystem(sys.argv[3]) as system:
 
         # untar simulation data archive to temporary directory
         with tarfile.open(point.get_tar_simulation_archive_path(spn)) as tar_archive:
-            print('Extracting tar archive {} to temporary directory {}'.format(tar_archive, system.temp_dir))
-            tar_archive.extractall(system.temp_dir)
+            print('Extracting tar archive {} to temporary directory {}'.format(tar_archive, system.work_dir))
+            tar_archive.extractall(system.work_dir)
 
         for trial in range(point.n_trials):
             print (spn, trial)
             sim_ref = point.get_simulation_reference(spn, trial)
-            sim_data_path = system.temp_dir + "/" + sim_ref + "_.h5"
+            sim_data_path = system.work_dir + "/" + sim_ref + "_.h5"
             archive["%03d" % spn].create_group("%02d" % trial)
             target_data_group = archive["%03d" % spn]["%02d" % trial]
 

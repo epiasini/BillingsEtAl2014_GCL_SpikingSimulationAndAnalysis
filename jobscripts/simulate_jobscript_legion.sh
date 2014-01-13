@@ -17,8 +17,10 @@
 # makes SGE put it back in the queue.
 trap 'exit 99' SIGUSR2
 
-
-# "jobscripts" are things that should be passed to qsub.
+# point TMPDIR to 'saveme' subdirectory of local scratch space, to
+# allow BLCR to checkpoint everything.
+export TMPDIR="$TMPDIR/saveme"
+mkdir -p $TMPDIR
 
 # base directory of the simulation script
 startdir=`pwd`
@@ -31,7 +33,8 @@ stim_pattern_number=$((SGE_TASK_ID - 1))
 
 hostname
 date
-/usr/bin/time nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number legion
+echo "Working in local scratch space $TMPDIR"
+/usr/bin/time nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number
 
 # Clean up saved checkpoints for this job and exit cleanly.
 /usr/local/bin/onterminate clean
