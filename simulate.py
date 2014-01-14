@@ -43,10 +43,27 @@ with ClusterSystem() as system:
     tar_archive_path = work_dir+'/temporary_archive.tar'
     tar_archive = tarfile.open(tar_archive_path, 'w')
 
-    # set level of inhibition by modifying GrC model
+    # set level of inhibition by modifying GrC model. This is somewhat
+    # involved, to follow what was done with the binary model. If
+    # DTA=0, then the total amount of inhibitory conductance is
+    # independent of th number of dendrites, and it's given by the
+    # default value of gGABA_base multiplied by the gaba_scale
+    # factor. If DTA is not zero, then the total amount of conductance
+    # is gGABA_base*(d/4)(1+DTA*p(MF)). Note that this means that when
+    # DTA is not zero the total GABA conductance scales with the
+    # number of dendrites, and conversely it is not possible -
+    # strictly speaking - to have the GABA conductance depend on the
+    # number of dendrites but not on p(MF).
     gGABA_base = 438
-    extra_tonic_inhibition_in_nS = gGABA_base * (float(point.gaba_scale) - 1) / 1000
-    set_tonic_GABA(work_dir, extra_tonic_inhibition_in_nS)
+    if not point.dta:
+        total_GABA_conductance_in_pS = gGABA_base + point.extra_tonic_inhibition
+    else:
+        base_tonic_inhibition = (point.n_grc_dend/4) * gGABA_base
+        extra_inhibition_from_dta = (point.n_grc_dend/4) * (point.active_mf_fraction * point.dta) * gGABA_base
+        total_GABA_conductance_in_pS = base_tonic_inhibition + point.extra_tonic_inhibition + extra_tonic_inhibition_from_dta
+
+    total_GABA_conductance_in_nS = float(total_GABA_conductance_in_pS)/1000
+    set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
 
     # load project and initialise
     project_file = java.io.File(work_dir + "/" + project_filename)
