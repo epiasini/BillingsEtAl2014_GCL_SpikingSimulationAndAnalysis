@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib
 from matplotlib import pyplot as plt
+import matplotlib.colors as colors
+import matplotlib.cm as cmx
 
 from utils.parameters import ParameterSpace, ParameterSpacePoint
 from utils.parameters import PSlice as psl
@@ -15,10 +17,12 @@ from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter, Rast
 
 
 
-plot_mi_detail = False
 plot_mi_heatmap = True
-plot_sparseness = True
+plot_sparseness = False
+plot_mi_comparison_nsp = False
+plot_line_comparison = False
 
+plot_mi_detail = False
 plot_dendrograms = False
 plot_mutual_information = False
 plot_kl_divergence = False
@@ -33,20 +37,20 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(1, 21, 1)
+n_grc_dend = psl(4)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
-active_mf_fraction = psl(.1,1.,.1)
+active_mf_fraction = psl(.5)
 extra_tonic_inhibition = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
-n_stim_patterns = psl(128)
-n_trials = psl(50)
-sim_duration = psl(150.0)
+n_stim_patterns = psl(1024)
+n_trials = psl(200)
+sim_duration = psl(200.0)
 ana_duration = psl(150.0) # must be < min(sim_duration)
-training_size = psl(30) # must be < min(n_trials)
+training_size = psl(5,196,1) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
@@ -70,14 +74,76 @@ space = ParameterSpace(n_grc_dend,
                        linkage_method,
                        tau,
                        dt)
+
+
 space.load_analysis_results()
 
 if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures')
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_nsb', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
         plt.close(rhm.fig)
+
+if plot_mi_comparison_nsp:
+    n_stim_patterns_2 = psl(1024)
+    sim_duration_2 = psl(200)
+    space2 = ParameterSpace(n_grc_dend,
+                            connectivity_rule,
+                            input_spatial_correlation_scale,
+                            active_mf_fraction,
+                            extra_tonic_inhibition,
+                            stim_rate_mu,
+                            stim_rate_sigma,
+                            noise_rate_mu,
+                            noise_rate_sigma,
+                            n_stim_patterns_2,
+                            n_trials,
+                            sim_duration_2,
+                            ana_duration,
+                            training_size,
+                            multineuron_metric_mixing,
+                            linkage_method,
+                            tau,
+                            dt)
+    space2.load_analysis_results()
+
+    for gd in [4,5,6]:
+        subspace1 = space.get_nontrivial_subspace(('n_grc_dend', gd))
+        subspace2 = space2.get_nontrivial_subspace(('n_grc_dend', gd))
+        rhm1 = RectangularHeatmapPlotter(subspace1)
+        rhm2 = RectangularHeatmapPlotter(subspace2)
+        fig, ax, data1 = rhm1.plot(heat_dim='point_mi_qe')
+        fig, ax, data2 = rhm2.plot(heat_dim='point_mi_qe')
+        fig_mi_compare, ax_mi_compare = plt.subplots()
+        ax_mi_compare.plot(subspace1.get_range('active_mf_fraction'), data1.flat/np.log2(128), label='128 patterns', linewidth=1.5, color='k')
+        ax_mi_compare.plot(subspace2.get_range('active_mf_fraction'), data2.flat/np.log2(1024), label='1024 patterns', linewidth=1.5, color='r')
+        ax_mi_compare.set_xlabel('p(MF)')
+        ax_mi_compare.set_ylabel('MI/H(input)')
+        ax_mi_compare.legend(loc='best')
+        ax_mi_compare.set_title('{} dendrites'.format(gd))
+        fig_mi_compare.savefig('mi_nsp_comparison_gd{}.png'.format(gd))
+
+if plot_line_comparison:
+    cm = plt.get_cmap('RdYlBu') 
+    c_norm  = colors.Normalize(vmin=0, vmax=space.get_range('n_grc_dend')[-1])
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+
+    fig_mi, ax_mi = plt.subplots()
+    fig_sparseness, ax_sparseness = plt.subplots()
+    ax_mi.set_xlabel('p(MF)')
+    ax_mi.set_ylabel('MI (bits)')
+    ax_sparseness.set_xlabel('p(MF)')
+    ax_sparseness.set_ylabel('p(GC)')
+    for gd in space.get_range('n_grc_dend'):
+        subspace = space.get_nontrivial_subspace(('n_grc_dend', gd))
+        data_mi = subspace._get_attribute_array('point_mi_qe')
+        data_o_sparseness = subspace._get_attribute_array('o_sparseness_activity')
+        color = scalar_map.to_rgba(gd)
+        ax_mi.plot(subspace.get_range('active_mf_fraction'), data_mi, color=color)
+        ax_sparseness.plot(subspace.get_range('active_mf_fraction'), data_o_sparseness, color=color)
+    fig_mi.savefig('line_detail_mi.png')
+    fig_sparseness.savefig('line_detail_sparseness.png')
 
 if plot_sparseness:
     for noise in space.get_range('noise_rate_mu'):
@@ -85,7 +151,7 @@ if plot_sparseness:
         rhm = RectangularHeatmapPlotter(subspace)
         fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures')
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures')
+        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
         #print data_o
         rhm = RectangularHeatmapPlotter(subspace)
         fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
@@ -114,7 +180,7 @@ if plot_sparseness:
         data[data_amp>1] = np.NaN
         cmap = matplotlib.cm.get_cmap('coolwarm')
         cmap.set_bad('k', 1.)
-        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower')
+        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower', vmin=0, vmax=1)
         cbar = fig.colorbar(plot)
         cbar.set_label('MI / H(input)')
         ax.set_xlabel('p(MF)')
