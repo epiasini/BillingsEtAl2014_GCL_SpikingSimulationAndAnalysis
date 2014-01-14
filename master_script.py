@@ -16,6 +16,8 @@ connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
 extra_tonic_inhibition = psl(0)
+dta = psl(0)
+modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
@@ -51,6 +53,8 @@ parameter_space = ParameterSpace(n_grc_dend,
                                  input_spatial_correlation_scale,
                                  active_mf_fraction,
                                  extra_tonic_inhibition,
+                                 dta,
+                                 modulation_frequency,
                                  stim_rate_mu,
                                  stim_rate_sigma,
                                  noise_rate_mu,
