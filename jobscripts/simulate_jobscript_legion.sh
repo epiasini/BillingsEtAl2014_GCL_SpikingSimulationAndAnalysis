@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #$ -S /bin/bash
-#$ -cwd
+#$ -wd /home/ucbtepi/Scratch/output
 #$ -o $HOME/log/
 #$ -e $HOME/log/
 #$ -l mem=5G
-#$ -l h_rt=7:45:00
+#$ -l h_rt=5:30:00
 #$ -P gclayer13
 
 # Set the checkpointing mechanism as BLCR
@@ -22,8 +22,9 @@ trap 'exit 99' SIGUSR2
 export TMPDIR="$TMPDIR/saveme"
 mkdir -p $TMPDIR
 
-# base directory of the simulation script
-startdir=`pwd`
+export nC_home=$HOME/local/src/neuroConstruct
+export src_dir=$HOME/code/network/src
+
 # string describing the parameter space point
 parameter_space_point=$1
 # number of the stim pattern which is going to be simulated (keep in
@@ -34,7 +35,7 @@ stim_pattern_number=$((SGE_TASK_ID - 1))
 hostname
 date
 echo "Working in local scratch space $TMPDIR"
-/usr/bin/time nC.sh -python $startdir/simulate.py $parameter_space_point $stim_pattern_number
+/usr/bin/time $nC_home/nC.sh -python $src_dir/simulate.py $parameter_space_point $stim_pattern_number
 
 # Clean up saved checkpoints for this job and exit cleanly.
 /usr/local/bin/onterminate clean
