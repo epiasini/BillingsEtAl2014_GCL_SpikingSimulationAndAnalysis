@@ -12,7 +12,7 @@ class SimpleParameterSpacePoint(object):
                  connectivity_rule,
                  input_spatial_correlation_scale,
                  active_mf_fraction,
-                 extra_tonic_inhibition,
+                 gaba_scale,
                  dta,
                  modulation_frequency,
                  stim_rate_mu,
@@ -27,7 +27,7 @@ class SimpleParameterSpacePoint(object):
         self.connectivity_rule = int(round(connectivity_rule ))
         self.input_spatial_correlation_scale = input_spatial_correlation_scale
         self.active_mf_fraction = active_mf_fraction
-        self.extra_tonic_inhibition = extra_tonic_inhibition
+        self.gaba_scale = gaba_scale
         self.dta = dta
         self.modulation_frequency = modulation_frequency
         self.stim_rate_mu = stim_rate_mu
@@ -50,14 +50,14 @@ class SimpleParameterSpacePoint(object):
                                                                  self.active_mf_fraction)
         self.stim_pattern_filename = "%s/sp%d_stim.txt" % (self.stim_pattern_folder_path,
                                                            self.n_stim_patterns)
-        self.data_folder_path = "%s/b%04d/dta%.1f/mod%d/sm%d/ss%d/nm%d/ns%d" % (self.stim_pattern_folder_path,
-                                                                                self.extra_tonic_inhibition,
-                                                                                self.dta,
-                                                                                self.modulation_frequency,
-                                                                                self.stim_rate_mu,
-                                                                                self.stim_rate_sigma,
-                                                                                self.noise_rate_mu,
-                                                                                self.noise_rate_sigma)
+        self.data_folder_path = "%s/b%.02fd/dta%.01f/mod%d/sm%d/ss%d/nm%d/ns%d" % (self.stim_pattern_folder_path,
+                                                                                   self.gaba_scale,
+                                                                                   self.dta,
+                                                                                   self.modulation_frequency,
+                                                                                   self.stim_rate_mu,
+                                                                                   self.stim_rate_sigma,
+                                                                                   self.noise_rate_mu,
+                                                                                   self.noise_rate_sigma)
         # the spike archive the point gets associated with can be an
         # archive for a larger set of simulations. For example, if
         # this point has n_stim_patterns=128, n_trials=50 and
@@ -82,7 +82,7 @@ class SimpleParameterSpacePoint(object):
         assert self.n_mf + self.n_grc == self.network_graph.number_of_nodes()
     def representation(self):
         # MUST NOT HAVE SPACES (see how simulations are submitted)
-        return "SimpleParameterSpacePoint(%d,%d,%f,%f,%d,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.connectivity_rule, self.input_spatial_correlation_scale, self.active_mf_fraction, self.extra_tonic_inhibition, self.dta, self.modulation_frequency, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
+        return "SimpleParameterSpacePoint(%d,%d,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.connectivity_rule, self.input_spatial_correlation_scale, self.active_mf_fraction, self.gaba_scale, self.dta, self.modulation_frequency, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def representation_without_commas(self):
         # sanitised version of the Point representation, with commas
         # replaced by | signs. This is needed because of a known bug
@@ -92,7 +92,7 @@ class SimpleParameterSpacePoint(object):
     def __repr__(self):
         return self.representation()
     def __str__(self):
-        return "gd: %d | mf: %.1f | b: %d | dta: %f | mod: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d | sdur: %d" % (self.n_grc_dend, self.active_mf_fraction, self.extra_tonic_inhibition, self.dta, self.modulation_frequency, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
+        return "gd: %d | mf: %.1f | b: %f | dta: %f | mod: %d | sr_mu: %d | sr_s: %d | nr_mu: %d | nr_s: %d | nsp: %d | t: %d | sdur: %d" % (self.n_grc_dend, self.active_mf_fraction, self.gaba_scale, self.dta, self.modulation_frequency, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def get_simulation_reference(self, stimulus_pattern_index, trial):
         """
         Return the simulation reference (the name of the relative subdirectory) of a given element in a batch of simulations.
