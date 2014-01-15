@@ -49,20 +49,17 @@ with ClusterSystem() as system:
     # independent of th number of dendrites, and it's given by the
     # default value of gGABA_base multiplied by the gaba_scale
     # factor. If DTA is not zero, then the total amount of conductance
-    # is gGABA_base*(d/4)(1+DTA*p(MF)). Note that this means that when
-    # DTA is not zero the total GABA conductance scales with the
-    # number of dendrites, and conversely it is not possible -
-    # strictly speaking - to have the GABA conductance depend on the
-    # number of dendrites but not on p(MF).
-    gGABA_base = 438
+    # is gaba_scale*gGABA_base*(d/4)(1+DTA*p(MF)). Note that this
+    # means that when DTA is not zero the total GABA conductance
+    # scales with the number of dendrites, and conversely it is not
+    # possible - strictly speaking - to have the GABA conductance
+    # depend on the number of dendrites but not on p(MF).
+    gGABA_base = 438.
     if not point.dta:
-        total_GABA_conductance_in_pS = gGABA_base + point.extra_tonic_inhibition
+        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale
     else:
-        base_tonic_inhibition = (point.n_grc_dend/4) * gGABA_base
-        extra_inhibition_from_dta = (point.n_grc_dend/4) * (point.active_mf_fraction * point.dta) * gGABA_base
-        total_GABA_conductance_in_pS = base_tonic_inhibition + point.extra_tonic_inhibition + extra_tonic_inhibition_from_dta
-
-    total_GABA_conductance_in_nS = float(total_GABA_conductance_in_pS)/1000
+        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (point.n_grc_dend/4) * (1 + (point.active_mf_fraction * point.dta))
+    total_GABA_conductance_in_nS = total_GABA_conductance_in_pS/1000.
     set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
 
     # load project and initialise
