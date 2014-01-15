@@ -31,7 +31,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                  connectivity_rule,
                  input_spatial_correlation_scale,
                  active_mf_fraction,
-                 extra_tonic_inhibition,
+                 gaba_scale,
+                 dta,
+                 modulation_frequency,
                  stim_rate_mu,
                  stim_rate_sigma,
                  noise_rate_mu,
@@ -49,7 +51,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                                                   connectivity_rule,
                                                   input_spatial_correlation_scale,
                                                   active_mf_fraction,
-                                                  extra_tonic_inhibition,
+                                                  gaba_scale,
+                                                  dta,
+                                                  modulation_frequency,
                                                   stim_rate_mu,
                                                   stim_rate_sigma,
                                                   noise_rate_mu,
@@ -167,7 +171,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
                     ts_decoded_mi_nsb[n_clusts-1] = s.I()            
                     if n_clusts == self.n_stim_patterns:
-                        px_at_same_size_point = s.PX  
+                        px_at_same_size_point = s.PX
                     
             else:
                 import pymuvr
@@ -229,6 +233,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             #random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
             o_synchrony = np.array([0]) #np.mean([synchrony(p) for p in random_fields_subset])
             # save analysis results in the archive
+            print('updating results archive')
             self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
             self.results_arch.update_result('tr_linkage', data=tr_tree)
             self.results_arch.update_result('tr_direct_mi', data=tr_direct_mi)
@@ -260,7 +265,9 @@ class ParameterSpace(np.ndarray):
         'connectivity_rule',
         'input_spatial_correlation_scale',
         'active_mf_fraction',
-        'extra_tonic_inhibition',
+        'gaba_scale',
+        'dta',
+        'modulation_frequency',
         'stim_rate_mu',
         'stim_rate_sigma',
         'noise_rate_mu',
@@ -279,7 +286,9 @@ class ParameterSpace(np.ndarray):
                 connectivity_rule_slice,
                 input_spatial_correlation_scale_slice,
                 active_mf_fraction_slice,
-                extra_tonic_inhibition_slice,
+                gaba_scale_slice,
+                dta_slice,
+                modulation_frequency_slice,
                 stim_rate_mu_slice,
                 stim_rate_sigma_slice,
                 noise_rate_mu_slice,
@@ -301,7 +310,9 @@ class ParameterSpace(np.ndarray):
                      connectivity_rule_slice,
                      input_spatial_correlation_scale_slice,
                      active_mf_fraction_slice,
-                     extra_tonic_inhibition_slice,
+                     gaba_scale_slice,
+                     dta_slice,
+                     modulation_frequency_slice,
                      stim_rate_mu_slice,
                      stim_rate_sigma_slice,
                      noise_rate_mu_slice,
@@ -323,7 +334,9 @@ class ParameterSpace(np.ndarray):
             'connectivity_rule': 'cr',
             'input_spatial_correlation_scale': 'iscs',
             'active_mf_fraction': 'mf',
-            'extra_tonic_inhibition': 'b',
+            'gaba_scale': 'b',
+            'dta': 'dta',
+            'modulation_frequency': 'mod',
             'stim_rate_mu': 'sm',
             'stim_rate_sigma': 'ss',
             'noise_rate_mu': 'nm',

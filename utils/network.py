@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 from java.util import ArrayList
 
-from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings
+from ucl.physiol.neuroconstruct.simulation import RandomSpikeTrainSettings, RandomSpikeTrainVariableSettings
 from ucl.physiol.neuroconstruct.project.cellchoice import FixedNumberCells
 from ucl.physiol.neuroconstruct.utils import NumberGenerator
 
@@ -84,27 +84,34 @@ def generate_nC_stimuli(point, project, sim_config, stim_pattern):
                 rate = point.noise_rate_mu
 
         rate_in_khz = rate/1000.
-        stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
+        if not point.modulation_frequency:
+            stim_type = 'RandomSpikeTrain'
+            stim = RandomSpikeTrainSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, NumberGenerator(rate_in_khz), 'FastSynInput')
+        else:
+            stim_type = 'RandomSpikeTrainVariable'
+            modulation_frequency_in_khz = point.modulation_frequency/1000.
+            rate_string = '{} * (1 + 0.5 * sin(2 * 3.14159265 * t * {}))'.format(rate_in_khz, modulation_frequency_in_khz)
+            stim = RandomSpikeTrainVariableSettings('MF_stim_'+str(mf), 'MFs', FixedNumberCells(0), 0, rate_string, 'FastSynInput', NumberGenerator(0), NumberGenerator(point.sim_duration))
         project.elecInputInfo.addStim(stim)
         sim_config.addInput(stim.getReference())
-        project.generatedElecInputs.addSingleInput(stim.getReference(), 'RandomSpikeTrain', 'MFs', mf, 0, 0, None)
+        project.generatedElecInputs.addSingleInput(stim.getReference(), stim_type, 'MFs', mf, 0, 0, None)
 
-def set_tonic_GABA(project_dir, extra_conductance_in_nS, reversal_potential=-79.1):
+def set_tonic_GABA(project_dir, conductance_in_nS, reversal_potential=-79.1):
     """
-    Modify the IaF_GrC.nml file in the working copy of the nC project
-    to change the level of tonic GABA from what is originally set in
-    the model.
+    Modify the IaF_GrC_no_tonic_GABA.nml file in the working copy of
+    the nC project to change the level of tonic GABA from what is
+    originally set in the model.
 
     """
     ET.register_namespace('', 'http://www.neuroml.org/schema/neuroml2')
-    filename = project_dir + "/cellMechanisms/IaF_GrC/IaF_GrC.nml"
+    filename = project_dir + "/cellMechanisms/IaF_GrC_no_tonic_GABA/IaF_GrC_no_tonic_GABA.nml"
     tree = ET.parse(filename)
     root = tree.getroot()
     cell = root.find("{http://www.neuroml.org/schema/neuroml2}iafRefCell")
     old_conductance = float(cell.get('leakConductance').rstrip('nS'))
     old_reversal_potential = float(cell.get('leakReversal').rstrip('mV'))
-    new_conductance = old_conductance + extra_conductance_in_nS
-    new_reversal_potential = (old_conductance * old_reversal_potential + extra_conductance_in_nS * reversal_potential)/new_conductance
+    new_conductance = old_conductance + conductance_in_nS
+    new_reversal_potential = (old_conductance * old_reversal_potential + conductance_in_nS * reversal_potential)/new_conductance
     cell.set('leakConductance', '{}nS'.format(new_conductance))
     cell.set('leakReversal', '{}mV'.format(new_reversal_potential))
     tree.write(filename, encoding="UTF-8", xml_declaration=True)

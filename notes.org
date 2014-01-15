@@ -396,8 +396,17 @@ though, as we still need to vary p(MF) as an independent variable.
      The parameter has been renamed to ~extra_tonic_inhibition~ in
      [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. It still doesn't have any effect on the
      simulations, though.
-**** TODO Implement DTA
-**** TODO Implement simple sinusoidally varying input
+**** DONE Implement DTA
+     CLOSED: [2014-01-14 Tue 23:58]
+     - CLOSING NOTE [2014-01-14 Tue 23:58] \\
+       Done in [[magit:~/phd/code/network/src/::commit@64cf9fe][commit #64cf9fe]].
+**** DONE Implement simple sinusoidally varying input
+     CLOSED: [2014-01-14 Tue 23:59]
+     - CLOSING NOTE [2014-01-14 Tue 23:59] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6cbb7f6][commit #6cbb7f6]]. For the time being, the modulation
+       frequency is a parameter (so that it can be set to 0 or 8 in
+       the simplest comparison), but the amplitude of the modulation
+       is hardcoded at 50%.
 **** DONE Fix csv export of glomerular positions in Guy's mathematica notebook.
      CLOSED: [2013-12-08 Sun 19:03]
      - CLOSING NOTE [2013-12-08 Sun 19:03] \\

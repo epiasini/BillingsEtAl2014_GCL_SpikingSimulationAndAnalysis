@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
-"""Usage example: compress.py ParameterSpacePoint(300,6,2.00,4,5.00,0.5,-20,120,30,30,10,20,200,40,0,5,2) [clean_up={0|1}]"""
+"""Usage example: compress.py ParameterSpacePoint(4+0+0+0.5+1+0+0+80+0+10+0+128+50+200+150+30+0+1+5+2) [clean_up={0|1}]"""
 import sys
 import os
 import shutil
