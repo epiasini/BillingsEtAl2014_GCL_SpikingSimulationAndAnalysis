@@ -11,7 +11,7 @@ do
 	do
 	    pattern_dir=$data_dir/gd$gd/cr$cr/iscs0.00/f$mf
 	    target_dir_old=$pattern_dir/b0000
-	    target_dir_new=$pattern_dir/b1
+	    target_dir_new=$pattern_dir/b1.00
 	    mv -v $target_dir_old $target_dir_new
 	done
     done

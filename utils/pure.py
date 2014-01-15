@@ -50,7 +50,7 @@ class SimpleParameterSpacePoint(object):
                                                                  self.active_mf_fraction)
         self.stim_pattern_filename = "%s/sp%d_stim.txt" % (self.stim_pattern_folder_path,
                                                            self.n_stim_patterns)
-        self.data_folder_path = "%s/b%.02fd/dta%.01f/mod%d/sm%d/ss%d/nm%d/ns%d" % (self.stim_pattern_folder_path,
+        self.data_folder_path = "%s/b%.02f/dta%.01f/mod%d/sm%d/ss%d/nm%d/ns%d" % (self.stim_pattern_folder_path,
                                                                                    self.gaba_scale,
                                                                                    self.dta,
                                                                                    self.modulation_frequency,
