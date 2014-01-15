@@ -102,6 +102,8 @@ class ResultsArchive(object):
             #self.point.decoder_precision = (1./self.point.tr_linkage)[:,2][::-1]
             self.point.point_mi_plugin = self.point.ts_decoded_mi_plugin[self.point.n_stim_patterns]
             self.point.point_mi_qe = self.point.ts_decoded_mi_qe[self.point.n_stim_patterns-1]
+            self.point.point_mi_pt = self.point.ts_decoded_mi_pt[self.point.n_stim_patterns-1]
+            self.point.point_mi_nsb = self.point.ts_decoded_mi_nsb[self.point.n_stim_patterns-1]
             #self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns-1]
             #self.point.o_level_entropy = entropy(self.point.o_level_hist_values/float(self.point.o_level_hist_values.sum()))
             #self.point.o_level_average_spiken = np.zeros(shape=(self.point.n_stim_patterns, self.point.n_grc))

@@ -164,6 +164,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     X_dims = (Xn, Xm)
                     X = decoded_output
                     s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                    s.calculate_entropies(method='plugin', calc=['HX', 'HXY'])
+                    ts_decoded_mi_plugin[n_clusts-1] = s.I()
                     s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
                     ts_decoded_mi_qe[n_clusts-1] = s.I()
                     s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
