@@ -533,6 +533,7 @@ though, as we still need to vary p(MF) as an independent variable.
      This, togheter with the previous item, should allow easy re-running
      of specific patterns if something goes wrong during simulations and
      not all patterns for a given data point reach completion.
+**** TODO Enable gz compression on hdf5 spike archives.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
