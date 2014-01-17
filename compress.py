@@ -79,21 +79,24 @@ with ClusterSystem() as system:
                     with h5py.File(sim_data_path) as spike_file:
                         dataset_mf = spike_file['MFs']['SPIKE_0']
                         dataset_grc = spike_file['GrCs']['SPIKE_min40']
-                        # set chunk shapes for hdf5 compression. The
-                        # spike times are 64-bit floats, so a maximum
-                        # chunk of 512 cells by 64 spikes works out to
-                        # weigh 256kB. This is within the recommended
+                        # set chunk shapes for hdf5 compression. If
+                        # the spike times are 64-bit floats, a
+                        # maximum-size chunk of 512 cells by 64 spikes
+                        # weighs 256kB. This is within the recommended
                         # chunk size limits (10kB to 300kB) specified
                         # in the h5py documentation. If the spike data
                         # for a given cell type on a trial is larger
                         # than this limit, we just make a chunk for
                         # each single-cell spike train.
                         chunk_size_max = 512*64
-                        chunk_shape_mf = dataset_mf.shape
-                        chunk_shape_grc = dataset_grc.shape
-                        for shape in (chunk_shape_mf, chunk_shape_grc):
-                            if np.prod(shape) > chunk_size_max:
-                                shape[1] = 1
+                        if np.prod(dataset_mf.shape) <= chunk_size_max:
+                            chunk_shape_mf = dataset_mf.shape
+                        else:
+                            chunk_shape_mf = (dataset_mf.shape[0], 1)
+                        if np.prod(dataset_grc.shape) <= chunk_size_max:
+                            chunk_shape_grc = dataset_grc.shape
+                        else:
+                            chunk_shape_grc = (dataset_grc.shape[0], 1)
                         target_data_group.create_dataset("mf_spiketimes",
                                                          data=dataset_mf,
                                                          compression="gzip",
