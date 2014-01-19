@@ -112,11 +112,16 @@ class ResultsArchive(object):
         target_group = self._open()
         if result_name in target_group.keys():
             del target_group[result_name]
-        # compress dataset, but leave it to h5py to determine chunk
-        # size as the datasets we expect to see here are zero- or
-        # one-dimensional.
-        target_group.create_dataset(result_name,
-                                    data=data,
-                                    compression='gzip',
-                                    compression_opts=9)
+        if np.isscalar(data):
+            # if dataset is scalar, store it uncompressed.
+            target_group.create_dataset(result_name,
+                                        data=data)
+        else:
+            # compress dataset, but leave it to h5py to determine
+            # chunk size as the datasets we expect to see here are
+            # one-dimensional.
+            target_group.create_dataset(result_name,
+                                        data=data,
+                                        compression='gzip',
+                                        compression_opts=9)
         self._close()
