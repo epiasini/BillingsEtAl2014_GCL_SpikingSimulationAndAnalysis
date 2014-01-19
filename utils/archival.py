@@ -51,22 +51,16 @@ class ResultsArchive(object):
     def __init__(self, point):
         self.point = point
         self.path = "{0}/mi.hdf5".format(self.point.data_folder_path)
-        self.datasets = ['tr_indexes',
-                         'tr_linkage',
-                         'tr_direct_mi',
-                         'ts_decoded_mi_plugin',
-                         'ts_decoded_mi_bootstrap',
+        self.datasets = ['ts_decoded_mi_plugin',
                          'ts_decoded_mi_qe',
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
-                         'px_at_same_size_point',
                          'i_level_array',
                          'i_sparseness_hoyer',
                          'i_sparseness_activity',
                          'o_level_array',
                          'o_sparseness_hoyer',
-                         'o_sparseness_activity',
-                         'o_synchrony']
+                         'o_sparseness_activity']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])
@@ -99,17 +93,10 @@ class ResultsArchive(object):
             for ds in self.datasets:
                 setattr(self.point, ds, np.array(target_group[ds]))
             self._close()
-            #self.point.decoder_precision = (1./self.point.tr_linkage)[:,2][::-1]
-            self.point.point_mi_plugin = self.point.ts_decoded_mi_plugin[self.point.n_stim_patterns]
+            self.point.point_mi_plugin = self.point.ts_decoded_mi_plugin[self.point.n_stim_patterns-1]
             self.point.point_mi_qe = self.point.ts_decoded_mi_qe[self.point.n_stim_patterns-1]
             self.point.point_mi_pt = self.point.ts_decoded_mi_pt[self.point.n_stim_patterns-1]
             self.point.point_mi_nsb = self.point.ts_decoded_mi_nsb[self.point.n_stim_patterns-1]
-            #self.point.point_separation = 1./self.point.decoder_precision[self.point.n_stim_patterns-1]
-            #self.point.o_level_entropy = entropy(self.point.o_level_hist_values/float(self.point.o_level_hist_values.sum()))
-            #self.point.o_level_average_spiken = np.zeros(shape=(self.point.n_stim_patterns, self.point.n_grc))
-            #self.point.sparseness_optimality = (1 - np.abs(self.point.o_population_sparseness-0.5))
-            #self.point.new_measure =  self.point.sparseness_optimality * float(self.point.point_separation)
-            #self.point.point_precision = self.point.decoder_precision[self.point.n_stim_patterns]
             return True
         else:
             # the hdf5 archive seems to be incomplete or missing
@@ -125,5 +112,11 @@ class ResultsArchive(object):
         target_group = self._open()
         if result_name in target_group.keys():
             del target_group[result_name]
-        target_group.create_dataset(result_name, data=data)
+        # compress dataset, but leave it to h5py to determine chunk
+        # size as the datasets we expect to see here are zero- or
+        # one-dimensional.
+        target_group.create_dataset(result_name,
+                                    data=data,
+                                    compression='gzip',
+                                    compression_opts=9)
         self._close()
