@@ -58,7 +58,7 @@ with ClusterSystem() as system:
     if not point.dta:
         total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale
     else:
-        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (point.n_grc_dend/4) * (1 + (point.active_mf_fraction * point.dta))
+        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (float(point.n_grc_dend)/4) * (1 + (point.active_mf_fraction * point.dta))
     total_GABA_conductance_in_nS = total_GABA_conductance_in_pS/1000.
     set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
 
