@@ -80,15 +80,15 @@ with ClusterSystem() as system:
                         dataset_mf = spike_file['MFs']['SPIKE_0']
                         dataset_grc = spike_file['GrCs']['SPIKE_min40']
                         # set chunk shapes for hdf5 compression. If
-                        # the spike times are 64-bit floats, a
-                        # maximum-size chunk of 512 cells by 64 spikes
+                        # the spike times are 32-bit floats, a
+                        # maximum-size chunk of 512 cells by 128 spikes
                         # weighs 256kB. This is within the recommended
                         # chunk size limits (10kB to 300kB) specified
                         # in the h5py documentation. If the spike data
                         # for a given cell type on a trial is larger
                         # than this limit, we just make a chunk for
                         # each single-cell spike train.
-                        chunk_size_max = 512*64
+                        chunk_size_max = 512*128
                         if np.prod(dataset_mf.shape) <= chunk_size_max:
                             chunk_shape_mf = dataset_mf.shape
                         else:
