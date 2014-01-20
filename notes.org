@@ -1045,7 +1045,14 @@ Command exited with non-zero status 1
    CLOSED: [2014-01-20 Mon 11:05]
 ** DONE Decoder performance: MI vs size of training set
    CLOSED: [2014-01-20 Mon 11:05]
-** TODO For a given parameter space point, MI vs simulation and analysis length
+** DONE For a given parameter space point, MI vs simulation and analysis length
+   CLOSED: [2014-01-20 Mon 17:41]
+   #+NAME: fig:ana_duration
+   #+CAPTION: MI vs analysis window length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and simulation length of 200ms.
+   [[file:fig/ana_duration.png][file:fig/ana_duration.png]]
+   #+NAME: fig:sim_duration
+   #+CAPTION: MI vs simulation length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and analysis window length of 50ms.
+   [[file:fig/sim_duration.png][file:fig/sim_duration.png]]
 ** TODO Sparse encodable range vs integration window length
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
