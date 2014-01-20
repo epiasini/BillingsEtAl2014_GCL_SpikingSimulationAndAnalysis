@@ -533,7 +533,11 @@ though, as we still need to vary p(MF) as an independent variable.
      This, togheter with the previous item, should allow easy re-running
      of specific patterns if something goes wrong during simulations and
      not all patterns for a given data point reach completion.
-**** TODO Enable gz compression on hdf5 spike archives.
+**** DONE Enable gz compression on hdf5 spike archives.
+     CLOSED: [2014-01-19 Sun 18:37]
+     - CLOSING NOTE [2014-01-19 Sun 18:37] \\
+       Done in [[magit:~/phd/code/network/src/::commit@37d9a97][commit #37d9a97]] for the spike archives and in [[magit:~/phd/code/network/src/::commit@278a7ba][commit #278a7ba]]
+       for the results archives.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -570,8 +574,45 @@ though, as we still need to vary p(MF) as an independent variable.
      CLOSED: [2013-12-25 Wed 00:19]
      - CLOSING NOTE [2013-12-25 Wed 00:19] \\
        Done in [[magit:~/phd/code/network/src/::commit@3373e73][commit #3373e73]].
-**** TODO Test decoder performance for convergence speed (performance vs size of training set)
-**** TODO Test decoder performance for rubustness against noise (performance vs size of testing set)
+**** DONE Test decoder performance for convergence speed (performance vs size of training set)
+     CLOSED: [2014-01-20 Mon 10:55]
+     - CLOSING NOTE [2014-01-20 Mon 10:55] \\
+       Settled on batch k-means and 30 trials per pattern in the training set
+       after discussing it with Angus.
+     Standard k-means seems to perform much better than mini-batch
+     k-means. I suspect much of the difference in performance to come
+     from the fact that the mini-batch algorithm is run only once; by
+     contrast, the batch implementation is restarted several (10 by
+     default) times, and this makes it much less likely to get stuck
+     in a local minimum for inertia. In fact, with less than 100-150
+     repetitions per pattern to train on, the final clustering given
+     by the mini-batch implementation seems to be very 'noisy', in the
+     sense that for a given parameter space point the final MI value
+     calculated with a decoder trained with mini-batch k-means can be
+     very different (even a 15% difference in information) between
+     different runs of the same analysis (or of very similar analysis,
+     like when doing a parameter sweep on ~training_size~). Using
+     batch k-means, we can use as few as 30 trials per pattern to
+     train the decoder, and still be quite close to extracting all the
+     available information (see figure [[fig:traning_size]]).
+     #+NAME: fig:training_size
+     #+CAPTION: MI vs training size for 4 dendrites, p(MF)=0.1, 1024 patterns and 200 trials per pattern.
+     [[file:fig/training_size_gd4_f01_sp1024_t200.png][file:fig/training_size_gd4_f01_sp1024_t200.png]]
+**** DONE Test decoder performance for rubustness against noise (performance vs size of testing set)
+     CLOSED: [2014-01-20 Mon 10:56]
+     - CLOSING NOTE [2014-01-20 Mon 10:56] \\
+       Settled on 30 'testing' trials per pattern (thus 60 trials overall,
+       including the ones used for training the decoder) after discussing it
+       with Angus.
+     The quadratic extrapolation method appears to give the most
+     stable bias correction. As can be seen in figure [[fig:n_trials]],
+     even for fairly adversarial conditions to information
+     transmission (and thus MI estimation) 30 trials seems to be
+     enough for the testing set.
+     #+NAME: fig:n_trials
+     #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
+     [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
+
 *** DONE Get the whole workflow to run on *Legion*.
     CLOSED: [2013-12-26 Thu 00:37]
     - CLOSING NOTE [2013-12-26 Thu 00:37] \\
@@ -1000,8 +1041,11 @@ Command exited with non-zero status 1
 647.71user 4.11system 33:52.91elapsed 32%CPU (0avgtext+0avgdata 12994880maxresident)k
 0inputs+0outputs (1major+831036minor)pagefaults 0swaps
 #+END_SRC
-** TODO Bias: MI vs size of testing set or number of clusters
-** TODO Decoder performance: MI vs size of training set
+** DONE Bias: MI vs size of testing set or number of clusters
+   CLOSED: [2014-01-20 Mon 11:05]
+** DONE Decoder performance: MI vs size of training set
+   CLOSED: [2014-01-20 Mon 11:05]
+** TODO For a given parameter space point, MI vs simulation and analysis length
 ** TODO Sparse encodable range vs integration window length
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
