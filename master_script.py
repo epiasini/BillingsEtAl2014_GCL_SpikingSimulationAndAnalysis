@@ -11,7 +11,7 @@ force_rerun_simulations = False
 clean_up_simulation_files = True
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(4, 11, 1)
+n_grc_dend = psl(1, 11, 1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
@@ -23,10 +23,10 @@ stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
 n_stim_patterns = psl(128)
-n_trials = psl(50)
-sim_duration = psl(150.0)
+n_trials = psl(60)
+sim_duration = psl(200.0)
 ana_duration = psl(150.0) # must be < min(sim_duration)
-training_size = psl(5) # must be < min(n_trials)
+training_size = psl(30) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
