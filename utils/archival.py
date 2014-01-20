@@ -26,6 +26,13 @@ class SpikesArchive(object):
         spikes = [[c[c>start_time].tolist() for c in o.transpose()] for o in observation_list]
         return spikes
     def get_spike_counts(self, cell_type='grc'):
+        """
+        Get (n_stim_patterns*n_trials, n_cells)-sized array of spike
+        counts for the given cell type, calculated considering only
+        the spikes t such that
+        (sim_duration-ana_duration) < t < sim_duration
+
+        """
         self.load_attrs()
         n_cells = self.attrs['n_'+cell_type]
         start_time = self.point.sim_duration - self.point.ana_duration
@@ -36,7 +43,7 @@ class SpikesArchive(object):
                 spikes = np.array(hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, trial, cell_type)])
                 if spikes.size:
                     # that is, if the network was not completely silent in this observation
-                    spike_counts[spn*self.point.n_trials + trial] = np.sum(spikes > start_time, axis=0)
+                    spike_counts[spn*self.point.n_trials + trial] = np.sum(np.logical_and(spikes > start_time, spikes < self.point.sim_duration), axis=0)
         hdf5_handle.close()
         return spike_counts
 
