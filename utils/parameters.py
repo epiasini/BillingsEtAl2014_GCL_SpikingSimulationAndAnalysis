@@ -4,7 +4,7 @@ import functools
 import random
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import KMeans
 import pyentropy as pe
 
 from pure import SimpleParameterSpacePoint
@@ -149,8 +149,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 tr_spike_counts = np.array([spike_counts[o] for o in train_idxs])
                 ts_spike_counts = np.array([spike_counts[o] for o in test_idxs])
                 for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1, clusts_step):
-                    clustering = MiniBatchKMeans(n_clusters=n_clusts,
-                                                 batch_size=int(round(n_tr_obs/5.)))
+                    clustering = KMeans(n_clusters=n_clusts)
                     print('performing k-means clustering on training set (training the decoder) for k='+str(n_clusts))
                     clustering.fit(tr_spike_counts)
                     print('using the decoder trained with k-means clustering to classify data points in testing set')
