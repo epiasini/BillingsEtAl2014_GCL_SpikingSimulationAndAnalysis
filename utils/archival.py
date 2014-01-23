@@ -11,6 +11,7 @@ class SpikesArchive(object):
     def load_attrs(self):
         with h5py.File(self.path) as hdf5_handle:
             self.attrs = dict(hdf5_handle.attrs)
+        self.slices_per_trial = int(1 + (self.attrs['sim_duration'] - self.point.sim_duration)//(self.point.ana_duration + self.point.SIM_DECORRELATION_TIME))
     def get_spikes(self, cell_type='grc'):
         # no need to lock the archive or to save the file handle,
         # since we plan on using this in read-only mode.  TODO: this
@@ -40,10 +41,14 @@ class SpikesArchive(object):
         spike_counts = np.zeros((self.point.n_stim_patterns * self.point.n_trials, n_cells))
         for spn in range(self.point.n_stim_patterns):
             for trial in range(self.point.n_trials):
-                spikes = np.array(hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, trial, cell_type)])
+                archive_trial = trial // self.slices_per_trial
+                slice_number = trial - archive_trial
+                slice_start = self.point.sim_transient_time + slice_number * (self.point.ana_duration + self.point.SIM_DECORRELATION_TIME)
+                slice_end = slice_start + self.point.ana_duration
+                spikes = np.array(hdf5_handle['/{0:03d}/{1:02d}/{2}_spiketimes'.format(spn, archive_trial, cell_type)])
                 if spikes.size:
                     # that is, if the network was not completely silent in this observation
-                    spike_counts[spn*self.point.n_trials + trial] = np.sum(np.logical_and(spikes > start_time, spikes < self.point.sim_duration), axis=0)
+                    spike_counts[spn*self.point.n_trials + trial] = np.sum(np.logical_and(spikes > slice_start, spikes < slice_end), axis=0)
         hdf5_handle.close()
         return spike_counts
 

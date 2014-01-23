@@ -47,6 +47,14 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                  linkage_method,
                  tau,
                  dt):
+        #--analysis-specific coordinates
+        self.ana_duration = ana_duration
+        self.training_size = int(round(training_size))
+        self.multineuron_metric_mixing = multineuron_metric_mixing
+        self.linkage_method = int(round(linkage_method))
+        self.tau = tau
+        self.dt = dt
+        self.linkage_method_string = ['ward', 'kmeans'][self.linkage_method]
         super(ParameterSpacePoint, self).__init__(n_grc_dend,
                                                   connectivity_rule,
                                                   input_spatial_correlation_scale,
@@ -61,14 +69,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                                                   n_stim_patterns,
                                                   n_trials,
                                                   sim_duration)
-        #--analysis-specific coordinates
-        self.ana_duration = ana_duration
-        self.training_size = int(round(training_size))
-        self.multineuron_metric_mixing = multineuron_metric_mixing
-        self.linkage_method = int(round(linkage_method))
-        self.tau = tau
-        self.dt = dt
-        self.linkage_method_string = ['ward', 'kmeans'][self.linkage_method]
+        #--useful quantities
+        self.sim_transient_time = self.sim_duration - self.ana_duration
         #--archive objects
         self.spikes_arch = SpikesArchive(self)
         self.results_arch = ResultsArchive(self)
@@ -91,6 +93,25 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         # arguments contain commas.
         return self.__repr__().replace(',', '+')
 
+    def is_spike_archive_compatible(self, path):
+        """Check if the archive at the given path, if present, is suitable
+        for providing the simulation data necessary to perform the
+        analysis specified by this data point. Simulation duration and
+        number of stimulus patterns need to be greater in the archive
+        than in the analysis settings, while the number of trials that
+        can be extracted from the archive can depend (via time
+        slicing) on the length of the original simulations compared to
+        the length of the analysis duration and the transient time (ie
+        sim_duration-ana_duration) we are asking for.
+
+        """
+        path_sdur = float(path.rstrip('.hdf5').partition('sdur')[2])
+        path_n_trials = float(path.rpartition('_t')[2].partition('_sdur')[0]) * (1 + max(0, (path_sdur - self.sim_duration)//(self.ana_duration + self.SIM_DECORRELATION_TIME)))
+        path_spn = float(path.rpartition('_t')[0].rpartition('sp')[2])
+        sdur_c = path_sdur >= self.sim_duration
+        n_trials_c = path_n_trials >= self.n_trials
+        spn_c = path_spn >= self.n_stim_patterns
+        return all([sdur_c, n_trials_c, spn_c])
     #-------------------
     # Simulation methods
     #-------------------
