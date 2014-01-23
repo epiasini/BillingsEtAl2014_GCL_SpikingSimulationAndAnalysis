@@ -53,7 +53,7 @@ class SpikesArchive(object):
         pattern = np.asarray(hdf5_handle['/{0:03d}/stim_pattern'.format(stim_pattern_number)])
         hdf5_handle.close()
         return pattern
-        
+  
 class ResultsArchive(object):
     def __init__(self, point):
         self.point = point
@@ -62,10 +62,8 @@ class ResultsArchive(object):
                          'ts_decoded_mi_qe',
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
-                         'i_level_array',
                          'i_sparseness_hoyer',
                          'i_sparseness_activity',
-                         'o_level_array',
                          'o_sparseness_hoyer',
                          'o_sparseness_activity']
     def _is_archive_on_disk_complete(self):
@@ -132,3 +130,29 @@ class ResultsArchive(object):
                                         compression='gzip',
                                         compression_opts=9)
         self._close()
+
+def create_chunked_spike_dataset(group,
+                                 name,
+                                 data)
+    # set chunk shapes for hdf5 compression of spike data. If the
+    # spike times are 32-bit floats, a maximum-size chunk of 512 cells
+    # by 128 spikes weighs 256kB. This is within the recommended chunk
+    # size limits (10kB to 300kB) specified in the h5py
+    # documentation. If the spike data for a given cell type on a
+    # trial is larger than this limit, we just make a chunk for each
+    # single-cell spike train.
+    CHUNK_SIZE_MAX = 512*128
+    data_size = np.prod(data.shape)
+    if data_size <= 1:
+        # do not attempt to compress empty or scalar datasets
+        group.create_dataset(name, data=data)
+    else:
+        if data_size <= CHUNK_SIZE_MAX:
+            chunk_shape = data.shape
+        else:
+            chunk_shape = (data.shape[0], 1)
+        group.create_dataset(name,
+                             data=data,
+                             compression='gzip',
+                             compression_opts=9,
+                             chunks=chunk_shape)

@@ -12,6 +12,7 @@ import numpy as np
 
 from utils.parameters import ParameterSpacePoint
 from utils.cluster_system import ClusterSystem
+from utils.archival import create_chunked_spike_dataset
 
 point = eval(sys.argv[1].replace('+', ','))
 
@@ -77,36 +78,12 @@ with ClusterSystem() as system:
             while compression_attempts < max_compression_attempts:
                 try:
                     with h5py.File(sim_data_path) as spike_file:
-                        dataset_mf = spike_file['MFs']['SPIKE_0']
-                        dataset_grc = spike_file['GrCs']['SPIKE_min40']
-                        # set chunk shapes for hdf5 compression. If
-                        # the spike times are 32-bit floats, a
-                        # maximum-size chunk of 512 cells by 128 spikes
-                        # weighs 256kB. This is within the recommended
-                        # chunk size limits (10kB to 300kB) specified
-                        # in the h5py documentation. If the spike data
-                        # for a given cell type on a trial is larger
-                        # than this limit, we just make a chunk for
-                        # each single-cell spike train.
-                        chunk_size_max = 512*128
-                        if np.prod(dataset_mf.shape) <= chunk_size_max:
-                            chunk_shape_mf = dataset_mf.shape
-                        else:
-                            chunk_shape_mf = (dataset_mf.shape[0], 1)
-                        if np.prod(dataset_grc.shape) <= chunk_size_max:
-                            chunk_shape_grc = dataset_grc.shape
-                        else:
-                            chunk_shape_grc = (dataset_grc.shape[0], 1)
-                        target_data_group.create_dataset("mf_spiketimes",
-                                                         data=dataset_mf,
-                                                         compression="gzip",
-                                                         compression_opts=9,
-                                                         chunks=chunk_shape_mf)
-                        target_data_group.create_dataset("grc_spiketimes",
-                                                         data=dataset_grc,
-                                                         compression="gzip",
-                                                         compression_opts=9,
-                                                         chunks=chunk_shape_grc)
+                        create_chunked_spike_dataset(target_data_group,
+                                                     'mf_spiketimes',
+                                                     spike_file['MFs']['SPIKE_0'])
+                        create_chunked_spike_dataset(target_data_group,
+                                                     'grc_spiketimes',
+                                                     spike_file['GrCs']['SPIKE_min40'])
                     break
                 except KeyError as e:
                     compression_attempts += 1
