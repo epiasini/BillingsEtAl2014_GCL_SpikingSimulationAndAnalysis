@@ -131,9 +131,7 @@ class ResultsArchive(object):
                                         compression_opts=9)
         self._close()
 
-def create_chunked_spike_dataset(group,
-                                 name,
-                                 data)
+def create_chunked_spike_dataset(group, name, data):
     # set chunk shapes for hdf5 compression of spike data. If the
     # spike times are 32-bit floats, a maximum-size chunk of 512 cells
     # by 128 spikes weighs 256kB. This is within the recommended chunk
