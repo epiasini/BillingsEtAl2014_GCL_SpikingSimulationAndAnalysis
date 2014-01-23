@@ -139,8 +139,9 @@ def create_chunked_spike_dataset(group,
     # by 128 spikes weighs 256kB. This is within the recommended chunk
     # size limits (10kB to 300kB) specified in the h5py
     # documentation. If the spike data for a given cell type on a
-    # trial is larger than this limit, we just make a chunk for each
-    # single-cell spike train.
+    # trial is larger than this limit, we group the single-cells spike
+    # trains in such a way that each group's size is smaller than
+    # 256kB when made into a chunk.
     CHUNK_SIZE_MAX = 512*128
     data_size = np.prod(data.shape)
     if data_size <= 1:
@@ -150,7 +151,7 @@ def create_chunked_spike_dataset(group,
         if data_size <= CHUNK_SIZE_MAX:
             chunk_shape = data.shape
         else:
-            chunk_shape = (data.shape[0], 1)
+            chunk_shape = (data.shape[0], max(1, np.floor(CHUNK_SIZE_MAX/data.shape[0])))
         group.create_dataset(name,
                              data=data,
                              compression='gzip',
