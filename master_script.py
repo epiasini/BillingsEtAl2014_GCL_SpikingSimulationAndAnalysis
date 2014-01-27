@@ -10,6 +10,10 @@ from utils.parameters import PSlice as psl
 force_rerun_simulations = False
 clean_up_simulation_files = True
 
+simulate = True
+compress = True
+analyse = True
+
 #+++++parameter ranges+++++++++++++
 n_grc_dend = psl(1, 11, 1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
@@ -74,13 +78,22 @@ batch_manager = BatchManager(parameter_space, system=system)
 ############################################
 ##====SIMULATION AND COMPRESSION STAGE====##
 ############################################
-print("Submitting simulation and compression jobs")
-batch_manager.start_simulation_and_compression(force=force_rerun_simulations,
-                                               clean_up=clean_up_simulation_files)
+if simulate and compress:
+    print("Submitting simulation and compression jobs")
+    batch_manager.start_simulation_and_compression(force=force_rerun_simulations,
+                                                   clean_up=clean_up_simulation_files)
+else:
+    if simulate:
+        print("Submitting simulation jobs")
+        batch_manager.start_simulation(force=force_rerun_simulations)
+    if compress:
+        print("Submitting compression jobs")
+        batch_manager.start_compression(clean_up=clean_up_simulation_files)
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################
-print("Submitting analysis jobs.")
-batch_manager.start_analysis()
+if analyse:
+    print("Submitting analysis jobs.")
+    batch_manager.start_analysis()
 
 print("All jobs submitted.")

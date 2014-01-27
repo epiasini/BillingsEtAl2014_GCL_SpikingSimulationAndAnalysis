@@ -626,6 +626,8 @@ though, as we still need to vary p(MF) as an independent variable.
      - CLOSING NOTE [2014-01-19 Sun 18:37] \\
        Done in [[magit:~/phd/code/network/src/::commit@37d9a97][commit #37d9a97]] for the spike archives and in [[magit:~/phd/code/network/src/::commit@278a7ba][commit #278a7ba]]
        for the results archives.
+**** DONE Master script: add back simulation/compression/analysis selector
+     CLOSED: [2014-01-27 Mon 13:35]
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
