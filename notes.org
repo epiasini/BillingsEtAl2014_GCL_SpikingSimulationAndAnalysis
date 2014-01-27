@@ -190,6 +190,94 @@ that for the analysis we need to use a simpler decoder.
     CLOSED: [2013-11-27 Wed 12:26]
     - CLOSING NOTE [2013-11-27 Wed 12:26] \\
       The experimental value of 0.438nS seems the best option.
+    What we call /tonic GABA conductance/ in most of this document and
+    in the paper would be best called /basal/ (or /resting/) /GABA
+    conductance/. Strictly speaking, the experimental value of 0.438nS
+    (from Rothman2009; Ward2012 reports 0.420nS) is just the total
+    amount of inhibitory conductance provided to a granule cell in
+    absence of stimulation to the neighboring Golgi cells. But this
+    involves both a properly tonic component *and* a time average of
+    direct and spillover contributions from spontaneous activity at
+    8Hz. Quoting Ward2012, section 3.2:
+    #+BEGIN_QUOTE
+    Application of 1 μM tetrodotoxin (TTX) to block action potentials
+    reduced the frequency of sIPSCs but did not elicit a shift in
+    holding current (I hold; 0.38 ± 2.77 pA equivalent to a
+    conductance of 5.9 ± 43.3 pS; N = 5; P = 0.78;
+    Fig. 3.1A). Application of the GABAAR antagonist gabazine (GBZ; 10
+    μM) blocked sIPSCs and elicited an outward current shift of 27 ±
+    17 pA (N = 11) reflecting a suppression of tonic conductance of
+    420 ± 270 pS. GBZ application also reduced the SD of the noise of
+    the recording (from 7.1 ± 4.2 pA to 2.6 ± 0.4 pA; Mann-Whitney U
+    test P = 0.008) by preventing the stochastic opening of GABAARs
+    (Fig. 3.1B).  In accordance with previous studies (Brickley et
+    al. 1996; Hamann et al. 2002) these results show that under
+    resting conditions GrCs are subject to both a large tonic
+    GABAergic inhibitory conductance and spontaneous phasic inhibitory
+    input.
+    #+END_QUOTE
+    And section 4.2:
+    #+BEGIN_QUOTE
+    The amount of tonic inhibition to which mature GrCs are subject is
+    thought to be greater than the amount of phasic inhibition (Rossi
+    et al. 2003). It is not known exactly how many GoCs contact a
+    single GrC. Estimates have ranged from ~ 4 (Rossi and Hamann 1998
+    ) to 2.6 ± 0.55 direct synaptic contacts from GoC axon terminals
+    (Jakab and Hamori 1988) with perhaps the same number of spillover
+    only inputs (Rossi & Hamann 1998). For the following experiment,
+    phasic inhibition was presumed to arise from 4 GoCs (a modest
+    estimate), two making direct contacts, the other two spillover
+    only.  The total resting inhibitory conductance to which GrCs are
+    subject (420 ± 270 pS), was presumed to include inhibitory input
+    from four GoCs firing at ~ 8 Hz (Dieudonné, 1998; Forti et
+    al. 2006). In order to obtain an estimate of the tonic inhibitory
+    conductance I measured the amount of inhibitory conductance
+    expected to arise from four GoCs firing at 8 Hz and subtracted it
+    from the measured total inhibitory conductance, which left an
+    estimated tonic conductance of 200 pS. As shown in Fig. 4.2A, the
+    four GoC inputs were desynchronised and delivered at 0 (red; off),
+    10 (purple; ~ resting rate), or 50 Hz (blue; high rate) on top of
+    the estimated tonic conductance. The sizes of the individual
+    synaptic inputs were scaled according to plasticity data from
+    paired recordings (by 0.85 for 10 Hz and by 0.3 for 50 Hz).
+    #+END_QUOTE
+    It is worth noting, here, that in the 2013 iteration of Ward's
+    experiments the numerical estimate for the 'basal 8Hz phasic'
+    component was slightly different, as we used an updated Goc to GrC
+    synaptic model and we also assumed that this inhibitory input was
+    coming from 3 direct plus 1 spillover-only connection.
+*** Dynamic Threshold Adjustment (DTA)
+    In simulations where the DTA setting is not zero, the GABA
+    conductance on the GrCs is affected in two different ways:
+    - an extra conductance of magnitude DTA*p(MF)*GABAbase is added to
+      the experimental value of 0.438nS for GABAbase;
+    - the sum of these two terms is then scaled according to the
+      number of dendrites by multiplying it by (d/4).
+    Given this definition, to understand which settings for the DTA
+    parameter could be considered 'high' or 'low' or 'normal' we look
+    at the dependency of the time-averaged GABA conductance from 3
+    direct and 1 spillover-only connections on the GoC firing rate
+    that I have calculated from the experimental data in Ward2012
+    (figure [[fig:inhibitory_conductance_vs_rate]]). This functional
+    dependence tells us that the total amount of conductance grows
+    from 0.42nS to 0.55nS as the GoC firing rate goes from the
+    spontaneous activity level of 8Hz to 50Hz, which is the maximum
+    that is experimentally observed. This represents a 31%
+    increase. Now, under the simplifying assumption that our binarised
+    MF input (ie, either 10Hz or 80Hz) to the granule cell layer is
+    enough to modulate the GoC firing rate across its whole dynamic
+    range (in other words, assuming that the GoC rate is 8Hz for
+    p(MF)=0 and 50Hz for p(MF)=1), we can then say that a 'normal'
+    value for the DTA parameter could be 0.3. Consequently, we can
+    pick 0.1 and 1 as 'low' and 'high' values. Also, very importantly,
+    we can note from figure [[fig:inhibitory_conductance_vs_rate]] that
+    the error associated with approximating the DTA mechanism with a
+    linear dependency is not too large in the region above 8Hz.
+    #+CAPTION: Time-averaged GABA conductance for 3 direct plus 1 spillover-only connection, as a fuction of GoC firing rate.
+    #+NAME: fig:inhibitory_conductance_vs_rate
+    [[file:fig/inhibitory_conductance_vs_rate.png][file:fig/inhibitory_conductance_vs_rate.png]]
+    
+
 *** DONE mf -> grc synapses: decide if total conductance should scale inversely with the number of dendrites.
     CLOSED: [2013-11-28 Thu 18:44]
     - CLOSING NOTE [2013-11-28 Thu 18:44] \\
@@ -396,8 +484,17 @@ though, as we still need to vary p(MF) as an independent variable.
      The parameter has been renamed to ~extra_tonic_inhibition~ in
      [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]]. It still doesn't have any effect on the
      simulations, though.
-**** TODO Implement DTA
-**** TODO Implement simple sinusoidally varying input
+**** DONE Implement DTA
+     CLOSED: [2014-01-14 Tue 23:58]
+     - CLOSING NOTE [2014-01-14 Tue 23:58] \\
+       Done in [[magit:~/phd/code/network/src/::commit@64cf9fe][commit #64cf9fe]].
+**** DONE Implement simple sinusoidally varying input
+     CLOSED: [2014-01-14 Tue 23:59]
+     - CLOSING NOTE [2014-01-14 Tue 23:59] \\
+       Done in [[magit:~/phd/code/network/src/::commit@6cbb7f6][commit #6cbb7f6]]. For the time being, the modulation
+       frequency is a parameter (so that it can be set to 0 or 8 in
+       the simplest comparison), but the amplitude of the modulation
+       is hardcoded at 50%.
 **** DONE Fix csv export of glomerular positions in Guy's mathematica notebook.
      CLOSED: [2013-12-08 Sun 19:03]
      - CLOSING NOTE [2013-12-08 Sun 19:03] \\
@@ -524,6 +621,13 @@ though, as we still need to vary p(MF) as an independent variable.
      This, togheter with the previous item, should allow easy re-running
      of specific patterns if something goes wrong during simulations and
      not all patterns for a given data point reach completion.
+**** DONE Enable gz compression on hdf5 spike archives.
+     CLOSED: [2014-01-19 Sun 18:37]
+     - CLOSING NOTE [2014-01-19 Sun 18:37] \\
+       Done in [[magit:~/phd/code/network/src/::commit@37d9a97][commit #37d9a97]] for the spike archives and in [[magit:~/phd/code/network/src/::commit@278a7ba][commit #278a7ba]]
+       for the results archives.
+**** DONE Master script: add back simulation/compression/analysis selector
+     CLOSED: [2014-01-27 Mon 13:35]
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -560,8 +664,45 @@ though, as we still need to vary p(MF) as an independent variable.
      CLOSED: [2013-12-25 Wed 00:19]
      - CLOSING NOTE [2013-12-25 Wed 00:19] \\
        Done in [[magit:~/phd/code/network/src/::commit@3373e73][commit #3373e73]].
-**** TODO Test decoder performance for convergence speed (performance vs size of training set)
-**** TODO Test decoder performance for rubustness against noise (performance vs size of testing set)
+**** DONE Test decoder performance for convergence speed (performance vs size of training set)
+     CLOSED: [2014-01-20 Mon 10:55]
+     - CLOSING NOTE [2014-01-20 Mon 10:55] \\
+       Settled on batch k-means and 30 trials per pattern in the training set
+       after discussing it with Angus.
+     Standard k-means seems to perform much better than mini-batch
+     k-means. I suspect much of the difference in performance to come
+     from the fact that the mini-batch algorithm is run only once; by
+     contrast, the batch implementation is restarted several (10 by
+     default) times, and this makes it much less likely to get stuck
+     in a local minimum for inertia. In fact, with less than 100-150
+     repetitions per pattern to train on, the final clustering given
+     by the mini-batch implementation seems to be very 'noisy', in the
+     sense that for a given parameter space point the final MI value
+     calculated with a decoder trained with mini-batch k-means can be
+     very different (even a 15% difference in information) between
+     different runs of the same analysis (or of very similar analysis,
+     like when doing a parameter sweep on ~training_size~). Using
+     batch k-means, we can use as few as 30 trials per pattern to
+     train the decoder, and still be quite close to extracting all the
+     available information (see figure [[fig:traning_size]]).
+     #+NAME: fig:training_size
+     #+CAPTION: MI vs training size for 4 dendrites, p(MF)=0.1, 1024 patterns and 200 trials per pattern.
+     [[file:fig/training_size_gd4_f01_sp1024_t200.png][file:fig/training_size_gd4_f01_sp1024_t200.png]]
+**** DONE Test decoder performance for rubustness against noise (performance vs size of testing set)
+     CLOSED: [2014-01-20 Mon 10:56]
+     - CLOSING NOTE [2014-01-20 Mon 10:56] \\
+       Settled on 30 'testing' trials per pattern (thus 60 trials overall,
+       including the ones used for training the decoder) after discussing it
+       with Angus.
+     The quadratic extrapolation method appears to give the most
+     stable bias correction. As can be seen in figure [[fig:n_trials]],
+     even for fairly adversarial conditions to information
+     transmission (and thus MI estimation) 30 trials seems to be
+     enough for the testing set.
+     #+NAME: fig:n_trials
+     #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
+     [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
+
 *** DONE Get the whole workflow to run on *Legion*.
     CLOSED: [2013-12-26 Thu 00:37]
     - CLOSING NOTE [2013-12-26 Thu 00:37] \\
@@ -990,8 +1131,18 @@ Command exited with non-zero status 1
 647.71user 4.11system 33:52.91elapsed 32%CPU (0avgtext+0avgdata 12994880maxresident)k
 0inputs+0outputs (1major+831036minor)pagefaults 0swaps
 #+END_SRC
-** TODO Bias: MI vs size of testing set or number of clusters
-** TODO Decoder performance: MI vs size of training set
+** DONE Bias: MI vs size of testing set or number of clusters
+   CLOSED: [2014-01-20 Mon 11:05]
+** DONE Decoder performance: MI vs size of training set
+   CLOSED: [2014-01-20 Mon 11:05]
+** DONE For a given parameter space point, MI vs simulation and analysis length
+   CLOSED: [2014-01-20 Mon 17:41]
+   #+NAME: fig:ana_duration
+   #+CAPTION: MI vs analysis window length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and simulation length of 200ms.
+   [[file:fig/ana_duration.png][file:fig/ana_duration.png]]
+   #+NAME: fig:sim_duration
+   #+CAPTION: MI vs simulation length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and analysis window length of 50ms.
+   [[file:fig/sim_duration.png][file:fig/sim_duration.png]]
 ** TODO Sparse encodable range vs integration window length
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity

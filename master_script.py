@@ -10,21 +10,27 @@ from utils.parameters import PSlice as psl
 force_rerun_simulations = False
 clean_up_simulation_files = True
 
+simulate = True
+compress = True
+analyse = True
+
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(4, 11, 1)
+n_grc_dend = psl(1, 11, 1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
-extra_tonic_inhibition = psl(0)
+gaba_scale = psl(1)
+dta = psl(0)
+modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
 n_stim_patterns = psl(128)
-n_trials = psl(50)
-sim_duration = psl(150.0)
+n_trials = psl(60)
+sim_duration = psl(200.0)
 ana_duration = psl(150.0) # must be < min(sim_duration)
-training_size = psl(5) # must be < min(n_trials)
+training_size = psl(30) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
@@ -50,7 +56,9 @@ parameter_space = ParameterSpace(n_grc_dend,
                                  connectivity_rule,
                                  input_spatial_correlation_scale,
                                  active_mf_fraction,
-                                 extra_tonic_inhibition,
+                                 gaba_scale,
+                                 dta,
+                                 modulation_frequency,
                                  stim_rate_mu,
                                  stim_rate_sigma,
                                  noise_rate_mu,
@@ -70,13 +78,22 @@ batch_manager = BatchManager(parameter_space, system=system)
 ############################################
 ##====SIMULATION AND COMPRESSION STAGE====##
 ############################################
-print("Submitting simulation and compression jobs")
-batch_manager.start_simulation_and_compression(force=force_rerun_simulations,
-                                               clean_up=clean_up_simulation_files)
+if simulate and compress:
+    print("Submitting simulation and compression jobs")
+    batch_manager.start_simulation_and_compression(force=force_rerun_simulations,
+                                                   clean_up=clean_up_simulation_files)
+else:
+    if simulate:
+        print("Submitting simulation jobs")
+        batch_manager.start_simulation(force=force_rerun_simulations)
+    if compress:
+        print("Submitting compression jobs")
+        batch_manager.start_compression(clean_up=clean_up_simulation_files)
 ##########################
 ##====ANALYSIS STAGE====##
 ##########################
-print("Submitting analysis jobs.")
-batch_manager.start_analysis()
+if analyse:
+    print("Submitting analysis jobs.")
+    batch_manager.start_analysis()
 
 print("All jobs submitted.")

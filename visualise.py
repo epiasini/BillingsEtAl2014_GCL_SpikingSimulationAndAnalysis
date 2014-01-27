@@ -17,10 +17,11 @@ from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter, Rast
 
 
 
-plot_mi_heatmap = True
+plot_mi_heatmap = False
 plot_sparseness = False
 plot_mi_comparison_nsp = False
 plot_line_comparison = False
+plot_line_n_trials = True
 
 plot_mi_detail = False
 plot_dendrograms = False
@@ -40,17 +41,19 @@ plot_mi_vs_dn_and_sparsity = False
 n_grc_dend = psl(4)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
-active_mf_fraction = psl(.5)
-extra_tonic_inhibition = psl(0)
+active_mf_fraction = psl(.1)
+gaba_scale = psl(1)
+dta = psl(0)
+modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
 n_stim_patterns = psl(1024)
-n_trials = psl(200)
+n_trials = psl(31, 201, 1)
 sim_duration = psl(200.0)
 ana_duration = psl(150.0) # must be < min(sim_duration)
-training_size = psl(5,196,1) # must be < min(n_trials)
+training_size = psl(30) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
 tau = psl(5)
@@ -60,7 +63,9 @@ space = ParameterSpace(n_grc_dend,
                        connectivity_rule,
                        input_spatial_correlation_scale,
                        active_mf_fraction,
-                       extra_tonic_inhibition,
+                       gaba_scale,
+                       dta,
+                       modulation_frequency,
                        stim_rate_mu,
                        stim_rate_sigma,
                        noise_rate_mu,
@@ -82,8 +87,24 @@ if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_nsb', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
         plt.close(rhm.fig)
+
+if plot_line_n_trials:
+    training_size = 30
+    testing_size = space.get_range('n_trials') - training_size
+    subspace = space.get_nontrivial_subspace(('training_size', training_size))
+    mi_qe =  subspace._get_attribute_array('point_mi_qe')
+    mi_pt  =  subspace._get_attribute_array('point_mi_pt')
+    mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
+    fig, ax = plt.subplots()
+    ax.plot(testing_size, mi_qe.flat, label='qe')
+    ax.plot(testing_size, mi_pt.flat, label='pt')
+    ax.plot(testing_size, mi_nsb.flat, label='nsb')
+    ax.set_xlabel('testing set size')
+    ax.set_ylabel('MI (bits)')
+    ax.legend(loc='best')
+    fig.savefig('n_trials.png')
 
 if plot_mi_comparison_nsp:
     n_stim_patterns_2 = psl(1024)

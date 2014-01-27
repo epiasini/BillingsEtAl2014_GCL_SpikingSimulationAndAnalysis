@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+0+80+0+10+0+128+50+200) 0
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+1+0+0+80+0+10+0+128+50+200) 0
 """
 import random
 import time
@@ -26,6 +26,14 @@ from utils.network import generate_nC_network, generate_nC_saves, generate_nC_st
 point = eval(sys.argv[1].replace('+', ','))
 stim_pattern_number = int(sys.argv[2])
 
+# first of all, check if a temporary tar archive is already available
+# for the results of the simulation of this stimulus pattern. If this
+# is the case there is no need for simulating everything again, so
+# just print a message and exit.
+if os.path.isfile(point.get_tar_simulation_archive_path(stim_pattern_number)):
+    print("WARNING: tar spikes archive found on disk. Not running simulations for stim pattern number " + str(stim_pattern_number) + ". closing job.")
+    java.lang.System.exit(0)
+
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'
 project_filename = 'if_gl.ncx' # neuroConstruct project file name
@@ -43,9 +51,24 @@ with ClusterSystem() as system:
     tar_archive_path = work_dir+'/temporary_archive.tar'
     tar_archive = tarfile.open(tar_archive_path, 'w')
 
-    # set level of inhibition by modifying GrC model
-    extra_tonic_inhibition_in_nS = float(point.extra_tonic_inhibition) / 1000
-    set_tonic_GABA(work_dir, extra_tonic_inhibition_in_nS)
+    # set level of inhibition by modifying GrC model. This is somewhat
+    # involved, to follow what was done with the binary model. If
+    # DTA=0, then the total amount of inhibitory conductance is
+    # independent of th number of dendrites, and it's given by the
+    # default value of gGABA_base multiplied by the gaba_scale
+    # factor. If DTA is not zero, then the total amount of conductance
+    # is gaba_scale*gGABA_base*(d/4)(1+DTA*p(MF)). Note that this
+    # means that when DTA is not zero the total GABA conductance
+    # scales with the number of dendrites, and conversely it is not
+    # possible - strictly speaking - to have the GABA conductance
+    # depend on the number of dendrites but not on p(MF).
+    gGABA_base = 438.
+    if not point.dta:
+        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale
+    else:
+        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (float(point.n_grc_dend)/4) * (1 + (point.active_mf_fraction * point.dta))
+    total_GABA_conductance_in_nS = total_GABA_conductance_in_pS/1000.
+    set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
 
     # load project and initialise
     project_file = java.io.File(work_dir + "/" + project_filename)
@@ -123,7 +146,7 @@ with ClusterSystem() as system:
                 print "Archiving "+ hdf5_file_name + " to temporary tar file"
                 tar_archive.add(hdf5_file_name, arcname=sim_ref+'_.h5')
             else:
-                print ("WARNING: archive" + hdf5_file_name + "was not found to contain simulation results! restarting simulation.")
+                print ("WARNING: archive " + hdf5_file_name + " was not found to contain simulation results! restarting simulation.")
 
             # delete useless files left over by neuroConstruct
             try:

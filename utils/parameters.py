@@ -4,7 +4,7 @@ import functools
 import random
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.cluster import KMeans
 import pyentropy as pe
 
 from pure import SimpleParameterSpacePoint
@@ -31,7 +31,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                  connectivity_rule,
                  input_spatial_correlation_scale,
                  active_mf_fraction,
-                 extra_tonic_inhibition,
+                 gaba_scale,
+                 dta,
+                 modulation_frequency,
                  stim_rate_mu,
                  stim_rate_sigma,
                  noise_rate_mu,
@@ -45,18 +47,6 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                  linkage_method,
                  tau,
                  dt):
-        super(ParameterSpacePoint, self).__init__(n_grc_dend,
-                                                  connectivity_rule,
-                                                  input_spatial_correlation_scale,
-                                                  active_mf_fraction,
-                                                  extra_tonic_inhibition,
-                                                  stim_rate_mu,
-                                                  stim_rate_sigma,
-                                                  noise_rate_mu,
-                                                  noise_rate_sigma,
-                                                  n_stim_patterns,
-                                                  n_trials,
-                                                  sim_duration)
         #--analysis-specific coordinates
         self.ana_duration = ana_duration
         self.training_size = int(round(training_size))
@@ -65,6 +55,22 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         self.tau = tau
         self.dt = dt
         self.linkage_method_string = ['ward', 'kmeans'][self.linkage_method]
+        super(ParameterSpacePoint, self).__init__(n_grc_dend,
+                                                  connectivity_rule,
+                                                  input_spatial_correlation_scale,
+                                                  active_mf_fraction,
+                                                  gaba_scale,
+                                                  dta,
+                                                  modulation_frequency,
+                                                  stim_rate_mu,
+                                                  stim_rate_sigma,
+                                                  noise_rate_mu,
+                                                  noise_rate_sigma,
+                                                  n_stim_patterns,
+                                                  n_trials,
+                                                  sim_duration)
+        #--useful quantities
+        self.sim_transient_time = self.sim_duration - self.ana_duration
         #--archive objects
         self.spikes_arch = SpikesArchive(self)
         self.results_arch = ResultsArchive(self)
@@ -87,6 +93,25 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         # arguments contain commas.
         return self.__repr__().replace(',', '+')
 
+    def is_spike_archive_compatible(self, path):
+        """Check if the archive at the given path, if present, is suitable
+        for providing the simulation data necessary to perform the
+        analysis specified by this data point. Simulation duration and
+        number of stimulus patterns need to be greater in the archive
+        than in the analysis settings, while the number of trials that
+        can be extracted from the archive can depend (via time
+        slicing) on the length of the original simulations compared to
+        the length of the analysis duration and the transient time (ie
+        sim_duration-ana_duration) we are asking for.
+
+        """
+        path_sdur = float(path.rstrip('.hdf5').partition('sdur')[2])
+        path_n_trials = float(path.rpartition('_t')[2].partition('_sdur')[0]) * (1 + max(0, (path_sdur - self.sim_duration)//(self.ana_duration + self.SIM_DECORRELATION_TIME)))
+        path_spn = float(path.rpartition('_t')[0].rpartition('sp')[2])
+        sdur_c = path_sdur >= self.sim_duration
+        n_trials_c = path_n_trials >= self.n_trials
+        spn_c = path_spn >= self.n_stim_patterns
+        return all([sdur_c, n_trials_c, spn_c])
     #-------------------
     # Simulation methods
     #-------------------
@@ -104,6 +129,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # we have the results already (loaded in memory or on the disk)
             pass
         else:
+            # check if the spikes archive to analyse is actually present on disk
+            if not os.path.isfile(self.spike_archive_path):
+                raise Exception("Spike archive {} not found! aborting analysis.".format(self.spike_archive_path))
             # we actually need to calculate them
             print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
@@ -123,15 +151,12 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             Xn = 1 # the output is effectively one-dimensional
             # initialize data structures for storage of results
             ts_decoded_mi_plugin = np.zeros(n_obs)
-            ts_decoded_mi_bootstrap = np.zeros(n_obs)
             ts_decoded_mi_qe = np.zeros(n_obs)
             ts_decoded_mi_pt = np.zeros(n_obs)
             ts_decoded_mi_nsb = np.zeros(n_obs)
-            tr_tree = np.zeros(shape=(n_tr_obs-1, 3))
 
             # compute mutual information by using direct clustering on training data (REMOVED)
             # --note: fcluster doesn't work in the border case with n_clusts=n_obs, as it never returns the trivial clustering. Cluster number 0 is never present in a clustering.
-            tr_direct_mi = np.zeros(n_tr_obs-1)
             print('counting spikes in output spike trains')
             i_level_array = self.spikes_arch.get_spike_counts(cell_type='mf')
             o_level_array = self.spikes_arch.get_spike_counts(cell_type='grc')
@@ -148,8 +173,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                 tr_spike_counts = np.array([spike_counts[o] for o in train_idxs])
                 ts_spike_counts = np.array([spike_counts[o] for o in test_idxs])
                 for n_clusts in range(min_clusts_analysed, max_clusts_analysed+1, clusts_step):
-                    clustering = MiniBatchKMeans(n_clusters=n_clusts,
-                                                 batch_size=int(round(n_tr_obs/5.)))
+                    clustering = KMeans(n_clusters=n_clusts)
                     print('performing k-means clustering on training set (training the decoder) for k='+str(n_clusts))
                     clustering.fit(tr_spike_counts)
                     print('using the decoder trained with k-means clustering to classify data points in testing set')
@@ -160,16 +184,16 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     X_dims = (Xn, Xm)
                     X = decoded_output
                     s = pe.SortedDiscreteSystem(X, X_dims, Ym, Ny)
+                    s.calculate_entropies(method='plugin', calc=['HX', 'HXY'])
+                    ts_decoded_mi_plugin[n_clusts-1] = s.I()
                     s.calculate_entropies(method='qe', sampling='naive', calc=['HX', 'HXY'], qe_method='plugin')
                     ts_decoded_mi_qe[n_clusts-1] = s.I()
                     s.calculate_entropies(method='pt', sampling='naive', calc=['HX', 'HXY'])
                     ts_decoded_mi_pt[n_clusts-1] = s.I()
                     s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
                     ts_decoded_mi_nsb[n_clusts-1] = s.I()            
-                    if n_clusts == self.n_stim_patterns:
-                        px_at_same_size_point = s.PX  
-                    
             else:
+                tr_tree = np.zeros(shape=(n_tr_obs-1, 3))
                 import pymuvr
                 spikes = self.spikes_arch.get_spikes(cell_type='grc')
                 self.spikes_arch.load_attrs()
@@ -222,31 +246,22 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
                     s.calculate_entropies(method='nsb', sampling='naive', calc=['HX', 'HXY'])
                     ts_decoded_mi_nsb[n_clusts-1] = s.I()            
                     if n_clusts == self.n_stim_patterns:
-                        px_at_same_size_point = s.PX    
+                        px_at_same_size_point = s.PX 
+                # save linkage tree to results archive (only if
+                # performing hierarchical clustering)
+                self.results_arch.update_result('tr_linkage', data=tr_tree)
 
-            # compute output layer synchronisation (pairwise average of Schreiber's reliability measure)
-            #random_observations_subset = spikes[random.sample(range(spikes.shape[0]), 1000)]
-            #random_fields_subset = convolve(random_observations_subset, self.sim_duration, self.tau, self.dt)
-            o_synchrony = np.array([0]) #np.mean([synchrony(p) for p in random_fields_subset])
             # save analysis results in the archive
-            self.results_arch.update_result('tr_indexes', data=np.array(train_idxs))
-            self.results_arch.update_result('tr_linkage', data=tr_tree)
-            self.results_arch.update_result('tr_direct_mi', data=tr_direct_mi)
+            print('updating results archive')
             self.results_arch.update_result('ts_decoded_mi_plugin', data=ts_decoded_mi_plugin)
-            self.results_arch.update_result('ts_decoded_mi_bootstrap', data=ts_decoded_mi_bootstrap)
             self.results_arch.update_result('ts_decoded_mi_qe', data=ts_decoded_mi_qe)
             self.results_arch.update_result('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
             self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
-            self.results_arch.update_result('px_at_same_size_point', data=px_at_same_size_point)
-            #self.results_arch.update_result('i_level_array', data=i_level_array)
-            self.results_arch.update_result('i_level_array', data=np.array([0]))
+
             self.results_arch.update_result('i_sparseness_hoyer', data=i_sparseness_hoyer)
             self.results_arch.update_result('i_sparseness_activity', data=i_sparseness_activity)
-            #self.results_arch.update_result('o_level_array', data=o_level_array)
-            self.results_arch.update_result('o_level_array', data=np.array([0]))
             self.results_arch.update_result('o_sparseness_hoyer', data=o_sparseness_hoyer)
             self.results_arch.update_result('o_sparseness_activity', data=o_sparseness_activity)
-            self.results_arch.update_result('o_synchrony', data=o_synchrony)
             # update attributes
             self.results_arch.load()
 
@@ -260,7 +275,9 @@ class ParameterSpace(np.ndarray):
         'connectivity_rule',
         'input_spatial_correlation_scale',
         'active_mf_fraction',
-        'extra_tonic_inhibition',
+        'gaba_scale',
+        'dta',
+        'modulation_frequency',
         'stim_rate_mu',
         'stim_rate_sigma',
         'noise_rate_mu',
@@ -279,7 +296,9 @@ class ParameterSpace(np.ndarray):
                 connectivity_rule_slice,
                 input_spatial_correlation_scale_slice,
                 active_mf_fraction_slice,
-                extra_tonic_inhibition_slice,
+                gaba_scale_slice,
+                dta_slice,
+                modulation_frequency_slice,
                 stim_rate_mu_slice,
                 stim_rate_sigma_slice,
                 noise_rate_mu_slice,
@@ -301,7 +320,9 @@ class ParameterSpace(np.ndarray):
                      connectivity_rule_slice,
                      input_spatial_correlation_scale_slice,
                      active_mf_fraction_slice,
-                     extra_tonic_inhibition_slice,
+                     gaba_scale_slice,
+                     dta_slice,
+                     modulation_frequency_slice,
                      stim_rate_mu_slice,
                      stim_rate_sigma_slice,
                      noise_rate_mu_slice,
@@ -323,7 +344,9 @@ class ParameterSpace(np.ndarray):
             'connectivity_rule': 'cr',
             'input_spatial_correlation_scale': 'iscs',
             'active_mf_fraction': 'mf',
-            'extra_tonic_inhibition': 'b',
+            'gaba_scale': 'b',
+            'dta': 'dta',
+            'modulation_frequency': 'mod',
             'stim_rate_mu': 'sm',
             'stim_rate_sigma': 'ss',
             'noise_rate_mu': 'nm',
@@ -381,25 +404,21 @@ class ParameterSpace(np.ndarray):
         return np.unique(np.array([getattr(x, parameter, None) for x in self.flat]))
     def _get_attribute_array(self, attribute):
         """
-        Return an array containing the value of the requested attribute for all the points in self.
-        The shape of the returned array is of course self.shape. Default to np.nan when a point doesn't
-        have the requested attribute: this is to increase robustness against missing datapoints
-        (typical situation: trying to plot a 2d heatmap where we lack one of the values).
+        Return an array containing the value of the requested attribute
+        for all the points in self.  The shape of the returned array
+        is of course self.shape. Default to np.nan when a point
+        doesn't have the requested attribute: this is to increase
+        robustness against missing datapoints (typical situation:
+        trying to plot a 2d heatmap where we lack one of the values).
+
         """
         return np.array([getattr(x, attribute, np.nan) for x in self.flat]).reshape(self.shape)
-    # def get_attribute_array(self, attribute, **kwargs):
-    #     attr_list = []
-    #     for x in self.flat:
-    #         attr = getattr(x, attribute, None)
-    #         if callable(attr):
-    #             attr = attr(**kwargs)
-    #         attr_list.append(attr)
-    #     return np.array(attr_list).reshape(self.shape)
     def _get_idx_from_value(self, parameter, value):
         param_range = self.get_range(parameter)
         if value not in param_range:
-            # Trying to find the index for a parameter (i.e., coordinate) value that's not on the mesh
-            #   raises an exception.
+            # Trying to find the index for a parameter (i.e.,
+            # coordinate) value that's not on the mesh raises an
+            # exception.
             raise ValueError('Parameter value ({0}, {1}) not present on the mesh!'.format(value, parameter))
         return np.searchsorted(param_range, value)
     def _fix_dimension(self, parameter, value):
@@ -411,8 +430,11 @@ class ParameterSpace(np.ndarray):
             pass
     def _get_embedded_hyperplane(self, parameter, value):
         """
-        Return a new Parameter_space object made only of those points that satisfy the condition parameter==value.
-        Don't change the dimensionality of the space (keep the hyperplane 'embedded' in the higher-dimensional space).
+        Return a new Parameter_space object made only of those points that
+        satisfy the condition parameter==value.  Don't change the
+        dimensionality of the space (keep the hyperplane 'embedded' in
+        the higher-dimensional space).
+
         """
         idx = self._get_idx_from_value(parameter, value)
         return np.split(self, self.shape[self._didx(parameter)], self._didx(parameter))[idx]
@@ -423,9 +445,12 @@ class ParameterSpace(np.ndarray):
         return hp
     def get_subspace(self, *parameter_value_pairs):
         """
-        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed
-        by setting parameter==value for every parameter, value pair in the parameter_value_pairs iterable.
-        Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed.
+        Return a new Parameter_space object where one or more parameters
+        (dimensions) have been fixed by setting parameter==value for
+        every parameter, value pair in the parameter_value_pairs
+        iterable.  Reduce the dimensionality of the space, forgetting
+        about the dimensions that have been fixed.
+
         """
         temp = self._get_hyperplane(*parameter_value_pairs[0])
         for pair in parameter_value_pairs[1:]:
@@ -433,11 +458,14 @@ class ParameterSpace(np.ndarray):
         return temp
     def get_nontrivial_subspace(self, *parameter_value_pairs):
         """
-        Return a new Parameter_space object where one or more parameters (dimensions) have been fixed
-        by setting parameter==value for every (parameter, value) pair that is given as an argument.
-        Reduce the dimensionality of the space, forgetting about the dimensions that have been fixed.
-        Finally, reduce further the dimensionality by fogetting about the _trivial_ dimensions,
+        Return a new Parameter_space object where one or more parameters
+        (dimensions) have been fixed by setting parameter==value for
+        every (parameter, value) pair that is given as an argument.
+        Reduce the dimensionality of the space, forgetting about the
+        dimensions that have been fixed.  Finally, reduce further the
+        dimensionality by fogetting about the _trivial_ dimensions,
         i.e. the ones where our points don't have any variability.
+
         """
         temp = self.get_subspace(*parameter_value_pairs)
         for parameter in [temp._param(k) for k,s in enumerate(temp.shape) if s==1]:

@@ -40,7 +40,19 @@ jobs for a given grid in parameter space on SGE.
         self.simulate_jobscript = 'jobscripts/simulate_jobscript_{system}.sh'.format(system=self.system)
         self.compress_jobscript = 'jobscripts/compress_jobscript_{system}.sh'.format(system=self.system)
         self.analyse_jobscript = 'jobscripts/analyse_jobscript_{system}.sh'.format(system=self.system)
-
+        # prepare a list containing one representative point for each
+        # 'equivalence class' composed by all those
+        # ParameterSpacePoints that have the same representation as a
+        # SimpleParameterSpacePoint. This is used to make sure that
+        # only one simulation is run if, for example, we are asked to
+        # simulate and analyse two points which only differ in
+        # 'analysis' coordinates.
+        unique_simple_representations = set()
+        self.simple_point_equivalence_classes = []
+        for point in self.parameter_space.flat:
+            if point.simple_representation() not in unique_simple_representations:
+                unique_simple_representations.add(point.simple_representation())
+                simple_point_equivalence_classes.append(point)
 
     def _submit_job(self, qsub_argument_list):
         popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
@@ -90,11 +102,16 @@ jobs for a given grid in parameter space on SGE.
         else:
             return False
     def _start_point_compression(self, point, clean_up):
-        qsub_argument_list = ['-hold_jid',
-                              self.sim_jids[point.simple_representation()],
-                              self.compress_jobscript,
-                              point.representation_without_commas(),
-                              str(clean_up)]
+        if point.simple_representation() in self.sim_jids:
+            qsub_argument_list = ['-hold_jid',
+                                  self.sim_jids[point.simple_representation()],
+                                  self.compress_jobscript,
+                                  point.representation_without_commas(),
+                                  str(clean_up)]
+        else:
+            qsub_argument_list = [self.compress_jobscript,
+                                  point.representation_without_commas(),
+                                  str(clean_up)]            
         # a compression job needs to know the 'full' representation of
         # its parameter space point, but there is only one simulation
         # and one compression job for all the parameter spac points
@@ -102,31 +119,49 @@ jobs for a given grid in parameter space on SGE.
         # is why it's best to build the compression job id dictionary
         # with simple representations.
         self.compr_jids[point.simple_representation()] = self._submit_job(qsub_argument_list)
-        
+
+    def _start_point_analysis(self, point):
+        if point.simple_representation() in self.compr_jids:
+            # a compression job has been submitted for this parameter
+            # space point, so wait until it's done befre starting
+            # analysis
+            qsub_argument_list = ['-hold_jid',
+                                  self.compr_jids[point.simple_representation()],
+                                  self.analyse_jobscript,
+                                  point.representation_without_commas()]
+        else:
+            qsub_argument_list = [self.analyse_jobscript,
+                                  point.representation_without_commas()]
+        self._submit_job(qsub_argument_list)
+
     def start_simulation_and_compression(self, force=False, clean_up=True):
-        """ Start simulation and compression for all the points in the
-        parameter space. Take care to only run simulations once in
-        case several points are present with the same 'simple'
-        projection on simulation space (ie points which only differ in
-        'analysis' coordinates).
+        """Start simulation and compression for all the points in the
+        parameter space. This function is needed to make sure
+        simulation and compression jobs are 'interleaved' in the SGE
+        queue, which is desirable for performance reasons on Legion.
+
         """
-        projection_on_simulation_space = set([p.simple_representation() for p in self.parameter_space.flat])
-        for point in [p for p in self.parameter_space.flat if p.simple_representation() in projection_on_simulation_space]:
+        for point in self.simple_point_equivalence_classes:
             if self._start_point_simulation(point, force):
                 self._start_point_compression(point, clean_up)
+
+    def start_simulation(self, force=False):
+        """Start appropriate simulations for all the points in parameter
+        space. This doesn't necessarily correspond to starting one
+        simulation per point, as we might have several points which
+        differ only in 'analysis' coordinates.
+
+        """
+        for point in self.simple_point_equivalence_classes:
+            self._start_point_simulation(point, force)
+
+    def start_compression(self, clean_up=True):
+        """Start compression for all the points in parameter space."""
+        for point in self.simple_point_equivalence_classes:
+            self._start_point_compression(point, clean_up)
                 
     def start_analysis(self):
+        """Start analysis for all the points in parameter space."""
         for point in self.parameter_space.flat:
-            if point.simple_representation() in self.compr_jids:
-                # a compression job has been submitted for this
-                # parameter space point, so wait until it's done befre
-                # starting analysis
-                qsub_argument_list = ['-hold_jid',
-                                      self.compr_jids[point.simple_representation()],
-                                      self.analyse_jobscript,
-                                      point.representation_without_commas()]
-            else:
-                qsub_argument_list = [self.analyse_jobscript,
-                                      point.representation_without_commas()]
-            self._submit_job(qsub_argument_list)
+            self._start_point_analysis(point)
         
