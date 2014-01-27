@@ -110,10 +110,12 @@ jobs for a given grid in parameter space on SGE.
         projection on simulation space (ie points which only differ in
         'analysis' coordinates).
         """
-        projection_on_simulation_space = set([p.simple_representation() for p in self.parameter_space.flat])
-        for point in [p for p in self.parameter_space.flat if p.simple_representation() in projection_on_simulation_space]:
-            if self._start_point_simulation(point, force):
-                self._start_point_compression(point, clean_up)
+        unique_simple_representations = set()
+        for point in self.parameter_space.flat:
+            if point.simple_representation() not in unique_simple_representations:
+                unique_simple_representations.add(point.simple_representation())
+                if self._start_point_simulation(point, force):
+                    self._start_point_compression(point, clean_up)
                 
     def start_analysis(self):
         for point in self.parameter_space.flat:
