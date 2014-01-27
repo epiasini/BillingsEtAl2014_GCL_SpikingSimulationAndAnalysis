@@ -52,7 +52,7 @@ jobs for a given grid in parameter space on SGE.
         for point in self.parameter_space.flat:
             if point.simple_representation() not in unique_simple_representations:
                 unique_simple_representations.add(point.simple_representation())
-                simple_point_equivalence_classes.append(point)
+                self.simple_point_equivalence_classes.append(point)
 
     def _submit_job(self, qsub_argument_list):
         popen_command = list(itertools.chain(['qsub', '-terse'], qsub_argument_list))
