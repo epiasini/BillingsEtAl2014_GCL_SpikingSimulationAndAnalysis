@@ -3,6 +3,7 @@
 """Usage example: compress.py ParameterSpacePoint(4+0+0+0.5+1+0+0+80+0+10+0+128+50+200+150+30+0+1+5+2) [clean_up={0|1}]"""
 import sys
 import os
+import os.path
 import shutil
 import time
 import tarfile
@@ -20,6 +21,17 @@ try:
     clean_up = bool(eval(sys.argv[2]))
 except IndexError:
     clean_up = True # default behaviour - DELETE ALL non-hdf5 files at the end.
+
+# first of all, check if all the necessary tar spike archives are
+# present on disk. If this is not the case there's no point to
+# starting the compression step, so just raise an exception.
+missing_tar_archives = []
+for stim_pattern_number in range(point.n_stim_patterns):
+    path = point.get_tar_simulation_archive_path(stim_pattern_number)
+    if not os.path.isfile(path):
+        missing_tar_archives.append(path)
+if any(missing_tar_archives):
+    raise Exception("Point: {}\nCompression step can't start due to missing tar spike archives. Missing files:\n{}".format(point, missing_tar_archives))
 
 with ClusterSystem() as system:
     # override archive location to work in temporary directory
@@ -51,9 +63,6 @@ with ClusterSystem() as system:
     spf = open(point.stim_pattern_filename, "r")
     stim_patterns = [[int(mf) for mf in line.split(' ')[0:-1]] for line in spf.readlines()]
     spf.close()
-
-    # initialise sets for missing data
-    missing_patterns = set()
 
     for spn, sp in enumerate(stim_patterns):
         # load stimulus pattern from txt file and save it in the hdf5 file
@@ -98,31 +107,24 @@ with ClusterSystem() as system:
                     print ("Missing directory! retrying. Error was: {}".format(e))
                     time.sleep(10)
             if compression_attempts == max_compression_attempts:
-                print("WARNING: giving up on compressing data for stim pattern number {}".format(spn))
-                missing_patterns.add(spn)
-
-        # delete NEURON and neuroConstruct simulation files
-        if clean_up:
-            print ("Removing everything except the compressed archives.")
-            try:
-                os.remove(point.get_tar_simulation_archive_path(spn))
-            except OSError as e:
-                print ("Error while cleaning up nC .h5 output files! Error was {}".format(e))
-
-    # remove all data relative to a stimulus pattern if at least one
-    # of its simulation trials wasn't recorded for some reason
-    defective_datasets = list(missing_patterns)
-    if defective_datasets:
-        print("Found %d defective datasets/directories, on a total of %d. Removing them from the hdf5 file." % (len(defective_datasets), point.n_stim_patterns))
-        for spn in defective_datasets:
-            del archive["%03d" % spn]
-    else:
-        print("No missing or corrupted data sets. Everything looks ok.")
+                raise Exception("Giving up on compressing data for stim pattern number {}".format(spn))
 
     archive.close()
+    print("Compression successfully completed!")
 
     # move spikes archive from temporary directory to permanent data dir
     print("Moving spike archive from {} to {}".format(point.spikes_arch.path,
                                                       permanent_archive_path))
     shutil.move(point.spikes_arch.path,
                 permanent_archive_path)
+
+# delete tar spike archives
+if clean_up:
+    print ("Removing everything except the compressed archives.")
+    for spn in range(point.n_stim_patterns):
+        try:
+            os.remove(point.get_tar_simulation_archive_path(spn))
+        except OSError as e:
+            print ("Error while cleaning up nC .h5 output files! Error was {}".format(e))
+
+print("Done removing uncompressed spikes. Closing job.")

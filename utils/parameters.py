@@ -129,6 +129,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             # we have the results already (loaded in memory or on the disk)
             pass
         else:
+            # check if the spikes archive to analyse is actually present on disk
+            if not os.path.isfile(self.spike_archive_path):
+                raise Exception("Spike archive {} not found! aborting analysis.".format(self.spike_archive_path))
             # we actually need to calculate them
             print("Analysing for: {0}".format(self))
             n_obs = self.n_stim_patterns * self.n_trials
