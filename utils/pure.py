@@ -2,7 +2,7 @@ import glob
 import networkx as nx
 
 BASE_DIR = "/home/ucbtepi/code/network/data"
-SIM_DECORRELATION_TIME = 10
+SIM_DECORRELATION_TIME = 30
 
 class SimpleParameterSpacePoint(object):
     """Used in the simulation script and as a base class for ParameterSpacePoint"""
