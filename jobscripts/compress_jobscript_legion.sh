@@ -3,8 +3,8 @@
 #$ -cwd
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l mem=8G
-#$ -l h_rt=24:00:00
+#$ -l mem=3G
+#$ -l h_rt=7:45:00
 #$ -P gclayer13
 #$ -l tmpfs=15G
 

@@ -3,8 +3,8 @@
 #$ -cwd
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l mem=6G
-#$ -l h_rt=11:00:00
+#$ -l mem=4G
+#$ -l h_rt=10:00:00
 #$ -P gclayer13
 
 args_list=$@

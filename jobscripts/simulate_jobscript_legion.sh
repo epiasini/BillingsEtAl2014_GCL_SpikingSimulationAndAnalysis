@@ -3,8 +3,8 @@
 #$ -wd /home/ucbtepi/Scratch/output
 #$ -o $HOME/log/
 #$ -e $HOME/log/
-#$ -l mem=5G
-#$ -l h_rt=5:30:00
+#$ -l mem=3G
+#$ -l h_rt=3:30:00
 #$ -P gclayer13
 
 # Set the checkpointing mechanism as BLCR
