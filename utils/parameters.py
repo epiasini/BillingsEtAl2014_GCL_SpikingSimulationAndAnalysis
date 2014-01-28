@@ -2,6 +2,7 @@ import numpy as np
 import itertools
 import functools
 import random
+import os.path
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import linkage, fcluster
 from sklearn.cluster import KMeans
@@ -133,7 +134,7 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             if not os.path.isfile(self.spike_archive_path):
                 raise Exception("Spike archive {} not found! aborting analysis.".format(self.spike_archive_path))
             # we actually need to calculate them
-            print("Analysing for: {0}".format(self))
+            print("Analysing for: {0} from spike archive: {1}".format(self, self.spike_archive_path))
             n_obs = self.n_stim_patterns * self.n_trials
             # load data
             min_clusts_analysed = int(round(self.n_stim_patterns * 1.0))
