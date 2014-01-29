@@ -6,9 +6,10 @@
 #$ -e $HOME/log/
 #$ -l h_vmem=3G
 #$ -l tmem=3G
-#$ -l h_rt=72:00:00
+#$ -l h_rt=8:00:00
 #$ -l s_stack=10M
 #$ -l h_stack=15M
+#$ -l scr=10G 
 #$ -p -1
 
 # SGE submission script for matlem
