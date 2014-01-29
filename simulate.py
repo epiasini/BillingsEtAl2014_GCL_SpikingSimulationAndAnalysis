@@ -148,7 +148,14 @@ with ClusterSystem() as system:
                 print "Archiving "+ hdf5_file_name + " to temporary tar file"
                 tar_archive.add(hdf5_file_name, arcname=sim_ref+'_.h5')
             else:
-                print ("WARNING: archive " + hdf5_file_name + " was not found to contain simulation results! restarting simulation.")
+                read_results_attempt = 0 
+                while read_results_attempt < 10 and not simulation_trial_is_successful:
+                    read_results_attempt += 1
+                    print("WARNING: simulation results not found. Waiting and retrying: attempt "+str(read_results_attempt))
+                    time.sleep(60)
+                    simulation_trial_is_successful = not bool(subprocess.call("python "+scripts_path+'test_trial_output_data.py '+hdf5_file_name, shell=True))
+                if not simulation_trial_is_successful:
+                    print ("WARNING: archive " + hdf5_file_name + " was not found to contain simulation results! restarting simulation.")
 
             # delete useless files left over by neuroConstruct
             try:
