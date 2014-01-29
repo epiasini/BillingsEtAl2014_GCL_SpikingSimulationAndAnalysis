@@ -105,8 +105,10 @@ with ClusterSystem() as system:
 
     # main loop
     for trial in range(point.n_trials):
+        simulation_attempt = 0
         simulation_trial_is_successful = False
-        while not simulation_trial_is_successful:
+        while simulation_attempt < 3 and not simulation_trial_is_successful:
+            simulation_attempt += 1
             simulator_seed = random.getrandbits(32)
             # innermost loop: determine the simulation reference name
             sim_ref = point.get_simulation_reference(stim_pattern_number, trial)
@@ -162,6 +164,9 @@ with ClusterSystem() as system:
                 shutil.rmtree(work_dir+'/simulations/'+sim_ref)
             except OSError:
                 print('Unable to delete %s' % work_dir+'/simulations/'+sim_ref)
+
+        if not simulation_trial_is_successful:
+            raise Exception("Simulation of trial {} was attempted several times, but it always failed. Something must be wrong; giving up.".format(trial))
 
     # move tar archive to main data directory
     tar_archive.close()
