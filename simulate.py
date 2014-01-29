@@ -31,8 +31,10 @@ stim_pattern_number = int(sys.argv[2])
 # is the case there is no need for simulating everything again, so
 # just print a message and exit.
 if os.path.isfile(point.get_tar_simulation_archive_path(stim_pattern_number)):
-    print("WARNING: tar spikes archive found on disk. Not running simulations for stim pattern number " + str(stim_pattern_number) + ". closing job.")
+    print("WARNING: tar spikes archive found on disk at path " + point.get_tar_simulation_archive_path(stim_pattern_number) + ".\nNot running simulations for stim pattern number " + str(stim_pattern_number) + ". closing job.")
     java.lang.System.exit(0)
+
+print("Simulating point:\n" + str(point) + "\nSimulation results will be stored in " + point.get_tar_simulation_archive_path(stim_pattern_number))
 
 scripts_path = '/home/ucbtepi/code/network/src/scripts/'
 project_path = '/home/ucbtepi/nC_projects/if_gl/'

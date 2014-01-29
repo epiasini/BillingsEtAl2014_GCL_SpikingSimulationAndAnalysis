@@ -31,7 +31,7 @@ for stim_pattern_number in range(point.n_stim_patterns):
     if not os.path.isfile(path):
         missing_tar_archives.append(path)
 if any(missing_tar_archives):
-    raise Exception("Point: {}\nCompression step can't start due to missing tar spike archives. Missing files:\n{}".format(point, missing_tar_archives))
+    raise Exception("Point: {}\nCompression step can't start due to {} missing tar spike archives out of {}. Missing files:\n{}".format(point, len(missing_tar_archives), point.n_stim_patterns, missing_tar_archives))
 
 with ClusterSystem() as system:
     # override archive location to work in temporary directory
