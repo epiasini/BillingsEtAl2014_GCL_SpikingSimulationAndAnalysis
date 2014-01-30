@@ -72,7 +72,7 @@ with ClusterSystem() as system:
 
         # untar simulation data archive to temporary directory
         with tarfile.open(point.get_tar_simulation_archive_path(spn)) as tar_archive:
-            print('Extracting tar archive {} to temporary directory {}'.format(tar_archive, system.work_dir))
+            print('Extracting tar archive {} to temporary directory {}'.format(point.get_tar_simulation_archive_path(spn), system.work_dir))
             tar_archive.extractall(system.work_dir)
 
         for trial in range(point.n_trials):
