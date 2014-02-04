@@ -47,13 +47,13 @@ connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
 gaba_scale = psl(1)
-dta = psl(0)
+dta = psl(0.1)
 modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
-n_stim_patterns = psl(1024)
+n_stim_patterns = psl(128)
 n_trials = psl(60)
 sim_duration = psl(180)
 ana_duration = psl(30) # must be < min(sim_duration)
@@ -93,6 +93,7 @@ if plot_mi_heatmap:
         rhm = RectangularHeatmapPlotter(subspace)
         fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension='png')
         plt.close(rhm.fig)
+        np.savetxt('data_mi.csv', data_mi, delimiter=',')
 
 if plot_line_n_trials:
     training_size = 30
@@ -254,6 +255,7 @@ if plot_sparseness:
         ax.set_yticklabels([l.get_text() for l in ax_mi.get_yticklabels()])
         fig.savefig('amplification.png')
         plt.close(rhm.fig)
+        np.savetxt('data_p_gc.csv', data_a_o, delimiter=',')
 
         # plot mi 'masked' to show only the region where the network
         # sparsifies
