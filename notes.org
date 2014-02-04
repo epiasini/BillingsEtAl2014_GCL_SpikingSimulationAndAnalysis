@@ -921,7 +921,7 @@ typical classes of output of the granular layer.
    network. The idea underlying this part of the paper is that we can
    get similar results to what has been shown until now if we start
    from a bottom-up biophysically realistic model of the network.
-*** TODO [4/5] figure 7: presentation of the model.
+*** TODO [5/6] figure 7: presentation of the model.
     The message we want to get across is that the model is tightly
     constrained to experimental data, and it is way more 'biological'
     than the binary network. This figure (together with the results,
@@ -939,11 +939,12 @@ typical classes of output of the granular layer.
     - [X] example of synaptic dynamics with fit to experimental data
     - [X] +3D visualisation of network structure with+ input and output
       raster plots
-    - [ ] cartoon explanation of MI and data analysis (spike counting
+    - [X] cartoon explanation of MI and data analysis (spike counting
       and clustering)
-      - [ ] make sure resolution of plot with clustered barcodes
+      - [X] make sure resolution of plot with clustered barcodes
         matches the plot where the barcodes are shuffled.
-*** TODO [0/3] figure 8: results. 
+    - [ ] figure legend	
+*** TODO [0/4] figure 8: results. 
     This should contain:
     - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
       show qualitative match to figure 3A in the simplest possible
@@ -961,6 +962,7 @@ typical classes of output of the granular layer.
       resources, this will have to be done with a smaller number of
       patterns than the previous figure (128 patterns should be
       feasible).
+    - [ ] figure legend
 *** DONE Mockup of figures 7 and 8
     CLOSED: [2014-01-12 Sun 18:23]
     Angus need this as soon as possible to start writing.
@@ -982,7 +984,123 @@ typical classes of output of the granular layer.
     It would be nice to have a representation of what kind of input
     we're playing into the network in this case as well. something
     like a raster plot or a visualisation of the conductance trains.
-*** TODO Detailed check/proofread of the Appendix to the supplementary material.
+*** DONE Detailed check/proofread of the Appendix to the supplementary material.
+    CLOSED: [2014-02-04 Tue 10:21]
+** <2014-02-06 Thu> Meeting with Guy to discuss changes to the Appendix.
+*** Points to discuss (taken from an email I sent to Guy)
+    1. I understand wanting to keep the mappings 'm' as one of the
+       sources of disorder for the system, but they don't really have
+       any role, in practice, in any of the calculation in which they
+       are involved. The effect of the mappings being random is only
+       'felt' through the functional form of u_N^{S_X}, but this is
+       handled separately anyway throughout the proof, so we can
+       safely take out all explicit references to them.
+    2. Bit of a philosophical point... Page 28: you justify the need
+       for using empirical probabilities (and entropies) by saying
+       that "the organism would require an infinite lifetime to obtain
+       'true' probability estimates". But why would the organism need
+       to estimate the probabilities in the first place? The organism
+       is -arguably- only interested in discriminating between
+       events. We don't know how it does it, and that's why we're
+       using information-theoretical quantities (MI and entropy) to
+       formulate *bounds* to its ability to do so. It seems to me that
+       these bounds depend on the underlying structure of the
+       communication channel, ie on the *true* probabilities and
+       entropies. The only thing that would depend on empirical
+       probabilities and entropies would be, in fact, the ability of
+       the organism to estimate probabilities and entropies; but - as
+       I said above - I don't think that's relevant to the organism...
+    3. Page 28-29: in our previous email exchange about this
+       paragraph, you mentioned you were going to remove most of this,
+       so I don't know if this still applies, but here it is anyway: a
+       few lines before eq 7 you say that codewords are sampled
+       without replacement, and then you go on and calculate the
+       probability that these codes are unique: isn't this
+       contradictory? I think the derivation still works, though, as
+       what you're really doing is sampling *with* replacement
+       (otherwise wouldn't you have l_{n-1} = [(mu sx) - u_{n-1} -
+       (n - 1)]/(mu sx) or something like that?)
+    4. Page 33: Are you sure of the correctness of the Taylor expansion in eq. 16 and 17? I think there might be several unrelated issues with it.
+     - aren't you missing a linear term in eq 16?
+     - as pointed out by one of the reviewers, I think the quadratic
+       term has the wrong sign.
+     - how do you justify expanding p(omega|theta,m) in terms of delta
+       in the logarithm but not in the factor multiplying it? If you
+       expand everything, the quadratic term in delta actually ends up
+       cancelling out and you're only left with the linear term (that
+       you don't have in your expansion in the first place)
+    5. Page 33 and 37: I don't understand your argument about the
+       entropy being infinite in the limit of an infinite network. The
+       logarithm in eq 15 might only be defined for p>0, but (p
+       log(p))->0 as p->0, and I don't see any reason why, in
+       principle, the sum giving the entropy should diverge. In fact,
+       intuitively I would expect it to converge to log(N)!
+    6. Quenched and Annealed averages. If I recall correctly, normally
+       by 'annealed average' one means an average in which the
+       disorder is considered on the same footing as the randomness in
+       the dynamics of the system, and this in practice means writing
+       ln<Z> instead than <ln(Z)> when calculating the mean free
+       energy over the disorder. This simplifies the math with respect
+       to the "proper", or quenched, average, where we keep the
+       disorder "frozen", we study the dynamics of the system of a
+       given setting of the disorder, and only at the end we average
+       over all possible settings for the disorder. This idea of
+       simplifying an average by postulating that the fluctuations
+       caused by disorder are small enough to write <ln(Z)>=ln(<Z>) is
+       indeed analogous to what you do when you bring the curly braces
+       inside the logarithm, but I think that the analogy could be
+       better explained, and motivated differently. The fact is that,
+       in general, for disordered systems the quenched average is the
+       correct one and the annealed average can only be used as a
+       convenient approximation - when it holds. In the text, though
+       (page 38), you seem to propose using the annealed average to
+       work around a formal problem (H diverging as gamma->infinity),
+       which sounds suspicious to me: essentially it means "this
+       series diverges, so let's make some approximations and make the
+       infinity disappear". Fortunately though, I think (see point 4)
+       that the series doesn't diverge in the first place, so I
+       propose we just say that we're using the annealed average
+       because it's more convenient, and keep the mention (that you
+       make at page 34) of the fact that numerical simulations show
+       how this approximation is indeed good.
+    7. Is there a reason for keeping around two different kinds of
+       averages? can't we just use curly braces everywhere? (note that
+       here I don't mean quenched vs annealed averages: those for me
+       are equivalent to, respectively, evaluating <H(p)> or H(<p>). I
+       mean <> vs {}.)
+    8. page 39 (and elsewhere): "the average fraction of codes leading
+       to some output codeword over all network connectivities depends
+       on the number of active outputs in the output codeword rather
+       than on the specific connectivity or codeword". I have two
+       comments on this:
+     - the independence on the specific connectivity is trivial since
+       the object we are dealing with is defined as an average over
+       said connectivities, so no problem here;
+     - by contrast, the fact that the quantity depends on and only on
+       the number of active outputs is not immediate. I think we could
+       make the point clearer by saying that the quantity in eq 22 is
+       invariant under permutations of the granule cell indexes (ie
+       permutations of the nu_i), which should be evident by looking
+       at the expression in eq 22 (also it's obvious following the
+       average over theta). From here, we can then argue that S_Y is
+       the most generic permutation-invariant function of a binary
+       vector.. I'm sure there is an easy symmetry-based argument to
+       be made here, but I still need to think about it (the idea
+       being that S_Y is sort of the conserved charge associated to
+       the permutation symmetry, which is even nicer if you think that
+       this symmetry constitutes the core assumption of the model:
+       that the network is random and the disorder is annealed).
+    These were my main conceptual points. There are some additional,
+    minor ones:
+    1. I think we can remove all the mentions of the "indicator
+       function". This should simplify the treatment somewhat.
+    2. I don't like the fact that the symbols S_X (and S_Y) represent
+       both sets (success classes) and the cardinality of such sets.
+    3. I have several suggestions for improving the notation, making
+       it (at least in my view) somewhat simpler and more consistent.
+    4. Various other bits and pieces that are not worth mentioning
+       here.
+
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
    My guess is that, unless our choice of input correlations make a
@@ -1153,3 +1271,6 @@ the length of the grc dendrites we should be able to test if the
 mf->grc connections are 'random' (ie after some opportunely
 constrained maxent distribution) by predicting the correlation range
 and seeing if it matches with the experiments.
+* Tasks related to the paper
+*** TODO Write an extension for the methods section describing how we used the spiking network
+*** TODO Write a short text describing what I think should be the main point we make about the spiking network in the main text.
