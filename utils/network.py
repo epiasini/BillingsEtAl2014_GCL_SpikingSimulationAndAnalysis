@@ -116,6 +116,42 @@ def set_tonic_GABA(project_dir, conductance_in_nS, reversal_potential=-79.1):
     cell.set('leakReversal', '{}mV'.format(new_reversal_potential))
     tree.write(filename, encoding="UTF-8", xml_declaration=True)
 
+def scale_synaptic_conductance(project_dir, component_name, scaling_factor, attributes_to_scale, units='nS'):
+    ET.register_namespace('', 'http://www.neuroml.org/schema/neuroml2')
+    filename = project_dir + "/cellMechanisms/{0}/{0}.nml".format(component_name)
+    tree = ET.parse(filename)
+    root = tree.getroot()
+    synapse = root.findall(".//*[@id='{}']".format(component_name))[0]
+    for attribute in attributes_to_scale:
+        old_conductance = float(synapse.get(attribute).rstrip(units))
+        new_conductance = old_conductance * scaling_factor
+        synapse.set(attribute, '{}{}'.format(new_conductance, units))
+    tree.write(filename, encoding="UTF-8", xml_declaration=True)
+
+
+def scale_excitatory_conductances(project_dir, scaling_factor):
+    """
+    Modify the RothmanMFToGrCAMPA.nml and RothmanMFToGrCNMDA.nml files
+    in the working copy of of the nC project to scale the total amount
+    of excitatory conductance.
+
+    """
+    # scale AMPA
+    scale_synaptic_conductance(project_dir=project_dir,
+                               component_name='RothmanMFToGrCAMPA',
+                               scaling_factor=scaling_factor,
+                               attributes_to_scale=['directAmp1',
+                                                    'directAmp2',
+                                                    'spilloverAmp1',
+                                                    'spilloverAmp2',
+                                                    'spilloverAmp3'])
+    # scale NMDA
+    scale_synaptic_conductance(project_dir=project_dir,
+                               component_name='RothmanMFToGrCNMDA',
+                               scaling_factor=scaling_factor,
+                               attributes_to_scale=['directAmp1',
+                                                    'directAmp2'])
+
 def export_to_neuroml(point, project, sim_config):
     # export to NeuroML (debug feature)
     from os.path import join, abspath, dirname

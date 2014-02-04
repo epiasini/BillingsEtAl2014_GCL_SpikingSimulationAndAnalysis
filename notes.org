@@ -628,6 +628,11 @@ though, as we still need to vary p(MF) as an independent variable.
        for the results archives.
 **** DONE Master script: add back simulation/compression/analysis selector
      CLOSED: [2014-01-27 Mon 13:35]
+**** DONE Implement inverse scaling of excitatory conductance with number of dendrites.
+     CLOSED: [2014-02-04 Tue 18:45]
+     Angus asked for this, as an alternative biologically plausible
+     way of setting the "threshold" of the cells as a function of the
+     number of dendrites.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]

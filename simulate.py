@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+1+0+0+80+0+10+0+128+50+200) 0
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+1+0+1+0+80+0+10+0+128+50+200) 0
 """
 import random
 import time
@@ -21,7 +21,7 @@ from ucl.physiol.neuroconstruct.neuron import NeuronFileManager
 
 from utils.cluster_system import ClusterSystem
 from utils.pure import SimpleParameterSpacePoint
-from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli, set_tonic_GABA
+from utils.network import generate_nC_network, generate_nC_saves, generate_nC_stimuli, set_tonic_GABA, scale_excitatory_conductances
 
 point = eval(sys.argv[1].replace('+', ','))
 stim_pattern_number = int(sys.argv[2])
@@ -71,6 +71,16 @@ with ClusterSystem() as system:
         total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (float(point.n_grc_dend)/4) * (1 + (point.active_mf_fraction * point.dta))
     total_GABA_conductance_in_nS = total_GABA_conductance_in_pS/1000.
     set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
+
+    # scale excitatory conductance by modifying the synaptic model. In
+    # general, the amplitude of the excitatory conductances is
+    # inversely proportional to the number of dendrites divided by 4,
+    # with the exc_cond_scaling parameter as the proportionality
+    # constant. If this is set to zero, the conductances are not
+    # scaled.
+    if point.exc_cond_scaling:
+        scaling_factor = point.exc_cond_scaling/(float(point.n_grc_dend)/4)
+        scale_excitatory_conductances(work_dir, scaling_factor)
 
     # load project and initialise
     project_file = java.io.File(work_dir + "/" + project_filename)

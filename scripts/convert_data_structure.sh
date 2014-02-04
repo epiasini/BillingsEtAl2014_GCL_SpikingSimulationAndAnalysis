@@ -9,11 +9,14 @@ do
     do
 	for cr in {0..1}
 	do
-	    pattern_dir=$data_dir/gd$gd/cr$cr/iscs0.00/f$mf
-	    target_dir_old=$pattern_dir/b0000
-	    mkdir -p $pattern_dir/b1.00/dta0.0
-	    target_dir_new=$pattern_dir/b1.00/dta0.0/mod0
-	    mv -v $target_dir_old $target_dir_new
+	    for dta in 0.0 0.1 0.3 1.0
+	    do
+		dta_dir=$data_dir/gd$gd/cr$cr/iscs0.00/f$mf/b1.00/dta$dta
+		old_dir=$dta_dir/mod0
+		target_dir=$dta_dir/ecs0.0
+		mkdir $target_dir
+		mv -v $old_dir $target_dir
+		done
 	done
     done
 done
