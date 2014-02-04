@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib
+matplotlib.rc('font', family='Helvetica', size=18)
+#matplotlib.rc('axes', labelsize='large')
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from matplotlib import pyplot as plt
@@ -300,18 +303,19 @@ class RasterPlot(object):
         self.mf_spikes = self.point.spikes_arch.get_spikes(cell_type='mf')[observation]
         self.grc_spikes = self.point.spikes_arch.get_spikes(cell_type='grc')[observation]
         self.spike_counts = [self.point.spikes_arch.get_spike_counts(cell_type='mf')[observation], self.point.spikes_arch.get_spike_counts(cell_type='grc')[observation]]
+
     def plot_raster(self):
         figs = []
         for cell_type, spikes in enumerate([self.mf_spikes, self.grc_spikes]):
             color = ['r', 'b'][cell_type]
             cmap = ['Reds', 'Blues'][cell_type]
-            fig = plt.figure()
+            fig = plt.figure(figsize=(4, 6))
             figs.append(fig)
-            ax_raster = fig.add_axes([0.19, 0.10, 0.75, 0.75])
-            ax_rates = fig.add_axes([0.94, 0.10, 0.05, 0.75])
+            ax_raster = fig.add_axes([0.39, 0.12, 0.45, 0.75])
+            ax_rates = fig.add_axes([0.84, 0.12, 0.15, 0.75])
             fig.patch.set_alpha(self.alpha)
             for cell, cell_times in enumerate(spikes):
-                ax_raster.scatter(cell_times,
+                ax_raster.scatter(np.array(cell_times) - (self.point.sim_duration - self.point.ana_duration),
                                   np.zeros_like(cell_times)+cell,
                                   c=color,
                                   marker='|')
@@ -322,22 +326,27 @@ class RasterPlot(object):
                             origin='lower')
             ax_rates.axes.get_xaxis().set_ticks([])
             ax_rates.axes.get_yaxis().set_ticks([])
-            ax_raster.set_xlabel('time (ms)', fontsize=16)
-            ax_raster.set_xlim(-5, self.point.sim_duration+5)
+            dt = np.floor(self.point.ana_duration)/3
+            ax_raster.set_xticks([int(round(dt * k)) for k in range(4)])
+            ax_raster.set_xlabel('Time (ms)')
+            ax_raster.set_xlim(-2, self.point.ana_duration+2)
             ax_raster.set_ylim(0, len(spikes))
+            ax_raster.xaxis.set_ticks_position('bottom')
+            ax_raster.yaxis.set_ticks_position('none')
             if cell_type == 1:
-                ax_raster.set_ylabel('cell index', fontsize=16)
+                ax_raster.set_ylabel('Cell index')
             elif cell_type == 0:
-                ax_pattern = fig.add_axes([0.14, 0.10, 0.05, 0.75])
+                ax_pattern = fig.add_axes([0.21, 0.12, 0.15, 0.75])
                 ax_pattern.imshow(self.binary_pattern,
                                   interpolation='none',
                                   cmap='binary',
                                   aspect='auto',
                                   origin='lower')
-                ax_pattern.axes.get_xaxis().set_ticks([])
+                ax_pattern.xaxis.set_ticks([])
+                ax_pattern.yaxis.set_ticks_position('none')
+                #ax_pattern.set_ylabel('Cell index')
                 ax_rates.axes.get_yaxis().set_ticks([])
                 ax_raster.axes.get_yaxis().set_ticks([])
-                ax_pattern.set_ylabel('cell index', fontsize=16)
         return figs
 
     def plot(self):
@@ -391,7 +400,7 @@ class BarcodePlot(object):
                 ax.spines['right'].set_color('none')
                 
             if k==0:
-                ax.set_ylabel('cell index', fontsize=16)
+                ax.set_ylabel('Cell index')
                 ax.yaxis.set_ticks_position('left')
             else:
                 ax.axes.get_yaxis().set_ticks([])
@@ -404,7 +413,7 @@ class BarcodePlot(object):
                 ax.axes.get_xaxis().set_ticks([])
 
 
-        axes[len(rate_profiles)/2].set_xlabel('events', fontsize=16)
+        axes[len(rate_profiles)/2].set_xlabel('Events')
 
         return fig
 
@@ -415,9 +424,9 @@ class BarcodePlot(object):
         return fig
 
     def plot_barcodes_with_centroids(self):
-        from sklearn.cluster import MiniBatchKMeans
-        clustering = MiniBatchKMeans(n_clusters=self.n_stim_patterns,
-                                     batch_size=self.n_trials)
+        from sklearn.cluster import KMeans
+        clustering = KMeans(n_clusters=self.n_stim_patterns,
+                            tol=1e-6)
         self.labeling = clustering.fit_predict(self.rate_profiles)
         self.centroids = clustering.cluster_centers_
         fig, axes = plt.subplots(ncols=len(self.centroids),
@@ -443,28 +452,33 @@ class BarcodePlot(object):
 
             axes[k].yaxis.set_ticks_position('left')
             axes[k].axes.get_xaxis().set_ticks([20, 40])
-            axes[k].set_title('cluster {}'.format(k+1), fontsize=12)
+            axes[k].set_title('Cluster {}'.format(k+1))
+            axes[k].set_xlabel('Events')
             if k>0:
                 axes[k].axes.get_yaxis().set_ticks([])
 
             centroid_ax.axes.get_xaxis().set_ticks([])
             centroid_ax.axes.get_yaxis().set_ticks([])
 
-        axes[0].set_xlabel('events', fontsize=16)
-        axes[0].set_ylabel('cell index', fontsize=16)
+        axes[0].set_ylabel('Cell index')
         return fig
         
 class DecodingProcessPlot(object):
-    def __init__(self, barcode_plot):
-        self.barcode = barcode_plot
-        self.raster = RasterPlot(self.barcode.point,
-                                 observation=self.barcode.observations[0])
+    def __init__(self, point, n_stim_patterns=3, n_trials=50):
+        self.point = point
+        self.barcode = BarcodePlot(point, n_stim_patterns, n_trials)
+        self.raster = RasterPlot(point, observation=self.barcode.observations[0])
         self.in_pattern = self.raster.binary_pattern
         self.out_rate_profile = self.barcode.rate_profiles[0].reshape(-1,1)
+    def plot(self):
+        # cluster data and plot clustering
+        self.barcode.plot_barcodes_with_centroids()
         self.decoder_label = self.barcode.labeling[0]
         self.centroid = self.barcode.centroids[self.decoder_label].reshape(-1,1)
         self.other_centroids = [self.barcode.centroids[label].reshape(-1,1) for label in range(self.barcode.n_stim_patterns) if label!=self.decoder_label]
-    def plot(self):
+        # plot detailed raster plot of selected observation
+        self.raster.plot()
+
         fig, ax = plt.subplots(nrows=1,
                                ncols=5)
         ax[0].imshow(self.in_pattern, interpolation='none', cmap='binary', aspect='auto', origin='lower')
@@ -473,10 +487,11 @@ class DecodingProcessPlot(object):
         ax[3].imshow(self.other_centroids[0], interpolation='none', cmap='binary', aspect='auto', origin='lower')
         ax[4].imshow(self.other_centroids[1], interpolation='none', cmap='binary', aspect='auto', origin='lower')
         for k, a in enumerate(ax):
-            a.axes.get_xaxis().set_ticks([])
+            a.xaxis.set_ticks([])
+            a.yaxis.set_ticks_position('none')
             if k>1:
-                a.axes.get_yaxis().set_ticks([])
-        ax[0].set_ylabel('cell index')
+                a.yaxis.set_ticks([])
+        ax[0].set_ylabel('Cell index')
         return fig, ax
         
         

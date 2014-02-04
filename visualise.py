@@ -17,11 +17,15 @@ from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter, Rast
 
 
 
-plot_mi_heatmap = False
-plot_sparseness = False
+plot_mi_heatmap = True
+plot_sparseness = True
 plot_mi_comparison_nsp = False
 plot_line_comparison = False
-plot_line_n_trials = True
+plot_line_n_trials = False
+plot_line_training_size = False
+plot_line_sim_duration = False
+plot_line_ana_duration = False
+
 
 plot_mi_detail = False
 plot_dendrograms = False
@@ -38,10 +42,10 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(4)
+n_grc_dend = psl(1,21,1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
-active_mf_fraction = psl(.1)
+active_mf_fraction = psl(.1,1.,.1)
 gaba_scale = psl(1)
 dta = psl(0)
 modulation_frequency = psl(0)
@@ -50,9 +54,9 @@ stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
 n_stim_patterns = psl(1024)
-n_trials = psl(31, 201, 1)
-sim_duration = psl(200.0)
-ana_duration = psl(150.0) # must be < min(sim_duration)
+n_trials = psl(60)
+sim_duration = psl(180)
+ana_duration = psl(30) # must be < min(sim_duration)
 training_size = psl(30) # must be < min(n_trials)
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
@@ -87,7 +91,7 @@ if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension='png')
         plt.close(rhm.fig)
 
 if plot_line_n_trials:
@@ -97,14 +101,71 @@ if plot_line_n_trials:
     mi_qe =  subspace._get_attribute_array('point_mi_qe')
     mi_pt  =  subspace._get_attribute_array('point_mi_pt')
     mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
+    mi_plugin  =  subspace._get_attribute_array('point_mi_plugin')
+    print testing_size, mi_qe
     fig, ax = plt.subplots()
     ax.plot(testing_size, mi_qe.flat, label='qe')
     ax.plot(testing_size, mi_pt.flat, label='pt')
     ax.plot(testing_size, mi_nsb.flat, label='nsb')
+    ax.plot(testing_size, mi_plugin.flat, label='plugin')
     ax.set_xlabel('testing set size')
     ax.set_ylabel('MI (bits)')
     ax.legend(loc='best')
     fig.savefig('n_trials.png')
+
+if plot_line_training_size:
+    n_trials = 200
+    training_size = space.get_range('training_size')
+    subspace = space.get_nontrivial_subspace(('n_trials', n_trials))
+    mi_plugin =  subspace._get_attribute_array('point_mi_plugin')
+    mi_qe =  subspace._get_attribute_array('point_mi_qe')
+    mi_pt  =  subspace._get_attribute_array('point_mi_pt')
+    mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
+    fig, ax = plt.subplots()
+    ax.plot(training_size, mi_qe.flat, label='qe')
+    ax.plot(training_size, mi_pt.flat, label='pt')
+    ax.plot(training_size, mi_nsb.flat, label='nsb')
+    ax.plot(training_size, mi_plugin.flat, label='plugin')
+    ax.set_xlabel('training set size')
+    ax.set_ylabel('MI (bits)')
+    ax.legend(loc='best')
+    fig.savefig('training_size.png')
+
+if plot_line_sim_duration:
+    ana_duration = 50
+    sim_duration = space.get_range('sim_duration')
+    subspace = space.get_nontrivial_subspace(('ana_duration', ana_duration))
+    mi_plugin =  subspace._get_attribute_array('point_mi_plugin')
+    mi_qe =  subspace._get_attribute_array('point_mi_qe')
+    mi_pt  =  subspace._get_attribute_array('point_mi_pt')
+    mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
+    fig, ax = plt.subplots()
+    ax.plot(sim_duration, mi_qe.flat, label='qe')
+    ax.plot(sim_duration, mi_pt.flat, label='pt')
+    ax.plot(sim_duration, mi_nsb.flat, label='nsb')
+    ax.plot(sim_duration, mi_plugin.flat, label='plugin')
+    ax.set_xlabel('simulation length (ms)')
+    ax.set_ylabel('MI (bits)')
+    ax.legend(loc='best')
+    fig.savefig('sim_duration.png')
+
+if plot_line_ana_duration:
+    sim_duration = 200
+    ana_duration = space.get_range('ana_duration')
+    subspace = space.get_nontrivial_subspace(('sim_duration', sim_duration))
+    mi_plugin =  subspace._get_attribute_array('point_mi_plugin')
+    mi_qe =  subspace._get_attribute_array('point_mi_qe')
+    mi_pt  =  subspace._get_attribute_array('point_mi_pt')
+    mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
+    fig, ax = plt.subplots()
+    ax.plot(ana_duration, mi_qe.flat, label='qe')
+    ax.plot(ana_duration, mi_pt.flat, label='pt')
+    ax.plot(ana_duration, mi_nsb.flat, label='nsb')
+    ax.plot(ana_duration, mi_plugin.flat, label='plugin')
+    ax.set_xlabel('analysis length (ms)')
+    ax.set_ylabel('MI (bits)')
+    ax.legend(loc='best')
+    fig.savefig('ana_duration.png')
 
 if plot_mi_comparison_nsp:
     n_stim_patterns_2 = psl(1024)
@@ -174,10 +235,10 @@ if plot_sparseness:
         rhm = RectangularHeatmapPlotter(subspace)
         fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
         #print data_o
-        rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
-        rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
+        # rhm = RectangularHeatmapPlotter(subspace)
+        # fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
+        # rhm = RectangularHeatmapPlotter(subspace)
+        # fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
 
         # use data extracted for input and output Hoyer sparseness to
         # visualise 'amplification', defined as
@@ -196,12 +257,12 @@ if plot_sparseness:
 
         # plot mi 'masked' to show only the region where the network
         # sparsifies
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=(5,5))
         data = data_mi/np.log2(n_stim_patterns.start)
         data[data_amp>1] = np.NaN
         cmap = matplotlib.cm.get_cmap('coolwarm')
         cmap.set_bad('k', 1.)
-        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower', vmin=0, vmax=1)
+        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower', vmin=0, vmax=1, aspect=1)
         cbar = fig.colorbar(plot)
         cbar.set_label('MI / H(input)')
         ax.set_xlabel('p(MF)')
