@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 To be used with something like this:
-./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+1+0+1+0+80+0+10+0+128+50+200) 0
+./nC.sh -python /home/ucbtepi/code/network/src/simulate.py SimpleParameterSpacePoint(4+0+0+0.5+1+0.3+0+1+0+80+0+10+0+128+50+200) 0
 """
 import random
 import time
@@ -53,34 +53,31 @@ with ClusterSystem() as system:
     tar_archive_path = work_dir+'/temporary_archive.tar'
     tar_archive = tarfile.open(tar_archive_path, 'w')
 
-    # set level of inhibition by modifying GrC model. This is somewhat
-    # involved, to follow what was done with the binary model. If
-    # DTA=0, then the total amount of inhibitory conductance is
-    # independent of th number of dendrites, and it's given by the
-    # default value of gGABA_base multiplied by the gaba_scale
-    # factor. If DTA is not zero, then the total amount of conductance
-    # is gaba_scale*gGABA_base*(d/4)(1+DTA*p(MF)). Note that this
-    # means that when DTA is not zero the total GABA conductance
-    # scales with the number of dendrites, and conversely it is not
-    # possible - strictly speaking - to have the GABA conductance
-    # depend on the number of dendrites but not on p(MF).
+    # set level of inhibition by modifying the GrC model. If
+    # inh_cond_scaling=0, then the total amount of inhibitory
+    # conductance is independent of the number of dendrites. If it is
+    # not zero, it's proportional to the number of dendrites divided
+    # by 4, with inh_cond_scaling as the proportionality constant. The
+    # DTA parameter sets how the total conductance scales with p(MF)
     gGABA_base = 438.
-    if not point.dta:
-        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale
+    dta_factor = 1 + (point.active_mf_fraction * point.dta)
+    if point.inh_cond_scaling:
+        inh_scaling_factor = point.inh_cond_scaling * (float(point.n_grc_dend)/4)
     else:
-        total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * (float(point.n_grc_dend)/4) * (1 + (point.active_mf_fraction * point.dta))
+        inh_scaling_factor = 1
+    total_GABA_conductance_in_pS = gGABA_base * point.gaba_scale * dta_factor * inh_scaling_factor
     total_GABA_conductance_in_nS = total_GABA_conductance_in_pS/1000.
     set_tonic_GABA(work_dir, total_GABA_conductance_in_nS)
 
-    # scale excitatory conductance by modifying the synaptic model. In
-    # general, the amplitude of the excitatory conductances is
-    # inversely proportional to the number of dendrites divided by 4,
-    # with the exc_cond_scaling parameter as the proportionality
-    # constant. If this is set to zero, the conductances are not
-    # scaled.
+    # scale excitatory conductance by modifying the AMPA and NMDA
+    # synaptic models. In general, the amplitude of the excitatory
+    # conductances is inversely proportional to the number of
+    # dendrites divided by 4, with the exc_cond_scaling parameter as
+    # the proportionality constant. If this is set to zero, the
+    # conductances are not scaled.
     if point.exc_cond_scaling:
-        scaling_factor = point.exc_cond_scaling/(float(point.n_grc_dend)/4)
-        scale_excitatory_conductances(work_dir, scaling_factor)
+        exc_scaling_factor = point.exc_cond_scaling / (float(point.n_grc_dend)/4)
+        scale_excitatory_conductances(work_dir, exc_scaling_factor)
 
     # load project and initialise
     project_file = java.io.File(work_dir + "/" + project_filename)

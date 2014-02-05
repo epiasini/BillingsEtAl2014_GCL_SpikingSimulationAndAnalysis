@@ -42,13 +42,14 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(1,21,1)
+n_grc_dend = psl(1,11,1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
 gaba_scale = psl(1)
-dta = psl(0.1)
-exc_cond_scaling = psl(0.)
+dta = psl(0)
+inh_cond_scaling = psl(0.)
+exc_cond_scaling = psl(1.)
 modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
@@ -70,6 +71,7 @@ space = ParameterSpace(n_grc_dend,
                        active_mf_fraction,
                        gaba_scale,
                        dta,
+                       inh_cond_scaling,
                        exc_cond_scaling,
                        modulation_frequency,
                        stim_rate_mu,
@@ -258,6 +260,7 @@ if plot_sparseness:
         fig.savefig('amplification.png')
         plt.close(rhm.fig)
         np.savetxt('data_p_gc.csv', data_a_o, delimiter=',')
+        np.savetxt('data_amplification.csv', data_amp, delimiter=',')
 
         # plot mi 'masked' to show only the region where the network
         # sparsifies

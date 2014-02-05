@@ -200,12 +200,12 @@ that for the analysis we need to use a simpler decoder.
     direct and spillover contributions from spontaneous activity at
     8Hz. Quoting Ward2012, section 3.2:
     #+BEGIN_QUOTE
-    Application of 1 μM tetrodotoxin (TTX) to block action potentials
+    Application of 1 \mu M tetrodotoxin (TTX) to block action potentials
     reduced the frequency of sIPSCs but did not elicit a shift in
     holding current (I hold; 0.38 ± 2.77 pA equivalent to a
     conductance of 5.9 ± 43.3 pS; N = 5; P = 0.78;
     Fig. 3.1A). Application of the GABAAR antagonist gabazine (GBZ; 10
-    μM) blocked sIPSCs and elicited an outward current shift of 27 ±
+    \mu M) blocked sIPSCs and elicited an outward current shift of 27 ±
     17 pA (N = 11) reflecting a suppression of tonic conductance of
     420 ± 270 pS. GBZ application also reduced the SD of the noise of
     the recording (from 7.1 ± 4.2 pA to 2.6 ± 0.4 pA; Mann-Whitney U
@@ -633,6 +633,9 @@ though, as we still need to vary p(MF) as an independent variable.
      Angus asked for this, as an alternative biologically plausible
      way of setting the "threshold" of the cells as a function of the
      number of dendrites.
+**** TODO Separate the DTA parameter from the control of how inhibition scales with the number of dendrites.
+     This is needed to study the effect of the DTA when we scale the
+     excitatory but not the inhibitory synaptic conductances with d.
 *** Analysis features
 **** DONE Implement pure rate-code decoder with k-means clustering.
      CLOSED: [2013-11-22 Fri 10:54]
@@ -948,7 +951,11 @@ typical classes of output of the granular layer.
       and clustering)
       - [X] make sure resolution of plot with clustered barcodes
         matches the plot where the barcodes are shuffled.
-    - [ ] figure legend	
+    - [ ] figure legend
+    #+NAME:figure_7
+    #+CAPTION:Estimation of mutual information and input/output sparseness in a spiking network model of the GCL. *A*: Synaptic input to a granule cell model with four dendrites. The traces on the left show an example of excitatory (AMPA, NMDA) and inhibitory (GABA) conductances injected into the cell during a simulation. The first two traces represent /active/ mossy fibre terminals, firing at 80Hz, while the two middle traces represent /inactive/ terminals, firing at 10Hz. The bottom trace shows how the amount of GABA conductance is constant throughout the simulation. *B*: Membrane potential of the model resulting from injection of conductances in panel A. Inset: rate I/O curve for the GrC model. Input rates are for 4 Poisson stimuli. *C*: Fit of the short-term plasticity model (red trace) of the AMPA component of the MF to GrC synapse to an experimental recording of a 100Hz conductance train (black trace). *D*: same as *C* but for the NMDA component and a 80Hz conductance train.
+    #+ATTR_HTML: :width 100%
+    [[file:fig/figure_7.png][file:fig/figure_7.png]]
 *** TODO [0/4] figure 8: results. 
     This should contain:
     - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
@@ -1279,3 +1286,4 @@ and seeing if it matches with the experiments.
 * Tasks related to the paper
 *** TODO Write an extension for the methods section describing how we used the spiking network
 *** TODO Write a short text describing what I think should be the main point we make about the spiking network in the main text.
+    

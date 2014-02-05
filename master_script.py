@@ -21,6 +21,7 @@ input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
 gaba_scale = psl(1)
 dta = psl(0.3)
+inh_cond_scaling = psl(0.)
 exc_cond_scaling = psl(1.)
 modulation_frequency = psl(0)
 stim_rate_mu = psl(80)
@@ -59,6 +60,7 @@ parameter_space = ParameterSpace(n_grc_dend,
                                  active_mf_fraction,
                                  gaba_scale,
                                  dta,
+                                 inh_cond_scaling,
                                  exc_cond_scaling,
                                  modulation_frequency,
                                  stim_rate_mu,
