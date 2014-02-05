@@ -633,7 +633,10 @@ though, as we still need to vary p(MF) as an independent variable.
      Angus asked for this, as an alternative biologically plausible
      way of setting the "threshold" of the cells as a function of the
      number of dendrites.
-**** TODO Separate the DTA parameter from the control of how inhibition scales with the number of dendrites.
+**** DONE Separate the DTA parameter from the control of how inhibition scales with the number of dendrites.
+     CLOSED: [2014-02-05 Wed 21:18]
+     - CLOSING NOTE [2014-02-05 Wed 21:18] \\
+       Done in [[magit:~/phd/code/network/src/::commit@657204d][commit #657204d]].
      This is needed to study the effect of the DTA when we scale the
      excitatory but not the inhibitory synaptic conductances with d.
 *** Analysis features
