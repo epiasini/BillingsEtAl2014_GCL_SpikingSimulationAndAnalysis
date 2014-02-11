@@ -956,8 +956,8 @@ typical classes of output of the granular layer.
         matches the plot where the barcodes are shuffled.
     - [ ] figure legend
     #+NAME:figure_7
-    #+CAPTION:Estimation of mutual information and input/output sparseness in a spiking network model of the GCL. *A*: Synaptic input to a granule cell model with four dendrites. The traces on the left show an example of excitatory (AMPA, NMDA) and inhibitory (GABA) conductances injected into the cell during a simulation. The first two traces represent /active/ mossy fibre terminals, firing at 80Hz, while the two middle traces represent /inactive/ terminals, firing at 10Hz. The bottom trace shows how the amount of GABA conductance is constant throughout the simulation. *B*: Membrane potential of the model resulting from injection of conductances in panel A. Inset: rate I/O curve for the GrC model. Input rates are for 4 Poisson stimuli. *C*: Fit of the short-term plasticity model (red trace) of the AMPA component of the MF to GrC synapse to an experimental recording of a 100Hz conductance train (black trace). *D*: same as *C* but for the NMDA component and a 80Hz conductance train.
-    #+ATTR_HTML: :width 100%
+    #+CAPTION:Estimation of mutual information and input/output sparseness in a spiking network model of the GCL. *A*: Synaptic input to a granule cell model with four dendrites. The traces on the left show an example of excitatory (AMPA, NMDA) and inhibitory (GABA) conductances injected into the cell during a simulation. The first two traces represent /active/ mossy fibre terminals, firing at 80Hz, while the two middle traces represent /inactive/ terminals, firing at 10Hz. The bottom trace shows how the amount of GABA conductance is constant throughout the simulation. *B*: Membrane potential of the model resulting from injection of conductances in panel A. Inset: rate I/O curve for the GrC model. Input rates are for 4 Poisson stimuli. *C*: Fit of the short-term plasticity model (red trace) of the AMPA component of the MF to GrC synapse to an experimental recording of a 100Hz conductance train (black trace). *D*: same as *C* but for the NMDA component and a 80Hz conductance train. *E*: Network simulation set-up. A binary stimulus pattern (represented by the black and white barcode) is selected out of a set of N patterns. A Poisson spike train is generated for each mossy fibre terminal (red raster plot) and played into the network. *F*: Three-dimensional view of the network model. Mossy fibre terminals are depicted in red and granule cells in blue. *G*: raster plot for the granule cells in response to the selected input pattern. Blue barcode: granule cell spike counts. *H*: Matching the 
+    #+ATTR_HTML: :width 800px
     [[file:fig/figure_7.png][file:fig/figure_7.png]]
 *** TODO [0/4] figure 8: results. 
     This should contain:
@@ -978,7 +978,7 @@ typical classes of output of the granular layer.
       patterns than the previous figure (128 patterns should be
       feasible).
     - [ ] figure legend
-*** DONE Mockup of figures 7 and 8
+*** DONE Mockup of figures 7 band 8
     CLOSED: [2014-01-12 Sun 18:23]
     Angus need this as soon as possible to start writing.
 *** TODO Proof-of-principle figure with sinusoidally varying input rate
@@ -1277,6 +1277,42 @@ Command exited with non-zero status 1
    #+CAPTION: MI vs simulation length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and analysis window length of 50ms.
    [[file:fig/sim_duration.png][file:fig/sim_duration.png]]
 ** TODO Sparse encodable range vs integration window length
+** DONE Robustness to changes in 'on' firing rate: run simulations for 40Hz and 120Hz.
+   CLOSED: [2014-02-11 Tue 14:09]
+   The first thing we notice in figure [[efficient_frontier_firing_rate]]
+   is that at 40Hz almost no information gets through the
+   network. This is of course to be expected, as in the 30ms time
+   window we're using for the simulations we expect to see little more
+   than one spike, on average, from each mossy fibre terminal firing
+   at this frequency.
+   #+NAME:efficient_frontier_firing_rate
+   #+CAPTION:Efficient frontier plot for 'on' mossy fibre rate set at 40Hz, 80Hz and 120Hz.
+   #+ATTR_HTML: :width 800px
+   [[file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png][file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png]] 
+
+   The other interesting feature we can immediately see in figure
+   [[efficient_frontier_firing_rate]] is that the networks with few
+   dendrites seem to always be the best choice for wide-range
+   encoding, while the networks with many dendrites seem to lose their
+   sparsification advantage as the firing rate is increased (ie the
+   pareto front gets 'squashed' on an almost vertical line for the
+   120Hz case). We can give an intuitive explanation for this
+   phenomenon by looking at the single-cell f-f curve, depicted in
+   figure [[rate_IO_exc_scaling]] for several values of ~d~ and
+   accordingly scaled AMPA and NMDA conductance amplitudes. Due to the
+   increase in nonlinearity of the curve at high d, above 80Hz we see
+   that the cell actually fires more when it's stimulated through many
+   synapses. This is not the whole picture, as the f-f curve would
+   correspond to the p(MF)=1 case in our simulations (all mf terminals
+   firing at the same rate), hence we don't see an horizontal
+   inversion of the parametrisation of the 120Hz Pareto front in
+   figure [[efficient_frontier_firing_rate]], but it's sufficient to
+   explain what's going on.
+   #+NAME:rate_IO_exc_scaling
+   #+CAPTION:Rate input-output relationship (f-f curve) for the GrC model with fixed tonic inhibition and variable-sized AMPA and NMDA synaptic conductances, which scale as d/4.
+   #+ATTR_HTML: :width 800px
+   [[file:fig/rate_IO_exc_scaling.png][file:fig/rate_IO_exc_scaling.png]]
+** TODO Spatial correlation?
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
