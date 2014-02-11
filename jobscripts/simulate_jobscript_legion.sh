@@ -1,10 +1,10 @@
 #!/bin/bash -l
 #$ -S /bin/bash
 #$ -wd /home/ucbtepi/Scratch/output
-#$ -o $HOME/log/
-#$ -e $HOME/log/
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -l mem=3G
-#$ -l h_rt=3:30:00
+#$ -l h_rt=1:14:00
 #$ -P gclayer13
 
 # Set the checkpointing mechanism as BLCR
