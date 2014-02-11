@@ -2,8 +2,8 @@
 #$ -V
 #$ -S /bin/bash
 #$ -cwd
-#$ -o $HOME/log/
-#$ -e $HOME/log/
+#$ -o /dev/null
+#$ -e /dev/null
 #$ -l h_vmem=3G
 #$ -l tmem=3G
 #$ -l h_rt=8:00:00
