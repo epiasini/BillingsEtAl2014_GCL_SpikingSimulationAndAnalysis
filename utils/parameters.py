@@ -117,6 +117,17 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
         n_trials_c = path_n_trials >= self.n_trials
         spn_c = path_spn >= self.n_stim_patterns
         return all([sdur_c, n_trials_c, spn_c])
+
+    def get_cell_positions(self):
+        cell_positions = {'MFs':np.zeros(shape=(self.n_mf, 3)),
+                          'GrCs':np.zeros(shape=(self.n_grc, 3))}
+        for node in self.network_graph.nodes():
+            cell, group_name = self.nC_cell_index_from_graph_node(node)
+            cell_positions[group_name][cell,0] = self.network_graph.node[node]['x']
+            cell_positions[group_name][cell,1] = self.network_graph.node[node]['y']
+            cell_positions[group_name][cell,2] = self.network_graph.node[node]['z']
+        return cell_positions
+
     #-------------------
     # Simulation methods
     #-------------------

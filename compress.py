@@ -48,13 +48,7 @@ with ClusterSystem() as system:
 
     # load network description from graphml file and save it in the hdf5 file
     network_adjacency_matrix = networkx.to_numpy_matrix(point.network_graph)
-    cell_positions = {'MFs':np.zeros(shape=(point.n_mf, 3)),
-                      'GrCs':np.zeros(shape=(point.n_grc, 3))}
-    for node in point.network_graph.nodes():
-        cell, group_name = point.nC_cell_index_from_graph_node(node)
-        cell_positions[group_name][cell,0] = point.network_graph.node[node]['x']
-        cell_positions[group_name][cell,1] = point.network_graph.node[node]['y']
-        cell_positions[group_name][cell,2] = point.network_graph.node[node]['z']
+    cell_positions = point.get_cell_positions()
     archive.create_dataset("network_adjacency_matrix", data=network_adjacency_matrix)
     archive.create_dataset("cell_positions_MFs", data=cell_positions['MFs'])
     archive.create_dataset("cell_positions_GrCs", data=cell_positions['GrCs'])
