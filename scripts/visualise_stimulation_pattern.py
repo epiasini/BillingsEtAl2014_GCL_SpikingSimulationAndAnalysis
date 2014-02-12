@@ -47,11 +47,11 @@ def plot_sample_activation_pattern(point, show_edges=False):
                          color=(0,0,0))
     # if requested, plot the 'heaviest' edges in the projected network
     if show_edges:
+        projected_graph = bipartite.weighted_projected_graph(point.network_graph,
+                                                             point.graph_mf_nodes)
         weights = np.array([data['weight'] for u,v,data in projected_graph.edges(data=True)])
         threshold_weight = np.percentile(weights, 70)
         max_weight = weights.max()
-        projected_graph = bipartite.weighted_projected_graph(point.network_graph,
-                                                             point.graph_mf_nodes)
         for u,v,data in projected_graph.edges(data=True):
             if data['weight'] > threshold_weight:
                 u_idx = point.nC_cell_index_from_graph_node(u)[0]
@@ -62,17 +62,17 @@ def plot_sample_activation_pattern(point, show_edges=False):
                 if binary_pattern[u_idx]==binary_pattern[v_idx]==0:
                     color = (0,0,0)
                 elif binary_pattern[u_idx]==binary_pattern[v_idx]==1:
-                    color=(1,0,0)
+                    color = (1,0,0)
                 else:
-                    color=(0,1,0)
-                    edge = mlab.plot3d(x, y, z, color=color,
-                                       opacity=0.5,
-                                       tube_radius=data['weight']/10.)
+                    color = (0,1,0)
+                edge = mlab.plot3d(x, y, z, color=color,
+                                   opacity=0.5,
+                                   tube_radius=data['weight']/10.)
     # show figure
     mlab.show()
 
 if __name__=="__main__":
-    input_spatial_correlation_scale = 1
+    input_spatial_correlation_scale = 2
     point = parameters.ParameterSpacePoint(4,0,input_spatial_correlation_scale,0.2,1,0.3,0,1,0,80,0,10,0,64,50,200,150,30,0,1,5,2)
 
-    plot_sample_activation_pattern(point)
+    plot_sample_activation_pattern(point, show_edges=True)
