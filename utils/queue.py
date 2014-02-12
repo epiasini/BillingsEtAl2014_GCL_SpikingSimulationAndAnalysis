@@ -4,6 +4,8 @@ import random
 import shutil
 from subprocess import Popen, PIPE
 
+import patterns
+
 class QueueError(Exception):
     pass
 
@@ -76,20 +78,10 @@ jobs for a given grid in parameter space on SGE.
         n_mf = point.n_mf
         # generate random stimulation patterns and save them in a text file
         if not os.path.exists(point.stim_pattern_filename):
-            active_mf_number = int(round(n_mf*point.active_mf_fraction))
-            stim_patterns = []
             print('creating stim file: {0}'.format(point.stim_pattern_filename))
-            stim_pattern_file = open(point.stim_pattern_filename, "w")
-            for spn in range(point.n_stim_patterns):
-                while True:
-                    sp = sorted(random.sample(range(n_mf), active_mf_number))
-                    if sp not in stim_patterns:
-                        break
-                stim_patterns.append(sp)
-                for mf in sp:
-                    stim_pattern_file.write(str(mf) + " ")
-                stim_pattern_file.write("\n")
-            stim_pattern_file.close()
+            pattern_set = patterns.StimulationPatternSet(point)
+            pattern_set.generate()
+            pattern_set.write_to_file()
         if not point.get_existing_spike_archive_path():
             # submit simulations to the queue as an array job
             qsub_argument_list = ['-t',
