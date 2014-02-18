@@ -3,10 +3,16 @@ import matplotlib
 matplotlib.rc('font', family='Helvetica', size=18)
 from matplotlib import pyplot as plt
 
-spn = 128
+iscs_range = [0]
+spn = 1024
+ics = 0.0
+ecs = 1.0
+#sm_range = [40, 80, 120]
+sm = 80
 p_mf_range = np.arange(.1,1,.1)
 n_gd_range = np.arange(1,21,1)
-dta_range = [0.1, 0.3, 1.0]
+#dta_range = [0.1, 0.3, 1.0]
+dta = 0.
 colors = ['k', 'r', 'g']
 
 max_mi = np.log2(spn)
@@ -16,12 +22,12 @@ fig, ax = plt.subplots()
 artists = []
 labels = []
 
-for i, dta in enumerate(dta_range):
-    mi_data = np.loadtxt('../../data/data_mi_spn{}_dta{:.01f}.csv'.format(spn, dta), delimiter=',')
-    p_gc_data = np.loadtxt('../../data/data_p_gc_spn{}_dta{:.01f}.csv'.format(spn, dta), delimiter=',')
+for i, iscs in enumerate(iscs_range):
+    mi_data = np.loadtxt('../../data/data_mi_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
+    p_gc_data = np.loadtxt('../../data/data_p_gc_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
     color = colors[i]
     artists.append(matplotlib.patches.Rectangle((0, 0), 1, 1, fc=color))
-    labels.append("DTA {:.01f}".format(dta))
+    labels.append("{}".format(iscs+1))
     for j, gd in enumerate(n_gd_range):
         mi = mi_data[j,:].mean()/max_mi
         p_gc = p_gc_data[j,:].mean()
@@ -31,7 +37,7 @@ for i, dta in enumerate(dta_range):
         else:
             ax.plot(sparsification, mi, c=color, marker="${}$".format(gd), markersize=22)
 
-ax.legend(artists, labels, loc='best')
+ax.legend(artists, labels, loc=3)
 ax.set_xlabel('Average GCL sparseness')
 ax.set_ylabel('Average MI/H(input)')
 plt.show()
