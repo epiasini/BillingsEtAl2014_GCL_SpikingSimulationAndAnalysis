@@ -51,6 +51,7 @@ class SpatiallyCorrelatedStimulationPatternGenerator(StimulationPatternGenerator
     """
     def __init__(self, point):
         super(SpatiallyCorrelatedStimulationPatternGenerator, self).__init__(point)
+        self.domain_size = 1 + point.input_spatial_correlation_scale
         self.input_spatial_correlation_scale = point.input_spatial_correlation_scale
         # get positions of mf terminals
         mf_positions = point.get_cell_positions()['MFs']
@@ -68,11 +69,13 @@ class SpatiallyCorrelatedStimulationPatternGenerator(StimulationPatternGenerator
             return sorted(random.sample(range(self.n_mf), self.active_mf_number))
         else:
             pattern = set()
-            while len(pattern) < self.active_mf_number:
-                # randomly select active domain size
-                domain_size = 1 + int(round(random.expovariate(1./self.input_spatial_correlation_scale)))
+            # activate new domains until the number of active mf
+            # terminals is equal to the desired number minus half the
+            # domain size, so that the expected number of active mfs
+            # coincides with the desired value.
+            while len(pattern) <= self.active_mf_number - np.floor(self.domain_size/2):
                 seed = random.randrange(self.n_mf)
-                domain = self.neighbors[seed,:domain_size]
+                domain = self.neighbors[seed,:self.domain_size]
                 for mf in domain:
                     pattern.add(mf)
             return sorted(list(pattern))
