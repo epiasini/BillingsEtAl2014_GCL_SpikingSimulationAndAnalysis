@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib
 matplotlib.rc('font', family='Helvetica', size=18)
+matplotlib.rc('mathtext', default='regular')
 from matplotlib import pyplot as plt
 
 iscs_range = [0]
@@ -35,9 +36,9 @@ for i, iscs in enumerate(iscs_range):
         if np.isnan(mi):
             print('Found NaN value for DTA={}, gd={}'.format(dta, gd))
         else:
-            ax.plot(sparsification, mi, c=color, marker="${}$".format(gd), markersize=22)
+            ax.plot(sparsification, mi, c=color, marker=r"${}$".format(gd), markersize=22)
 
-ax.legend(artists, labels, loc=3)
+#ax.legend(artists, labels, loc=3)
 ax.set_xlabel('Average GCL sparseness')
 ax.set_ylabel('Average MI/H(input)')
 plt.show()
