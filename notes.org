@@ -1385,5 +1385,34 @@ constrained maxent distribution) by predicting the correlation range
 and seeing if it matches with the experiments.
 * Tasks related to the paper
 *** TODO Write an extension for the methods section describing how we used the spiking network
+**** Spiking network simulations and analysis
+
 *** TODO Write a short text describing what I think should be the main point we make about the spiking network in the main text.
-    
+**** A biophysically detailed, spiking network model reproduces the main findings.
+To test the robustness of our conclusions with respect to the
+assumptions and simplifications that were needed to develop our
+analytical approach, we built a spiking implementation of our
+anatomical network model where cell and synaptic dynamics were tightly
+constrained by experimental measurements (excitatory synaptic
+conductances were scaled inversely to the number of dendrites to
+preserve the total amount of excitation; see Methods for details). To
+quantify the input/output transformation operated by the network, for
+each choice of the number of GrC dendrites and p(MF) we simulated 1024
+rate-coded input patterns generated as explained in figure 7. Unlike
+in the binary network model, in this case the response of the network
+(constituted by the spike times of each granule cell) to a given
+stimulation pattern is not uniquely determined, but it is stochastic
+(noisy) in nature because of the randomness involved in generating
+input spike trains as instances of the Poisson point process. This
+means that the Shannon information between input and output does not
+correspond any more to the output entropy, and that to estimate it we
+have to take noise into account by performing many repetitions of each
+simulation (see Methods).
+
+The estimated MI and output sparseness (illustrated in figure 8 for a
+number of settings of ~d~ and ~p(MF)~) match very well with the
+analogous quantities for the binary model in presence of tonic
+inhibition (figures 4E, 6B); this is the most relevant comparison than
+can be made between the two models, as the tonic inhibition in the
+binary model has a similar effect to the scaling of the excitatory
+conductance the spiking model.
