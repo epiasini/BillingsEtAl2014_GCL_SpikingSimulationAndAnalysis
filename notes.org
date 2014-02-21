@@ -1323,6 +1323,57 @@ Command exited with non-zero status 1
    #+ATTR_HTML: :width 800px
    [[file:fig/rate_IO_exc_scaling.png][file:fig/rate_IO_exc_scaling.png]]
 ** TODO Spatial correlation?
+   #+NAME:efficient_frontier_spatial_correlation
+   #+CAPTION: Efficient frontier plot for uncorrelated (black) and correlated (red; domain size = 5) input patterns.
+   #+ATTR_HTML: :width 600px
+   [[file:fig/efficient_frontier_spatial_correlation.png][file:fig/efficient_frontier_spatial_correlation.png]]
+   #+NAME:mi_correlated_patterns
+   #+CAPTION: Mutual information for spatially correlated patterns (active domain size = 5)
+   #+ATTR_HTML: :width 600px
+   [[file:fig/point_mi_qe_cr0_iscs4.0_b1.0_dta0.0_ics0.0_ecs1.0_mod0.0_sm80.0_ss0.0_nm10.0_ns0.0_sp128_t60_tr30.png][file:fig/point_mi_qe_cr0_iscs4.0_b1.0_dta0.0_ics0.0_ecs1.0_mod0.0_sm80.0_ss0.0_nm10.0_ns0.0_sp128_t60_tr30.png]]
+   #+NAME:binomial_pGC
+   #+CAPTION: p(GC) for a simplified binomial model with \phi=d*0.75
+   #+ATTR_HTML: :width 600px
+   [[file:fig/binomial_pGC.png][file:fig/binomial_pGC.png]]
+
+   The performance in the correlated case seems to be higher than the
+   uncorrelated case for networks with many dendrites, and this
+   performance improvement comes mostly from the *high d, low p(MF)*
+   data points. I think this could be explained in the following way:
+   - consider the case with uncorrelated input.
+   - remember that the threshold is scaled proportionally with d, and
+     there's no dta.
+   - each granule cell thus samples d terminals, and the probability
+     for any of them to be active is independent and equal to p(MF).
+   - broadly speaking, by looking at the f-f curve for the model, the
+     cell needs to sample at least (3/4)*d active terminals to fire.
+   - in this simplified view, p(GC) is equal to 1-F(3/4*d,d,p(MF)),
+     where F(k,n,p) is the cumulative binomial distribution function
+     up to 3/4*d successes over d trials with probability of success
+     p(MF) (this function is plotted in figure 6; compare it to
+     figures 4 and 5 to see how this is reflected at the network
+     level).
+   - this means that as d increases it's harder and harder to activate
+     cells at low p(MF), and this presumably constitutes a limitation
+     to information transmission.
+   - if now we introduce spatial correlations by making sure that
+     active mfs are close together, it stands to reason that this
+     should increase p(GC) by making sure that the small amount of
+     excitation available is not dispersed through the network but
+     concentrated in a few hotspots where GCs would then be allowed to
+     cross threshold.
+   This phenomenon, anyway, depends on the way in which I'm scaling the
+   threshold with the number of dendrites. Guy says:
+   #+BEGIN_QUOTE
+   I had the suspicion that his might be what would happen because the
+   GCL is subject to spatially correlated input and so one would think
+   that the anatomy would permit some kind of tuning to
+   correlation. Of course this leaves open the question of what
+   exactly this tuning is and how it balances against the other
+   considerations of input transformation. It might be the correlation
+   structure of the inputs is another determinant of the appropriate
+   number of dendrites.
+   #+END_QUOTE
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
