@@ -1374,6 +1374,9 @@ Command exited with non-zero status 1
    structure of the inputs is another determinant of the appropriate
    number of dendrites.
    #+END_QUOTE
+** Effect of DTA
+** Anatomical vs random model
+** Excitatory vs inhibitory scaling
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
@@ -1385,7 +1388,60 @@ constrained maxent distribution) by predicting the correlation range
 and seeing if it matches with the experiments.
 * Tasks related to the paper
 *** TODO Write an extension for the methods section describing how we used the spiking network
-**** Spiking network simulations and analysis
+**** Model description
+A spiking network was built on top of our anatomical connectivity
+model using neuroConstruct (Gleeson2008) and simulated with NEURON
+(Carnevale2006). Granule cells were represented by the average cell
+model published in Schwartz2012, and a new model for the mossy fibre
+to granule cell synapse was fit with swarm intelligence techniques
+(Deb2010) to existing experimental data from paired recordings
+(Rothman2009; but data on the NMDA/AMPA conductance ratio and the NMDA
+block model were taken from Schwartz2012). Tonic GABAR-mediated
+inhibition was included, using the amplitude reported in Rothman2009
+and the reversal potential in Seja2012. AMPAR- and NMDAR-mediated
+conductance amplitudes were scaled by a factor of ~4/d~ to conserve
+the total amount of excitation as the number of granule cell dendrites
+was varied (see Supplementary Information for additional discussion).
+
+All models we used are available in NeuroML/LEMS format (Gleeson2010)
+on the Open Source Brain.
+**** Simulation set-up
+To test the input/output transformations operated by the spiking
+network in a way that could be directly compared to the results for
+the binary network we simulated the response of the system to a set of
+1024 rate-coded patterns. Exactly as in the binary case, each pattern
+was determined by selecting a random subset of mossy fibre terminals
+and designating them to be 'active' (black lines in the black and
+white barcode in figure 7). During the simulation, active mossy fibre
+terminals fired Poisson spike trains with mean rate 80Hz, while
+inactive ones fired with a background rate of 10Hz (red raster plot in
+figure 7). These rates were selected to be representative of typical
+rate-coded inputs to the cerebellum (Van Kan 1993); but see the
+Supplementary information for further discussion. For each simulation,
+the system was recorded for 30ms after being allowed to reach steady
+state, either by simulating the appropriate random input for 150ms
+starting from rest or by waiting 30ms after a previous simulation of
+the same pattern to allow the state to decorrelate.
+**** Data analysis
+For our analysis, we considered the outcome of a simulation to be the
+vector of all granule cell spike counts (blue barcode in figure
+7). Because of the randomness in the generation of the input spike
+trains, any given input pattern will give rise to a distribution of
+possible outputs. In principle, to calculate the mutual information
+one should reconstruct this conditional probability distribution for
+each input pattern, but this is unfeasible in practice due to the very
+large number of simulations that would be needed to reconstruct such a
+distribution (a form of /curse of dimensionality/ (Quian Quiroga
+2009)). Instead, we reduce the dimensionality of the output space by
+using a k-means classifier (called the /decoder/; Lloyd1982,
+Pedregosa2009) to divide the network outputs in a number of classes
+equal to the number of input patterns. Computing the MI between input
+patterns and the output of the decoder is then possible with a
+manageable number of simulations (we use 30 simulations for each input
+pattern to calculate the MI, plus 30 more to train the decoder; see
+supplementary information), provided that we take care of using an
+appropriate technique for correcting for the remaining undersampling
+bias (Treves1995, Ince2009).
 
 *** TODO Write a short text describing what I think should be the main point we make about the spiking network in the main text.
 **** A biophysically detailed, spiking network model reproduces the main findings.
@@ -1406,13 +1462,15 @@ stimulation pattern is not uniquely determined, but it is stochastic
 input spike trains as instances of the Poisson point process. This
 means that the Shannon information between input and output does not
 correspond any more to the output entropy, and that to estimate it we
-have to take noise into account by performing many repetitions of each
-simulation (see Methods).
+have to perform many repetitions of each simulation (see Methods).
 
 The estimated MI and output sparseness (illustrated in figure 8 for a
 number of settings of ~d~ and ~p(MF)~) match very well with the
 analogous quantities for the binary model in presence of tonic
-inhibition (figures 4E, 6B); this is the most relevant comparison than
+inhibition (figures 4E, 6B; this is the most relevant comparison than
 can be made between the two models, as the tonic inhibition in the
 binary model has a similar effect to the scaling of the excitatory
-conductance the spiking model.
+conductance in the spiking model). In particular, networks with a
+small number of dendrites are optimal for wide range sparse encoding,
+while network with many dendrites have a sparser output at the expense
+of transmitted information.
