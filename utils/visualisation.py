@@ -12,6 +12,8 @@ import random
 
 import analysis
 
+diverging_colormap='RdYlBu_r'
+
 def on_draw(event):
     """Auto-wraps all text objects in a figure at draw-time"""
     fig = event.canvas.figure
@@ -102,7 +104,7 @@ def plot_data_vector(axes, data_vector, convolve_dt=2):
         return int(x*convolve_dt)
     conv_ax = axes
     conv_ax.xaxis.set_major_formatter(FuncFormatter(scale_by_convolve_dt))
-    conv_plot = conv_ax.imshow(data_vector, cmap='coolwarm', interpolation='none', aspect=2, origin='lower')
+    conv_plot = conv_ax.imshow(data_vector, cmap=diverging_colormap, interpolation='none', aspect=2, origin='lower')
     conv_ax.set_xlabel('Time (ms)')
     conv_ax.set_ylabel('Cell index')
     return conv_plot
@@ -110,7 +112,7 @@ def plot_data_vector(axes, data_vector, convolve_dt=2):
 def plot_2d_heatmap(data, x_ref_range, y_ref_range, xlabel, ylabel, cbar_label, title):
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plot = ax.imshow(data, interpolation='none', cmap='coolwarm', origin='lower')
+    plot = ax.imshow(data, interpolation='none', cmap=diverging_colormap, origin='lower')
     cbar = fig.colorbar(plot, use_gridspec=True)
     cbar.set_label(cbar_label)
     ax.set_xticks(np.arange(len(x_ref_range)))
@@ -184,7 +186,7 @@ class PointDetailColormap(MIDetailPlotter):
         try:
             values = np.vstack([getattr(self.point, 'ts_decoded_mi_{0}'.format(correction)) for correction in self.corrections])
             labels = ['_'.join([x for x in [self.label_prefix, correction] if x!=None]) for correction in self.corrections]
-            self.plot = self.ax.imshow(values, aspect='auto', interpolation='none', cmap='coolwarm', origin='lower')
+            self.plot = self.ax.imshow(values, aspect='auto', interpolation='none', cmap=diverging_colormap, origin='lower')
             self.cbar = self.fig.colorbar(self.plot)
             self.ax.set_yticks(range(values.shape[0]))
             self.ax.set_yticklabels(labels)
@@ -209,18 +211,18 @@ class RectangularHeatmapPlotter(object):
         if self.space.ndim == 1:
             # matplotlib's imshow complains if the data is one-dimensional
             plot_data = plot_data.reshape(1, -1)
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap='coolwarm', origin='lower')
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(0)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks([])
         elif not invert_axes:            
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap='coolwarm', origin='lower')
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(1)
             y_param = self.space._param(0)
             self.ax.set_xticks(np.arange(self.space.shape[1]))
             self.ax.set_yticks(np.arange(self.space.shape[0]))
         else:
-            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap='coolwarm', origin='lower')
+            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(0)
             y_param = self.space._param(1)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
