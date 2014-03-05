@@ -343,7 +343,12 @@ that for the analysis we need to use a simpler decoder.
      CLOSED: [2013-11-29 Fri 19:05]
      - CLOSING NOTE [2013-11-29 Fri 19:05] \\
        Rancz2007 and references 8-11 therein should be enough.
-*** TODO specify a form of input pattern correlation
+*** DONE specify a form of input pattern correlation
+    CLOSED: [2014-02-21 Fri 11:05]
+    - CLOSING NOTE [2014-02-21 Fri 11:05] \\
+      Finalised in [[magit:~/phd/code/network/src/::commit@f19a536][commit #f19a536]]: the mf terminals are activated in groups
+      of ~input_spatial_correlation_scale~ +1 nearest neighbors (/active
+      domains/). Overlapping domains are allowed.
 When doing this, we should keep in mind the ~40um figure for
 correlation of grc activity. Or rather +the inverse, ie+ the typical
 distance between two glomeruli which share a common output, /which is
@@ -546,7 +551,10 @@ though, as we still need to vary p(MF) as an independent variable.
        #+ATTR_HTML: :width 60%
        [[file:fig/network_projected_randomised_gd4.png]]
 
-**** TODO Implement input correlations.
+**** DONE Implement input correlations.
+     CLOSED: [2014-02-21 Fri 11:09]
+     - CLOSING NOTE [2014-02-21 Fri 11:09] \\
+       Done in [[magit:~/phd/code/network/src/::commit@f19a536][commit f19a536]].
 **** DONE Substitute Jython 2.5 with 2.7b1 in nC, test and make a pull request
      CLOSED: [2013-12-09 Mon 23:03]
      - CLOSING NOTE [2013-12-09 Mon 23:03] \\
@@ -696,24 +704,12 @@ though, as we still need to vary p(MF) as an independent variable.
      batch k-means, we can use as few as 30 trials per pattern to
      train the decoder, and still be quite close to extracting all the
      available information (see figure [[fig:traning_size]]).
-     #+NAME: fig:training_size
-     #+CAPTION: MI vs training size for 4 dendrites, p(MF)=0.1, 1024 patterns and 200 trials per pattern.
-     [[file:fig/training_size_gd4_f01_sp1024_t200.png][file:fig/training_size_gd4_f01_sp1024_t200.png]]
 **** DONE Test decoder performance for rubustness against noise (performance vs size of testing set)
      CLOSED: [2014-01-20 Mon 10:56]
      - CLOSING NOTE [2014-01-20 Mon 10:56] \\
        Settled on 30 'testing' trials per pattern (thus 60 trials overall,
        including the ones used for training the decoder) after discussing it
        with Angus.
-     The quadratic extrapolation method appears to give the most
-     stable bias correction. As can be seen in figure [[fig:n_trials]],
-     even for fairly adversarial conditions to information
-     transmission (and thus MI estimation) 30 trials seems to be
-     enough for the testing set.
-     #+NAME: fig:n_trials
-     #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
-     [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
-
 *** DONE Get the whole workflow to run on *Legion*.
     CLOSED: [2013-12-26 Thu 00:37]
     - CLOSING NOTE [2013-12-26 Thu 00:37] \\
@@ -814,7 +810,8 @@ promoted to being a parameter anyway.
      CLOSED: [2013-12-25 Wed 00:22]
      - CLOSING NOTE [2013-12-25 Wed 00:22] \\
        Done in [[magit:~/phd/code/network/src/::commit@6468623][commit #6468623]].
-**** TODO I have to improve my plots, and in particular make some output sparsity vs input sparsity plots, which would make it easier to visualise ranges over which the network sparsifies.
+**** DONE I have to improve my plots, and in particular make some output sparsity vs input sparsity plots, which would make it easier to visualise ranges over which the network sparsifies.
+     CLOSED: [2014-02-21 Fri 11:10]
 **** DONE Some more quantitative analysis on the difference in structure between the random and spatial graphs.
      CLOSED: [2014-01-06 Mon 14:02]
      - CLOSING NOTE [2014-01-06 Mon 14:02] \\
@@ -932,7 +929,7 @@ typical classes of output of the granular layer.
    network. The idea underlying this part of the paper is that we can
    get similar results to what has been shown until now if we start
    from a bottom-up biophysically realistic model of the network.
-*** TODO [5/6] figure 7: presentation of the model.
+*** TODO [6/6] figure 7: presentation of the model.
     The message we want to get across is that the model is tightly
     constrained to experimental data, and it is way more 'biological'
     than the binary network. This figure (together with the results,
@@ -954,30 +951,23 @@ typical classes of output of the granular layer.
       and clustering)
       - [X] make sure resolution of plot with clustered barcodes
         matches the plot where the barcodes are shuffled.
-    - [ ] figure legend
-    #+NAME:figure_7
-    #+CAPTION:Estimation of mutual information and input/output sparseness in a spiking network model of the GCL. *A*: Synaptic input to a granule cell model with four dendrites. The traces on the left show an example of excitatory (AMPA, NMDA) and inhibitory (GABA) conductances injected into the cell during a simulation. The first two traces represent /active/ mossy fibre terminals, firing at 80Hz, while the two middle traces represent /inactive/ terminals, firing at 10Hz. The bottom trace shows how the amount of GABA conductance is constant throughout the simulation. *B*: Membrane potential of the model resulting from injection of conductances in panel A. Inset: rate I/O curve for the GrC model. Input rates are for 4 Poisson stimuli. *C*: Fit of the short-term plasticity model (red trace) of the AMPA component of the MF to GrC synapse to an experimental recording of a 100Hz conductance train (black trace). *D*: same as *C* but for the NMDA component and a 80Hz conductance train. *E*: Network simulation set-up. A binary stimulus pattern (represented by the black and white barcode) is selected out of a set of N patterns. A Poisson spike train is generated for each mossy fibre terminal (red raster plot) and played into the network. *F*: Three-dimensional view of the network model. Mossy fibre terminals are depicted in red and granule cells in blue. *G*: raster plot for the granule cells in response to the selected input pattern. Blue barcode: granule cell spike counts. *H*: Matching the 
-    #+ATTR_HTML: :width 800px
-    [[file:fig/figure_7.png][file:fig/figure_7.png]]
-*** TODO [0/4] figure 8: results. 
+    - [X] figure legend
+*** TODO [4/4] figure 8: results. 
     This should contain:
-    - [ ] 'raw data' in the form of a MI heatmap for 1024 patterns, to
+    - [X] 'raw data' in the form of a MI heatmap for 1024 patterns, to
       show qualitative match to figure 3A in the simplest possible
-      case (with fixed inhibition). In the heatmap, we should indicate
-      the region where amplification is less than 1. We should either
-      spend some words to address the fact that 1024 is a very small
-      number compared to 1 billion patterns, by claiming that
-      increasing the number of patterns should only make the reduction
-      of encodable range stronger, or show this result alongside a
-      version of figure 3A opportunely scaled down to 1024 patterns.
-    - [ ] sparsification heatmap.
-    - [ ] global results in form of an 'efficient frontier' kind of
-      plot, populated with data from at least 2-3 DTA
-      settings. Because of our constraints in time and computational
-      resources, this will have to be done with a smaller number of
-      patterns than the previous figure (128 patterns should be
-      feasible).
-    - [ ] figure legend
+      case (with fixed inhibition). +In the heatmap, we should
+      indicate the region where amplification is less than 1+. We
+      should either spend some words to address the fact that 1024 is
+      a very small number compared to 1 billion patterns, by claiming
+      that increasing the number of patterns should only make the
+      reduction of encodable range stronger, or show this result
+      alongside a version of figure 3A opportunely scaled down to 1024
+      patterns.
+    - [X] +sparsification+ output sparseness heatmap.
+    - [X] global results in form of an 'efficient frontier' kind of
+      plot +populated with data from at least 2-3 DTA settings+.
+    - [X] figure legend
 *** DONE Mockup of figures 7 band 8
     CLOSED: [2014-01-12 Sun 18:23]
     Angus need this as soon as possible to start writing.
@@ -1270,15 +1260,186 @@ Command exited with non-zero status 1
    CLOSED: [2014-01-20 Mon 11:05]
 ** DONE For a given parameter space point, MI vs simulation and analysis length
    CLOSED: [2014-01-20 Mon 17:41]
-   #+NAME: fig:ana_duration
-   #+CAPTION: MI vs analysis window length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and simulation length of 200ms.
-   [[file:fig/ana_duration.png][file:fig/ana_duration.png]]
    #+NAME: fig:sim_duration
    #+CAPTION: MI vs simulation length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and analysis window length of 50ms.
    [[file:fig/sim_duration.png][file:fig/sim_duration.png]]
-** TODO Sparse encodable range vs integration window length
+** DONE Sparse encodable range vs integration window length
+   CLOSED: [2014-02-23 Sun 18:35]
 ** DONE Robustness to changes in 'on' firing rate: run simulations for 40Hz and 120Hz.
    CLOSED: [2014-02-11 Tue 14:09]
+** Effect of DTA
+** Anatomical vs random model
+** Excitatory vs inhibitory scaling
+* Other ideas
+*** Testing for 'randomness' in the mf->grc connectivity
+If it were possible to measure the correlation range of the activity
+of grcs following signals from the mfs given with a known spatial
+correlation (see work by Mapelli?), then given the measurements of
+the length of the grc dendrites we should be able to test if the
+mf->grc connections are 'random' (ie after some opportunely
+constrained maxent distribution) by predicting the correlation range
+and seeing if it matches with the experiments.
+* Drafts for paragraphs to insert in the paper
+*** Methods
+    #+NAME:figure_7
+    #+CAPTION:Figure 7 in the paper. Estimation of input/output mapping in a spiking network model of the GCL. *A*: Synaptic input to a granule cell model with four dendrites. The traces on the left show an example of excitatory (AMPA, NMDA) and inhibitory (GABA) conductances injected into the cell during a simulation. The first two traces represent /active/ mossy fibre terminals, firing at 80Hz, while the two middle traces represent /inactive/ terminals, firing at 10Hz. The bottom trace shows how the amount of GABA conductance is constant throughout the simulation. *B*: Membrane potential of the model resulting from injection of conductances in panel A. Inset: rate I/O curve for the GrC model. Input rates are for 4 Poisson stimuli. *C*: Fit of the short-term plasticity model (red trace) of the AMPA component of the MF to GrC synapse to an experimental recording of a 100Hz conductance train (black trace). *D*: same as *C* but for the NMDA component and a 80Hz conductance train. *E*, *F*, *G*, *H*: Network simulation set-up. *E*: A binary stimulus pattern (represented by the black and white barcode) is selected out of a set of N patterns. A Poisson spike train is generated for each mossy fibre terminal (red raster plot) and played into the network. Red barcode: empirical spike counts for the given realisation of the spike trains (analogue to one column of the red binary input matrices in figure 5). *F*: Three-dimensional view of the network model. Mossy fibre terminals are depicted in red and granule cells in blue. *G*: granule cell firing activity in response to the selected input pattern. Blue barcode: granule cell spike count vector, used for estimation of output sparseness and MI. *H*: the output spike count vector is assigned to one of N output classes by finding the closest centroid in a codebook prepared by running the k-means algorithm on a separate training data set. Mutual information is then estimated between the N input patterns and the N output classes.
+    #+ATTR_HTML: :width 800px
+    [[file:fig/figure_7.png][file:fig/figure_7.png]]
+
+**** Spiking network model
+A spiking network was built on top of our anatomical connectivity
+model using neuroConstruct (Gleeson2008) and simulated with NEURON
+(Carnevale2006). Granule cells were represented by the average cell
+model published in Schwartz2012, and a new model for the mossy fibre
+to granule cell synapse was fit with swarm intelligence techniques
+(Deb2010) to existing experimental data from paired recordings
+(Rothman2009; but data on the NMDA/AMPA conductance ratio and the NMDA
+block model were taken from Schwartz2012). Tonic GABAR-mediated
+inhibition was included, using the amplitude reported in Rothman2009
+and the reversal potential in Seja2012. AMPAR- and NMDAR-mediated
+conductance amplitudes were scaled by a factor of ~4/d~ to conserve
+the total amount of excitation as the number of granule cell dendrites
+was varied (see Supplementary Information for additional discussion).
+
+All models we used are available in NeuroML/LEMS format (Gleeson2010)
+on the Open Source Brain.
+**** Simulation set-up for the spiking network
+To test the input/output transformations operated by the spiking
+network in a way that could be directly compared to the results for
+the binary network we simulated the response of the system to a set of
+1024 rate-coded patterns. Exactly as in the binary case, each pattern
+was determined by selecting a random subset of mossy fibre terminals
+and designating them to be 'active' (black lines in the black and
+white barcode in figure 7). During the simulation, active mossy fibre
+terminals fired Poisson spike trains with mean rate 80Hz, while
+inactive ones fired with a background rate of 10Hz (red raster plot in
+figure 7). These rates were selected to be representative of typical
+rate-coded inputs to the cerebellum (Van Kan 1993); but see the
+Supplementary information for further discussion. For each simulation,
+the system was recorded for 30ms after being allowed to reach steady
+state, either by simulating the appropriate random input for 150ms
+starting from rest or by waiting 30ms after a previous simulation of
+the same pattern to allow the state to decorrelate.
+**** Analysis of spiking network simulations
+For our analysis, we considered the outcome of a simulation to be the
+vector of all granule cell spike counts (blue barcode in figure
+7). Because of the randomness in the generation of the input spike
+trains, any given input pattern will give rise to a distribution of
+possible outputs. In principle, to calculate the mutual information
+one should reconstruct this conditional probability distribution for
+each input pattern, but this is unfeasible in practice due to the very
+large number of simulations that would be needed to reconstruct such a
+distribution (a form of /curse of dimensionality/ (Quian Quiroga
+2009)). Instead, we reduce the dimensionality of the output space by
+using a k-means classifier (called the /decoder/; Lloyd1982,
+Pedregosa2009) to divide the network outputs in a number of classes
+equal to the number of input patterns. Computing the MI between input
+patterns and the output of the decoder is then possible with a
+manageable number of simulations (we use 30 simulations for each input
+pattern to calculate the MI, plus 30 more to train the decoder; see
+supplementary information), provided that we take care of using an
+appropriate technique for correcting for the remaining undersampling
+bias (Treves1995, Ince2009).
+
+*** Results
+      #+NAME:figure_8
+      #+CAPTION:Figure 8 in the paper. Input-output transformation for the spiking network with tonic inhibition scaling as the number of dendrites, calculated with a set of 1024 stimulus patterns. *A*: Mutual information as a fraction of input entropy (log_{2}1024=10 bits assuming a uniform prior over inputs). Compare to figure 4E. *B*: many-valued extension to p(GC), corresponding to 1 - output sparseness. *C*: efficient frontier plot showing how the number of dendrites controls the tradeoff between MI (averaged over all values of p(MF) for a given number of dendrites) and output sparseness.
+      #+ATTR_HTML: :width 800px
+      [[file:fig/figure_8.png][file:fig/figure_8.png]]
+
+**** A biophysically detailed, spiking network model reproduces the main findings.
+To test the robustness of our conclusions with respect to the
+assumptions and simplifications that were needed to develop our
+analytical approach, we built a spiking implementation of our
+anatomical network model where cell and synaptic dynamics were tightly
+constrained by experimental measurements (excitatory synaptic
+conductances were altered from their experimental values to preserve
+the the total amount of excitation as the number of dendrites was
+varied; see Methods for details). To quantify the input/output
+transformation operated by the network, for each choice of the number
+of GrC dendrites and p(MF) we simulated 1024 rate-coded input patterns
+generated as explained in figure 7. Unlike in the binary network
+model, in this case the response of the network (constituted by the
+spike times of each granule cell) to a given stimulation pattern is
+not uniquely determined, but it is stochastic (noisy) in nature
+because of the randomness involved in generating input spike trains as
+instances of a Poisson point process. This means that the Shannon
+information between input and output does not correspond any more to
+the output entropy, and that to estimate it we have to perform many
+repetitions of each simulation (see Methods).
+
+The estimated MI and output sparseness (illustrated in figure 8 for a
+number of settings of ~d~ and ~p(MF)~) match very well with the
+analogous quantities for the binary model in presence of tonic
+inhibition (figures 4E, 6B; this is the most relevant comparison than
+can be made between the two models, as the tonic inhibition in the
+binary model has a similar effect to the scaling of the excitatory
+conductances in the spiking model). In particular, networks with a
+small number of dendrites are optimal for wide range sparse encoding,
+while network with many dendrites have a sparser output at the expense
+of transmitted information.
+*** Supplementary Information
+**** Effect of spatial correlations in input patterns
+     #+NAME:input_pattern_uncorrelated
+     #+CAPTION:Uncorrelated input pattern for p(MF)=0.2 (active mf terminals in red, inactive terminals in black)
+     #+ATTR_HTML: :width 400px
+     [[file:fig/input_pattern_iscs0_mf0.2.png][file:fig/input_pattern_iscs0_mf0.2.png]]
+     #+NAME:input_pattern_correlated
+     #+CAPTION:Spatially correlated (domain size 5) input pattern for p(MF)=0.2 (active mf terminals in red, inactive terminals in black)
+     #+ATTR_HTML: :width 400px
+     [[file:fig/input_pattern_iscs4_mf0.2.png][file:fig/input_pattern_iscs4_mf0.2.png]]
+   #+NAME:efficient_frontier_spatial_correlation
+   #+CAPTION: Efficient frontier plot for uncorrelated (black) and correlated (red; domain size = 5) input patterns.
+   #+ATTR_HTML: :width 600px
+   [[file:fig/efficient_frontier_spatial_correlation.png][file:fig/efficient_frontier_spatial_correlation.png]]
+   #+NAME:mi_correlated_patterns
+   #+CAPTION: Mutual information for spatially correlated patterns (active domain size = 5)
+   #+ATTR_HTML: :width 600px
+   [[file:fig/point_mi_qe_cr0_iscs4.0_b1.0_dta0.0_ics0.0_ecs1.0_mod0.0_sm80.0_ss0.0_nm10.0_ns0.0_sp128_t60_tr30.png][file:fig/point_mi_qe_cr0_iscs4.0_b1.0_dta0.0_ics0.0_ecs1.0_mod0.0_sm80.0_ss0.0_nm10.0_ns0.0_sp128_t60_tr30.png]]
+   #+NAME:binomial_pGC
+   #+CAPTION: p(GC) for a simplified binomial model with \phi=d*0.75
+   #+ATTR_HTML: :width 600px
+   [[file:fig/binomial_pGC.png][file:fig/binomial_pGC.png]]
+
+   The performance in the correlated case seems to be higher than the
+   uncorrelated case for networks with many dendrites, and this
+   performance improvement comes mostly from the *high d, low p(MF)*
+   data points. I think this could be explained in the following way:
+   - consider the case with uncorrelated input.
+   - remember that the threshold is scaled proportionally with d, and
+     there's no dta.
+   - each granule cell thus samples d terminals, and the probability
+     for any of them to be active is independent and equal to p(MF).
+   - broadly speaking, by looking at the f-f curve for the model, the
+     cell needs to sample at least (3/4)*d active terminals to fire.
+   - in this simplified view, p(GC) is equal to 1-F(3/4*d,d,p(MF)),
+     where F(k,n,p) is the cumulative binomial distribution function
+     up to 3/4*d successes over d trials with probability of success
+     p(MF) (this function is plotted in figure 6; compare it to
+     figures 4 and 5 to see how this is reflected at the network
+     level).
+   - this means that as d increases it's harder and harder to activate
+     cells at low p(MF), and this presumably constitutes a limitation
+     to information transmission.
+   - if now we introduce spatial correlations by making sure that
+     active mfs are close together, it stands to reason that this
+     should increase p(GC) by making sure that the small amount of
+     excitation available is not dispersed through the network but
+     concentrated in a few hotspots where GCs would then be allowed to
+     cross threshold.
+   This phenomenon, anyway, depends on the way in which I'm scaling the
+   threshold with the number of dendrites. Guy says:
+   #+BEGIN_QUOTE
+   I had the suspicion that his might be what would happen because the
+   GCL is subject to spatially correlated input and so one would think
+   that the anatomy would permit some kind of tuning to
+   correlation. Of course this leaves open the question of what
+   exactly this tuning is and how it balances against the other
+   considerations of input transformation. It might be the correlation
+   structure of the inputs is another determinant of the appropriate
+   number of dendrites.
+   #+END_QUOTE
+**** Effect of choice of stimulation rates
    The first thing we notice in figure [[efficient_frontier_firing_rate]]
    is that at 40Hz almost no information gets through the
    network. This is of course to be expected, as in the 30ms time
@@ -1312,17 +1473,30 @@ Command exited with non-zero status 1
    #+CAPTION:Rate input-output relationship (f-f curve) for the GrC model with fixed tonic inhibition and variable-sized AMPA and NMDA synaptic conductances, which scale as d/4.
    #+ATTR_HTML: :width 800px
    [[file:fig/rate_IO_exc_scaling.png][file:fig/rate_IO_exc_scaling.png]]
-** TODO Spatial correlation?
-* Other ideas
-*** Testing for 'randomness' in the mf->grc connectivity
-If it were possible to measure the correlation range of the activity
-of grcs following signals from the mfs given with a known spatial
-correlation (see work by Mapelli?), then given the measurements of
-the length of the grc dendrites we should be able to test if the
-mf->grc connections are 'random' (ie after some opportunely
-constrained maxent distribution) by predicting the correlation range
-and seeing if it matches with the experiments.
-* Tasks related to the paper
-*** TODO Write an extension for the methods section describing how we used the spiking network
-*** TODO Write a short text describing what I think should be the main point we make about the spiking network in the main text.
-    
+**** Effect of time window used for estimating the MI
+   #+NAME: fig:ana_duration
+   #+CAPTION: MI vs analysis window length for 4 dendrites, p(MF)=0.1, 1024 patterns, 60 trials (30+30), and simulation length of 200ms.
+   [[file:fig/ana_duration.png][file:fig/ana_duration.png]]
+   #+NAME: fig:adur_15
+   #+CAPTION: MI heatmap for 128 patterns calculated over a 15ms time window.
+   [[file:fig/mi_adur_15.png][file:fig/mi_adur_15.png]]
+   #+NAME: fig:adur_45
+   #+CAPTION: MI heatmap for 128 patterns calculated over a 45ms time window.
+   [[file:fig/mi_adur_45.png][file:fig/mi_adur_45.png]]
+   #+NAME: fig:adur_60
+   #+CAPTION: MI heatmap for 128 patterns calculated over a 60ms time window.
+   [[file:fig/mi_adur_60.png][file:fig/mi_adur_60.png]]
+**** Effect of number of trials used to train the decoder
+     #+NAME: fig:training_size
+     #+CAPTION: MI vs training size for 4 dendrites, p(MF)=0.1, 1024 patterns and 200 trials per pattern.
+     [[file:fig/training_size_gd4_f01_sp1024_t200.png][file:fig/training_size_gd4_f01_sp1024_t200.png]]
+**** Effect of number of trials used to estimate the information (undersampling bias)
+     The quadratic extrapolation method appears to give the most
+     stable bias correction. As can be seen in figure [[fig:n_trials]],
+     even for fairly adversarial conditions to information
+     transmission (and thus MI estimation) 30 trials seems to be
+     enough for the testing set.
+     #+NAME: fig:n_trials
+     #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
+     [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
+     
