@@ -176,6 +176,9 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             print('counting spikes in output spike trains')
             i_level_array = self.spikes_arch.get_spike_counts(cell_type='mf')
             o_level_array = self.spikes_arch.get_spike_counts(cell_type='grc')
+            print('computing mean input and output spike counts')
+            i_mean_count = i_level_array.mean()
+            o_mean_count = o_level_array.mean()
             print('computing input and output sparsity')
             i_sparseness_hoyer = hoyer_sparseness(i_level_array)
             i_sparseness_activity = activity_sparseness(i_level_array)
@@ -274,6 +277,8 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('ts_decoded_mi_pt', data=ts_decoded_mi_pt)
             self.results_arch.update_result('ts_decoded_mi_nsb', data=ts_decoded_mi_nsb)
 
+            self.results_arch.update_result('i_mean_count', data=i_mean_count)
+            self.results_arch.update_result('o_mean_count', data=o_mean_count)
             self.results_arch.update_result('i_sparseness_hoyer', data=i_sparseness_hoyer)
             self.results_arch.update_result('i_sparseness_activity', data=i_sparseness_activity)
             self.results_arch.update_result('o_sparseness_hoyer', data=o_sparseness_hoyer)

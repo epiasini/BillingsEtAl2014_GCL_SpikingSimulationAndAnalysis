@@ -67,6 +67,8 @@ class ResultsArchive(object):
                          'ts_decoded_mi_qe',
                          'ts_decoded_mi_pt',
                          'ts_decoded_mi_nsb',
+                         'i_mean_count',
+                         'o_mean_count',
                          'i_sparseness_hoyer',
                          'i_sparseness_activity',
                          'o_sparseness_hoyer',
