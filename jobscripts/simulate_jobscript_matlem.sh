@@ -16,6 +16,7 @@
 
 # point TMPDIR to local scratch space
 export TMPDIR="/scratch0/ucbtepi"
+mkdir -p $TMPDIR
 
 # networkxj_dir should point to a copy of the networkxj package, This
 # is a fork of the last networkx version (1.2) made to be compatible

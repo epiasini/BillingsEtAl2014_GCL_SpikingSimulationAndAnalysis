@@ -15,6 +15,7 @@
 
 # point TMPDIR to local scratch space
 export TMPDIR="/scratch0/ucbtepi"
+mkdir -p $TMPDIR
 
 args_list=$@
 
