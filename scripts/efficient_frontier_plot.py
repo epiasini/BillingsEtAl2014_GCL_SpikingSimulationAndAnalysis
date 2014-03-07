@@ -6,8 +6,8 @@ from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
-iscs_range = [4]
-spn = 128
+iscs_range = [0]
+spn = 1024
 ics = 0.0
 ecs = 1.0
 #sm_range = [40, 80, 120]
@@ -19,7 +19,8 @@ dta = 0.
 
 max_mi = np.log2(spn)
 
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(6,4))
+ax.locator_params(tight=False, nbins=4)
 # proxy artists and labels for legend
 artists = []
 labels = []
@@ -39,7 +40,7 @@ for i, iscs in enumerate(iscs_range):
         if np.isnan(mi):
             print('Found NaN value for DTA={}, gd={}'.format(dta, gd))
         else:
-            ax.plot(sparsification, mi, c=color, marker=r"${}$".format(gd), markersize=22)
+            ax.plot(sparsification, mi, c=color, marker=r"${}$".format(gd), markersize=20)
 
 #ax.legend(artists, labels, loc=3)
 ax.set_xlabel('Average sparsification')
@@ -52,7 +53,8 @@ o_mean_count = np.load('../../data/data_o_mean_count_iscs{}_spn{}_dta{:.01f}_ics
 cm = plt.get_cmap(diverging_colormap) 
 c_norm  = colors.Normalize(vmin=0, vmax=n_gd_range[-1])
 scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(3,4))
+ax.locator_params(tight=True, nbins=5)
 ax.set_xlabel('Average spikes per MF')
 ax.set_ylabel('Average spikes per GC')
 for j, gd in enumerate(n_gd_range):
