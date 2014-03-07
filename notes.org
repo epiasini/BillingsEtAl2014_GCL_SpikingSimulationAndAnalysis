@@ -952,7 +952,7 @@ typical classes of output of the granular layer.
       - [X] make sure resolution of plot with clustered barcodes
         matches the plot where the barcodes are shuffled.
     - [X] figure legend
-*** TODO [4/4] figure 8: results. 
+*** TODO [4/5] figure 8: results. 
     This should contain:
     - [X] 'raw data' in the form of a MI heatmap for 1024 patterns, to
       show qualitative match to figure 3A in the simplest possible
@@ -968,6 +968,7 @@ typical classes of output of the granular layer.
     - [X] global results in form of an 'efficient frontier' kind of
       plot +populated with data from at least 2-3 DTA settings+.
     - [X] figure legend
+    - [ ] Example raster plots showing high/low sparsification
 *** DONE Mockup of figures 7 band 8
     CLOSED: [2014-01-12 Sun 18:23]
     Angus need this as soon as possible to start writing.
@@ -1105,6 +1106,44 @@ typical classes of output of the granular layer.
        it (at least in my view) somewhat simpler and more consistent.
     4. Various other bits and pieces that are not worth mentioning
        here.
+
+** Short meeting with Angus and Guy <2014-03-04 Tue>
+*** Figure 3
+- Delete panel B, and add raster plots from figure 5.
+- Possibly add the heatmap for the '*tonic only*' threshold
+  scaling. It' s ok to add it here (rather than in figure 4) because
+  for it we don't need to explain the DTA; plus it would make it more
+  'standalone' and easier to reference later as the configuration that
+  we're interested in studying with the spiking network
+*** Figure 4
+- We want to make sparsification more prominent to show that we're
+  interested in the tradeoff between it and information
+  transmission. To increase treat the two quantities in a more
+  symmetrical fashion, we could *add heatmaps for sparsification*.
+- If we don't put it in figure 3, we have to add the new tonic only
+  threshold scaling heatmap here.
+- How are we going to fit 6/8 heatmaps plus (at least) the small panel
+  explaining the DTA in a single figure? Do we need to *take something
+  out*?.
+*** Figure 5
+- Take out the example raster plots (move them to figure 3)
+- If we add sparsification heatmaps to figure 4, are the remaining
+  panels still needed here?
+*** Output sparseness vs sparsification
+Probably using sparsification wouldn't have any effect on the
+appearance of the plots and it will have the benefit of harmonising
+the presentation of the binary and spiking cases.
+*** Input-output function for an infinite network
+[[file:fig/network_IO_binary.png][file:~/phd/code/network/src/fig/network_IO_binary.png]]
+[[file:fig/network_IO_rate_coded.png][file:~/phd/code/network/src/fig/network_IO_rate_coded.png]]
+*** Figure 8
+Angus proposed to include heatmaps for the correlated input case (here
+shown in the mockup for 128 patterns as the 1024 pattern simulations
+are still running). Guy suggested we add the network I/O functions
+too.
+
+[[file:~/Dropbox/GCLpaper/Billings_etal_Silver_paper_2013/Neuron_Submission/eugenio_figures/figure_8.png]]
+*** Sections for the supplementary material (see below).
 
 * Questions to be addressed with the model after we're sure it works
 ** Is the network with d=4 any better than the one with d=10 at information transmission or sparsification?
@@ -1267,9 +1306,15 @@ Command exited with non-zero status 1
    CLOSED: [2014-02-23 Sun 18:35]
 ** DONE Robustness to changes in 'on' firing rate: run simulations for 40Hz and 120Hz.
    CLOSED: [2014-02-11 Tue 14:09]
-** Effect of DTA
-** Anatomical vs random model
-** Excitatory vs inhibitory scaling
+** TODO Effect of DTA
+** TODO Anatomical vs random model
+** TODO Excitatory vs inhibitory scaling
+** TODO Relationship between p(MF) and input sparseness (goodness of sparseness measure)
+** TODO Why is the output sparseness different from 0.5 for the network with 1 dendrite?
+*** Relationship between p(MF) and sparseness (or: binary and rate-coded activity sparseness measures)
+The activity sparseness measure doesn't directly map to p(GC) in the
+binary case: indeed if we measure the 
+[[file:fig/spasity_measure.png][file:fig/spasity_measure.png]]
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
 If it were possible to measure the correlation range of the activity
@@ -1299,85 +1344,98 @@ inhibition was included, using the amplitude reported in Rothman2009
 and the reversal potential in Seja2012. AMPAR- and NMDAR-mediated
 conductance amplitudes were scaled by a factor of ~4/d~ to conserve
 the total amount of excitation as the number of granule cell dendrites
-was varied (see Supplementary Information for additional discussion).
+was varied (see Supplemental Information for additional discussion).
 
 All models we used are available in NeuroML/LEMS format (Gleeson2010)
 on the Open Source Brain.
 **** Simulation set-up for the spiking network
 To test the input/output transformations operated by the spiking
 network in a way that could be directly compared to the results for
-the binary network we simulated the response of the system to a set of
-1024 rate-coded patterns. Exactly as in the binary case, each pattern
-was determined by selecting a random subset of mossy fibre terminals
-and designating them to be 'active' (black lines in the black and
-white barcode in figure 7). During the simulation, active mossy fibre
-terminals fired Poisson spike trains with mean rate 80Hz, while
-inactive ones fired with a background rate of 10Hz (red raster plot in
-figure 7). These rates were selected to be representative of typical
-rate-coded inputs to the cerebellum (Van Kan 1993); but see the
-Supplementary information for further discussion. For each simulation,
-the system was recorded for 30ms after being allowed to reach steady
-state, either by simulating the appropriate random input for 150ms
-starting from rest or by waiting 30ms after a previous simulation of
-the same pattern to allow the state to decorrelate.
+the uniform binary network we simulated the response of the system to
+a set of 1024 random rate-coded patterns. Mirroring the binary case,
+each pattern was determined by selecting a random subset of mossy
+fibre terminals and designating them to be 'active' (black lines in
+the black and white barcode in figure 7E; top two traces in figure
+7A). During the simulation, active mossy fibre terminals fired Poisson
+spike trains with mean rate 80Hz, while inactive ones fired with a
+background rate of 10Hz (red raster plot in figure 7). These rates
+were selected to be representative of typical rate-coded inputs to the
+cerebellum (Van Kan 1993); but see the Supplemental information for
+further discussion. The spiking activity of the network was recorded
+over a 30ms time window (*shall we add* /disregarding an initial
+transient to allow the system to start from an appropriately
+randomized state?/).
+
 **** Analysis of spiking network simulations
-For our analysis, we considered the outcome of a simulation to be the
-vector of all granule cell spike counts (blue barcode in figure
-7). Because of the randomness in the generation of the input spike
-trains, any given input pattern will give rise to a distribution of
-possible outputs. In principle, to calculate the mutual information
-one should reconstruct this conditional probability distribution for
-each input pattern, but this is unfeasible in practice due to the very
-large number of simulations that would be needed to reconstruct such a
-distribution (a form of /curse of dimensionality/ (Quian Quiroga
-2009)). Instead, we reduce the dimensionality of the output space by
-using a k-means classifier (called the /decoder/; Lloyd1982,
-Pedregosa2009) to divide the network outputs in a number of classes
-equal to the number of input patterns. Computing the MI between input
-patterns and the output of the decoder is then possible with a
-manageable number of simulations (we use 30 simulations for each input
-pattern to calculate the MI, plus 30 more to train the decoder; see
-supplementary information), provided that we take care of using an
-appropriate technique for correcting for the remaining undersampling
-bias (Treves1995, Ince2009).
+We consider the output of a simulation to be the vector of all granule
+cell spike counts (blue barcode in figure 7F). Because of the
+randomness in the generation of the input spike trains, any given
+input pattern gives rise to a distribution of possible outputs. In
+principle, calculating the mutual information between input and output
+requires the estimation of this distribution for each input pattern
+(together with a choice of prior distribution over input patterns,
+which we take to be uniform). In practice, this is unfeasible due to
+the very large number of simulations required (a form of /curse of
+dimensionality/ (Quian Quiroga 2009)). To simplify the task, we reduce
+the dimensionality of the output space by cascading the network with a
+/decoder/ which labels output spike count vectors as belonging to one
+out of a fixed number of classes M, such that the communication
+channel represented by the network plus the decoder maps N input
+patterns to M output classes, and for a resonable value of M this
+(toghether with an appropriate undersampling bias correction
+technique; see Treves1995, Ince2009) allows for direct estimation of
+the MI.
+
+The decoder is a simple euclidean nearest neighbor classifier, or a
+Voronoi tassellation of the output space. The M points defining the
+tassellation are the centroids of the clusters obtained by running the
+k-means algorithm (Lloyd1982, Pedregosa2009) on a dataset generated by
+simulating each input pattern 30 times (see supplemental
+information). This dataset is then discarded and it is not used for
+calculation of the MI. For our analyses we set M=N, as this is the
+lowest number of patterns that allows full recovery of the
+information, and as the perfomance of the decoder generally doesn't
+improve by increasing M further - reflecting the fact that the
+tassellation of output space defined by the decoder matches well with
+the natural structure of the data clusters.
+
+To measure the sparseness of a population of spiking cells we use the
+/activity sparseness/ quantity introduced in Willmore2001. This
+corresponds to calculating the standard deviation of the number of
+spikes fired by the cells across the population and computing the
+fraction of cells firing fewer spikes than that. The /sparsification/
+operated by the network on an input stimulus is then defined as the
+output sparseness divided by the input sparseness.
 
 *** Results
       #+NAME:figure_8
-      #+CAPTION:Figure 8 in the paper. Input-output transformation for the spiking network with tonic inhibition scaling as the number of dendrites, calculated with a set of 1024 stimulus patterns. *A*: Mutual information as a fraction of input entropy (log_{2}1024=10 bits assuming a uniform prior over inputs). Compare to figure 4E. *B*: many-valued extension to p(GC), corresponding to 1 - output sparseness. *C*: efficient frontier plot showing how the number of dendrites controls the tradeoff between MI (averaged over all values of p(MF) for a given number of dendrites) and output sparseness.
+      #+CAPTION:Figure 8 in the paper. Input-output transformation for the spiking network with tonic inhibition scaling as the number of dendrites, calculated with a set of 1024 stimulus patterns. *A*: Mutual information for the spiking network cascaded with the decoder. Compare to figure 4. *B*: sparsification . *C*: efficient frontier plot showing how the number of dendrites controls the tradeoff between MI (averaged over all values of p(MF) for a given number of dendrites) and sparsification.
       #+ATTR_HTML: :width 800px
-      [[file:fig/figure_8.png][file:fig/figure_8.png]]
+    [[file:fig/figure_8.png][file:fig/figure_8.png]]
 
 **** A biophysically detailed, spiking network model reproduces the main findings.
 To test the robustness of our conclusions with respect to the
 assumptions and simplifications that were needed to develop our
-analytical approach, we built a spiking implementation of our
+analytical approach, we built a spiking implementation of the
 anatomical network model where cell and synaptic dynamics were tightly
-constrained by experimental measurements (excitatory synaptic
-conductances were altered from their experimental values to preserve
-the the total amount of excitation as the number of dendrites was
-varied; see Methods for details). To quantify the input/output
-transformation operated by the network, for each choice of the number
-of GrC dendrites and p(MF) we simulated 1024 rate-coded input patterns
-generated as explained in figure 7. Unlike in the binary network
-model, in this case the response of the network (constituted by the
-spike times of each granule cell) to a given stimulation pattern is
-not uniquely determined, but it is stochastic (noisy) in nature
-because of the randomness involved in generating input spike trains as
-instances of a Poisson point process. This means that the Shannon
-information between input and output does not correspond any more to
-the output entropy, and that to estimate it we have to perform many
-repetitions of each simulation (see Methods).
+constrained by experimental measurements. To quantify the input/output
+transformations operated by the network, we simulated 1024 rate-coded
+input patterns for several combinations of ~d~ and p(MF). Because of
+the richer nature of the inputs and outputs compared to the binary
+case, and because of the noise introduced in the input/output
+transformations by the stochasticity of the input spike trains, we had
+to generalize our measure of sparseness and to measure the full
+Shannon information rather than just the output entropy (see Methods).
 
-The estimated MI and output sparseness (illustrated in figure 8 for a
+The estimated MI and sparsification (illustrated in figure 8 for a
 number of settings of ~d~ and ~p(MF)~) match very well with the
 analogous quantities for the binary model in presence of tonic
-inhibition (figures 4E, 6B; this is the most relevant comparison than
-can be made between the two models, as the tonic inhibition in the
-binary model has a similar effect to the scaling of the excitatory
-conductances in the spiking model). In particular, networks with a
-small number of dendrites are optimal for wide range sparse encoding,
-while network with many dendrites have a sparser output at the expense
-of transmitted information.
+inhibition (figure 4). In particular, networks with a small number of
+dendrites are optimal for wide range sparse encoding, while network
+with many dendrites have a sparser output at the expense of
+transmitted information.
+
+*paragraph on correlated inputs*
 *** Supplementary Information
 **** Effect of spatial correlations in input patterns
      #+NAME:input_pattern_uncorrelated
@@ -1500,3 +1558,16 @@ of transmitted information.
      #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
      [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
      
+**** Intuitive explanation
+***** Sparsification
+Generally speaking, the input/output relationship for the network
+becomes steeper as ~d~ increases. This sentence can be given precise
+meaning in several ways, depending on whether we're looking at the
+binary or the rate-coded case and (at least in the rate-coded case)
+what we exactly mean by input and output.
+****** Binary case
+Even if the \phi/d ratio is kept fixed, the probability for a cell to
+be above threshold becomes a steeper function of p(MF). 
+
+***** Single-cell effects
+***** Network effects
