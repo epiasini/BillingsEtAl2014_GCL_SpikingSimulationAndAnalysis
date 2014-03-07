@@ -219,8 +219,8 @@ class RectangularHeatmapPlotter(object):
             plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(1)
             y_param = self.space._param(0)
-            self.ax.set_xticks(np.arange(self.space.shape[1]))
-            self.ax.set_yticks(np.arange(self.space.shape[0]))
+            self.ax.set_xticks(np.arange(1, self.space.shape[1], 2))
+            self.ax.set_yticks(np.arange(1, self.space.shape[0], 2))
         else:
             plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(0)
@@ -229,10 +229,10 @@ class RectangularHeatmapPlotter(object):
             self.ax.set_yticks(np.arange(self.space.shape[1]))
         self.cbar = self.fig.colorbar(plot, use_gridspec=True)
         self.cbar.set_label(heat_dim)
-        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)])
+        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)[1::2]])
         self.ax.set_xlabel(x_param)
         if self.space.ndim > 1:
-            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)])
+            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)[1::2]])
             self.ax.set_ylabel(y_param)
 
         sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
