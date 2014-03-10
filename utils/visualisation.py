@@ -201,7 +201,7 @@ class RectangularHeatmapPlotter(object):
             raise ValueError('Attempt to plot an heatmap for a space with more than 2 dimensions.')
         self.space = space
         self.gs = GridSpec(1,1)
-        self.fig = plt.figure()
+        self.fig = plt.figure(figsize=(4,6))
         self.fig.patch.set_alpha(alpha)
         self.ax = self.fig.add_subplot(self.gs[0])
         self.fig.canvas.mpl_connect('draw_event', on_draw)
@@ -219,21 +219,35 @@ class RectangularHeatmapPlotter(object):
             plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(1)
             y_param = self.space._param(0)
-            self.ax.set_xticks(np.arange(1, self.space.shape[1], 2))
-            self.ax.set_yticks(np.arange(1, self.space.shape[0], 2))
+            self.ax.set_xticks(np.arange(1, self.space.shape[1]+1, 4))
+            self.ax.set_yticks(np.arange(1, self.space.shape[0]+1, 4))
         else:
             plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(0)
             y_param = self.space._param(1)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks(np.arange(self.space.shape[1]))
-        self.cbar = self.fig.colorbar(plot, use_gridspec=True)
+        self.cbar = self.fig.colorbar(plot, use_gridspec=True, orientation='horizontal')
         self.cbar.set_label(heat_dim)
-        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)[1::2]])
-        self.ax.set_xlabel(x_param)
+        self.cbar.set_ticks(np.linspace(plot_data.min(),
+                                        plot_data.max(),
+                                        4))
+        self.cbar.set_ticklabels(np.linspace(plot_data.min(),
+                                             plot_data.max(),
+                                             4).round(1))
+        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)[1::4]])
+        self.ax.get_xaxis().tick_bottom()
+        self.ax.get_yaxis().tick_left()
+        if x_param=='active_mf_fraction':
+            self.ax.set_xlabel('p(MF)')
+        else:
+            self.ax.set_xlabel(x_param)
         if self.space.ndim > 1:
-            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)[1::2]])
-            self.ax.set_ylabel(y_param)
+            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)[1::4]])
+            if y_param=='n_grc_dend':
+                self.ax.set_ylabel('Synaptic connections')
+            else:
+                self.ax.set_ylabel(y_param)
 
         sorted_fixed_param_names = [x for x in sorted(self.space.fixed_parameters, key=self.space.absolute_didx) if x in self.space.ABBREVIATIONS]
         fig_title = 'param. coordinates: '+' '.join('{0}{1}'.format(self.space.ABBREVIATIONS[parameter], self.space.fixed_parameters[parameter]) for parameter in sorted_fixed_param_names)
