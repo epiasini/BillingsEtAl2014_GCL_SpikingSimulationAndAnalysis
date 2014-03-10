@@ -72,7 +72,7 @@ def plot_sample_activation_pattern(point, show_edges=False):
     mlab.show()
 
 if __name__=="__main__":
-    input_spatial_correlation_scale = 2
+    input_spatial_correlation_scale = 4
     point = parameters.ParameterSpacePoint(4,0,input_spatial_correlation_scale,0.2,1,0.3,0,1,0,80,0,10,0,64,50,200,150,30,0,1,5,2)
 
-    plot_sample_activation_pattern(point, show_edges=True)
+    plot_sample_activation_pattern(point, show_edges=False)
