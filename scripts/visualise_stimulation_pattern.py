@@ -13,6 +13,9 @@ def plot_sample_activation_pattern(point, show_edges=False):
     mlab.figure(1, bgcolor=(1, 1, 1))
     mlab.clf()
 
+    # colour preferences
+    color_active = (0.8,0,0)
+    color_inactive = (0.8,0.8,0.8)
     # load mf positions
     mf_positions = point.get_cell_positions()['MFs']
     x = mf_positions[:,0]
@@ -21,30 +24,30 @@ def plot_sample_activation_pattern(point, show_edges=False):
     # generate stimulation pattern in an appropriate format
     pattern_generator = patterns.SpatiallyCorrelatedStimulationPatternGenerator(point)
     pattern = pattern_generator.generate()
+    not_pattern = [m for m in range(point.n_mf) if m not in pattern]
     binary_pattern = np.zeros(mf_positions.shape[0])
     binary_pattern[pattern] = 1
     # create mayavi plots for mfs
-    pts = mlab.points3d(x, y, z, binary_pattern,
-                        scale_factor=3,
-                        resolution=10,
-                        opacity=1,
-                        scale_mode='none',
-                        colormap='RdGy')
-    pts.module_manager.scalar_lut_manager.reverse_lut = True
-    mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts),
-                         color=(1,0,0))
-    # this bit of trickery re-plots the cells but with an inverted
-    # scalar value (and non-inverted colormap, so the cell colour
-    # stays the same) so that we can display an 'off' kernel density
-    # estimate as well as the 'on' one.
-    pts_inverse = mlab.points3d(x, y, z, 1-binary_pattern,
-                                scale_factor=3,
-                                resolution=10,
-                                opacity=1,
-                                scale_mode='none',
-                                colormap='RdGy')
-    mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_inverse),
-                         color=(0,0,0))
+    pts_active = mlab.points3d(x[pattern],
+                               y[pattern],
+                               z[pattern],
+                               scale_factor=3,
+                               resolution=16,
+                               opacity=1,
+                               scale_mode='none',
+                               color=color_active)
+    pts_inactive = mlab.points3d(x[not_pattern],
+                                 y[not_pattern],
+                                 z[not_pattern],
+                                 scale_factor=3,
+                                 resolution=16,
+                                 opacity=1,
+                                 scale_mode='none',
+                                 color=color_inactive)
+    mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_active),
+                         color=color_active)
+    mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_inactive),
+                         color=color_inactive)
     # if requested, plot the 'heaviest' edges in the projected network
     if show_edges:
         projected_graph = bipartite.weighted_projected_graph(point.network_graph,
