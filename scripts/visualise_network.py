@@ -13,21 +13,31 @@ g = nx.read_graphml(filename, node_type=int)
 g_a_matrix = nx.to_numpy_matrix(g)
 g_a_list = np.array(g.edges()) - 1
 g_pos_matrix = np.array([[g.node[n]['x'], g.node[n]['y'], g.node[n]['z']] for n in g.nodes()])
-g_id_matrix = np.array([g.node[n]['bipartite'] for n in g.nodes()]) 
+g_id_matrix = np.array([g.node[n]['bipartite'] for n in g.nodes()])
 
 
 x = g_pos_matrix[:,0]
 y = g_pos_matrix[:,1]
 z = g_pos_matrix[:,2]
 s = g_id_matrix
-pts = mlab.points3d(x, y, z, s,
+pts = mlab.points3d(x, y, z, 1-s,
                     scale_factor=3,
                     resolution=10,
                     opacity=1,
                     scale_mode='none',
                     colormap='RdYlBu')
 pts.mlab_source.dataset.lines = np.array(g_a_list)
-
+mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts),
+                     color=(1,0,0))
+pts.module_manager.scalar_lut_manager.reverse_lut = True
+pts_inverse = mlab.points3d(x, y, z, s,
+                            scale_factor=3,
+                            resolution=10,
+                            opacity=1,
+                            scale_mode='none',
+                            colormap='RdYlBu')
+mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_inverse),
+                     color=(0,0,1))
 # Use a tube fiter to plot tubes on the link
 tube = mlab.pipeline.tube(pts, tube_radius=0.1)
 tube.filter.radius_factor = 1.
