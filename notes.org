@@ -103,7 +103,7 @@ to a numerical extension of the analytical results.
 - use a pure rate code (rate in, rate out).
 If there is time, we could add the following features:
 - modulate sinusoidally input rate in time
-- use the MUVR metric to cluster output 
+- use the MUVR metric to cluster output
 **** DONE First assessment of the time involved in running simulations and analyses
      CLOSED: [2013-11-22 Fri 10:24]
 ***** DONE Back-of-the-envelope estimation of computational cost of simulations
@@ -159,7 +159,7 @@ that for the analysis we need to use a simpler decoder.
     autocorrelation seems to drop to its asymptotic value (the average
     firing rate) after about 50ms (see figures below, and note that
     the reported stimulation rate is for each of 4 MFs).
-    
+
     Another interesing phenomenon can be seen in this experiment: as
     reported in Moreno-Bote and Parga 2006, there are two regimes
     depending on whether the average membrane depolarization is above
@@ -276,7 +276,7 @@ that for the analysis we need to use a simpler decoder.
     #+CAPTION: Time-averaged GABA conductance for 3 direct plus 1 spillover-only connection, as a fuction of GoC firing rate.
     #+NAME: fig:inhibitory_conductance_vs_rate
     [[file:fig/inhibitory_conductance_vs_rate.png][file:fig/inhibitory_conductance_vs_rate.png]]
-    
+
 
 *** DONE mf -> grc synapses: decide if total conductance should scale inversely with the number of dendrites.
     CLOSED: [2013-11-28 Thu 18:44]
@@ -391,7 +391,7 @@ though, as we still need to vary p(MF) as an independent variable.
     has the very nice property of matching my control parameter for
     p(MF).
 *** Plan B: is there an easy way of integrating synaptic noise in our analysis?
-** Technical upgrades needed 
+** Technical upgrades needed
 *** Simulation features
 **** DONE Check that GrC and synaptic model actually correspond to the latest version from Rothman and Piasini 2013.
      CLOSED: [2013-11-22 Fri 13:10]
@@ -458,7 +458,7 @@ though, as we still need to vary p(MF) as an independent variable.
      the connection would not cause a single mossy fibre to be connection to the same granule cell
      [The last one is a bit of an artificial one that had to be introduced because for high number of connections, the resampling because an problem since it diminishes the number
      of independent inputs to the network, which create conceptual issues]
-       
+
      The above also assumes that all cells and connections are
      confined to the same sphere (connections do not penetrate the
      sphere holding the GRCs).
@@ -728,9 +728,9 @@ though, as we still need to vary p(MF) as an independent variable.
     NEURON having issues compiling mod files. This only happens for
     jobs I submit into the queue, as everything seems to run smoothly
     on the /user test nodes/.
-** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri> 
+** Meeting with Angus and Guy, pre-christmas break <2013-12-13 Fri>
 *** Points for discussion
-1. *integration time window*: 
+1. *integration time window*:
    - I should probably implement it as a free parameter that only
      requests for simulations to be rerun if the new length is longer
      than what's available
@@ -766,7 +766,7 @@ though, as we still need to vary p(MF) as an independent variable.
      this issue would be to normalise the rate profiles over the set
      of nodes, so that we are sure we always get the same input
      rate. But then again this would effectively alter the sparsity of
-     the input pattern.. we need to think if there's a way of 
+     the input pattern.. we need to think if there's a way of
    - once I've implemented it, apart from the parameters I have
      already to specify mean and fluctuations for rates, I will also
      need a discrete parameter to switch between correlated and
@@ -952,7 +952,7 @@ typical classes of output of the granular layer.
       - [X] make sure resolution of plot with clustered barcodes
         matches the plot where the barcodes are shuffled.
     - [X] figure legend
-*** TODO [4/5] figure 8: results. 
+*** TODO [4/5] figure 8: results.
     This should contain:
     - [X] 'raw data' in the form of a MI heatmap for 1024 patterns, to
       show qualitative match to figure 3A in the simplest possible
@@ -986,7 +986,7 @@ typical classes of output of the granular layer.
     oscillate at some carrier frequency (50% modulation at 8Hz is what
     we're going for). Background activity from 'off' fibers
     will not be modulated.
-    
+
     It would be nice to have a representation of what kind of input
     we're playing into the network in this case as well. something
     like a raster plot or a visualisation of the conductance trains.
@@ -1231,7 +1231,7 @@ too.
     number of simulated patterns (100) to understand if this is a
     fluke or not, and more generally to compare the behaviour of the
     two sparseness measures across a wider range of conditions.
-    
+
     <2013-12-05 Thu> The results from the parameter sweep look
     encouraging in terms of behaviour of the 'activity' sparseness. It
     looks like a (random) network with 4 dendrites sparsifies all
@@ -1265,7 +1265,7 @@ too.
     #+CAPTION: 'Masked' mutual information over total input entropy for 128 patterns, 50 trials (30 for training), 80/10Hz. Only regions in parameter space where the network sparsifies are shown.
     #+NAME: fig:MI_masked_128
     [[file:fig/mi_masked_128.png][file:fig/mi_masked_128.png]]
-    
+
 * Controls for supplementary information
 ** DONE Fix crash that happens when trying to analyse more than about 1024 (patterns) * 70 (trials) observations
    CLOSED: [2014-01-12 Sun 18:26]
@@ -1313,7 +1313,7 @@ Command exited with non-zero status 1
 ** TODO Why is the output sparseness different from 0.5 for the network with 1 dendrite?
 *** Relationship between p(MF) and sparseness (or: binary and rate-coded activity sparseness measures)
 The activity sparseness measure doesn't directly map to p(GC) in the
-binary case: indeed if we measure the 
+binary case: indeed if we measure the
 [[file:fig/spasity_measure.png][file:fig/spasity_measure.png]]
 * Other ideas
 *** Testing for 'randomness' in the mf->grc connectivity
@@ -1507,7 +1507,7 @@ transmitted information.
    #+NAME:efficient_frontier_firing_rate
    #+CAPTION:Efficient frontier plot for 'on' mossy fibre rate set at 40Hz, 80Hz and 120Hz.
    #+ATTR_HTML: :width 800px
-   [[file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png][file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png]] 
+   [[file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png][file:fig/efficient_frontier_spn128_ecs1.00_dta0.0.png]]
 
    The other interesting feature we can immediately see in figure
    [[efficient_frontier_firing_rate]] is that the networks with few
@@ -1557,7 +1557,7 @@ transmitted information.
      #+NAME: fig:n_trials
      #+CAPTION: MI vs testing set size (number of trials - training set size) for 4 dendrites, p(MF)=0.1, 1024 patterns and 30 training observations per pattern.
      [[file:fig/n_trials_gd4_f0.1_sp1024_tr30.png][file:fig/n_trials_gd4_f0.1_sp1024_tr30.png]]
-     
+
 **** Intuitive explanation
 ***** Sparsification
 Generally speaking, the input/output relationship for the network
@@ -1567,7 +1567,47 @@ binary or the rate-coded case and (at least in the rate-coded case)
 what we exactly mean by input and output.
 ****** Binary case
 Even if the \phi/d ratio is kept fixed, the probability for a cell to
-be above threshold becomes a steeper function of p(MF). 
+be above threshold becomes a steeper function of p(MF).
 
 ***** Single-cell effects
 ***** Network effects
+* Notes on the convergence between my part and Guy's <2014-03-11 Tue>
+*** figure 1
+do I have to provide a 3D visualisation of the network with the
+correct red/blue color scheme? I can't provide it as vector
+graphics, though.
+*** figure 2
+invert N..1 to 1..N pattern numbering (top to bottom)?
+*** figure 3
+I thought this was going to be just the same as the old figure 2, plus
+the network activity examples from figure 5 (only with fixed threshold
+setting to be able to introduce them before the NADT is mentioned).
+*** figure 4
+This is still missing at the moment. It should have:
+- the heatmaps (information and p(GC)) for the 'fixed threshold which
+  scales with the connectivity' case. I think Angus wanted to do away
+  with the results for the pure fixed threshold setting, but it's best
+  to check with him.
+- as an aside, why not use the same colormap for p(GC) as we are
+  doing for the information? And is it possible to use a continuous
+  colorbar instead of the discrete one that's there at the moment?
+  the last thing is not too iportant.. one option could also be to
+  get the colorbar from figure 8.
+- A plot of p(GC) vs p(MF) as the synaptic connectivity changes in
+  that same configuration. I propose to use the same colormap I use in
+  figure 8 to indicate the number of dendrites.
+*** figure 5
+This should contain what is in figure 4 at the moment, except for the
+plot with DTA+tnic which should be removed. The existing figure 5
+should be split in two: the top part goes in figure 3 or figure 4,
+and the bottom part should be discarded or moved to the SI.
+*** figure 6
+Do the results change if we plot the average output entropy instead
+of the encodable range? the encodable range is not a difficult
+concept, but using it in the plots requires the reader to remember
+the definition and actively think about its meaning. 'Average
+information' is perhaps more self-explanatory (even though it may be
+possible to misinterpret it as the information across patterns with
+different p(MF)?) and - because it doesn't do any thresholding - has
+a smoother dependence on the overall performance of the
+network. Finally, it's the measure I use in the spiking case.
