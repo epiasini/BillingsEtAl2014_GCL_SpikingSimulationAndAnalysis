@@ -22,27 +22,17 @@ z = g_pos_matrix[:,2]
 s = g_id_matrix
 pts = mlab.points3d(x, y, z, 1-s,
                     scale_factor=3,
-                    resolution=10,
+                    resolution=16,
                     opacity=1,
                     scale_mode='none',
                     colormap='RdYlBu')
 pts.mlab_source.dataset.lines = np.array(g_a_list)
-mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts),
-                     color=(1,0,0))
 pts.module_manager.scalar_lut_manager.reverse_lut = True
-pts_inverse = mlab.points3d(x, y, z, s,
-                            scale_factor=3,
-                            resolution=10,
-                            opacity=1,
-                            scale_mode='none',
-                            colormap='RdYlBu')
-mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_inverse),
-                     color=(0,0,1))
 # Use a tube fiter to plot tubes on the link
 tube = mlab.pipeline.tube(pts, tube_radius=0.1)
 tube.filter.radius_factor = 1.
 #tube.filter.vary_radius = 'vary_radius_by_scalar'
-mlab.pipeline.surface(tube, color=(0.2, 0.2, 0.2))
+mlab.pipeline.surface(tube, color=(0.3, 0.3, 0.3), opacity=0.5)
 
 # # Visualize the local atomic density
 #mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts))
