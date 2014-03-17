@@ -46,8 +46,6 @@ def plot_sample_activation_pattern(point, show_edges=False):
                                  color=color_inactive)
     mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_active),
                          color=color_active)
-    mlab.pipeline.volume(mlab.pipeline.gaussian_splatter(pts_inactive),
-                         color=color_inactive)
     # if requested, plot the 'heaviest' edges in the projected network
     if show_edges:
         projected_graph = bipartite.weighted_projected_graph(point.network_graph,
