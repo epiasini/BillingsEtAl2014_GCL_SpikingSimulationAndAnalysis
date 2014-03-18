@@ -50,14 +50,33 @@ def hoyer_sparseness(level_array):
     1-sparsity=1) in this case.
 
     """
-    n_cells = level_array.shape[1]
+    n_cells = float(level_array.shape[1])
     response_sparseness = (np.sqrt(n_cells) - level_array.sum(axis=1)/np.sqrt(np.square(level_array).sum(axis=1))) / (np.sqrt(n_cells) - 1)
     response_sparseness[np.isnan(response_sparseness)] = 1
     # now we average across all stimuli to get the average population
     # sparseness for the dataset, and subtract from 1 to have
-    # something that is 0 if the array is very sparse arrays and 1 if
-    # it is not sparse.
+    # something that is 0 if the array is very sparse and 1 if it is
+    # not sparse.
     return 1 - response_sparseness.mean()
+
+def vinje_sparseness(level_array):
+    """Return 1 - the Vinje-Gallant sparseness for an array of
+    n_stimuli*n_cells spike counts.
+
+    This is possibly the simplest possible correct normalisation of
+    the Treves-Rolls measure, and is sort of a squared version of the
+    Hoyer metric.
+
+    """
+    n_cells = float(level_array.shape[1])
+    response_sparseness = (n_cells - np.square(level_array.sum(axis=1))/np.square(level_array).sum(axis=1)) / (n_cells - 1)
+    response_sparseness[np.isnan(response_sparseness)] = 1
+    # now we average across all stimuli to get the average population
+    # sparseness for the dataset, and subtract from 1 to have
+    # something that is 0 if the array is very sparse and 1 if it is
+    # not sparse.
+    return 1 - response_sparseness.mean()
+    
 
 def activity_sparseness(level_array):
     """if level_array is a n_stimuli*n_cells array of spike numbers/firing

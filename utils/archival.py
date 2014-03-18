@@ -71,8 +71,10 @@ class ResultsArchive(object):
                          'o_mean_count',
                          'i_sparseness_hoyer',
                          'i_sparseness_activity',
+                         'i_sparseness_vinje',
                          'o_sparseness_hoyer',
-                         'o_sparseness_activity']
+                         'o_sparseness_activity',
+                         'o_sparseness_vinje']
     def _is_archive_on_disk_complete(self):
         target_group = self._open()
         answer = all([ds in target_group.keys() for ds in self.datasets])

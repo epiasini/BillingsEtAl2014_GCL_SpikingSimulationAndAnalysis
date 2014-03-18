@@ -10,7 +10,7 @@ import pyentropy as pe
 
 from pure import SimpleParameterSpacePoint
 from archival import SpikesArchive, ResultsArchive
-from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, hoyer_sparseness, activity_sparseness
+from analysis import convolve, multineuron_distance, multineuron_distance_labeled_line, hoyer_sparseness, activity_sparseness, vinje_sparseness
 
 class PSlice(object):
     """
@@ -182,10 +182,12 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             print('computing input and output sparsity')
             i_sparseness_hoyer = hoyer_sparseness(i_level_array)
             i_sparseness_activity = activity_sparseness(i_level_array)
+            i_sparseness_vinje = vinje_sparseness(i_level_array)
             o_sparseness_hoyer = hoyer_sparseness(o_level_array)
             o_sparseness_activity = activity_sparseness(o_level_array)
-            print('input sparseness: hoyer {:.2f}, activity {:.2f}'.format(i_sparseness_hoyer, i_sparseness_activity))
-            print('output sparseness: hoyer {:.2f}, activity {:.2f}'.format(o_sparseness_hoyer, o_sparseness_activity))
+            o_sparseness_vinje = vinje_sparseness(o_level_array)
+            print('input sparseness: hoyer {:.2f}, vinje {:.2f}, activity {:.2f}'.format(i_sparseness_hoyer, i_sparseness_vinje, i_sparseness_activity))
+            print('output sparseness: hoyer {:.2f}, vinje {:.2f}, activity {:.2f}'.format(o_sparseness_hoyer, o_sparseness_vinje, o_sparseness_activity))
             if self.linkage_method_string == 'kmeans':
                 spike_counts = o_level_array
                 # divide spike count data in training and testing set
@@ -281,8 +283,10 @@ class ParameterSpacePoint(SimpleParameterSpacePoint):
             self.results_arch.update_result('o_mean_count', data=o_mean_count)
             self.results_arch.update_result('i_sparseness_hoyer', data=i_sparseness_hoyer)
             self.results_arch.update_result('i_sparseness_activity', data=i_sparseness_activity)
+            self.results_arch.update_result('i_sparseness_vinje', data=i_sparseness_vinje)
             self.results_arch.update_result('o_sparseness_hoyer', data=o_sparseness_hoyer)
             self.results_arch.update_result('o_sparseness_activity', data=o_sparseness_activity)
+            self.results_arch.update_result('o_sparseness_vinje', data=o_sparseness_vinje)
             # update attributes
             self.results_arch.load()
 
