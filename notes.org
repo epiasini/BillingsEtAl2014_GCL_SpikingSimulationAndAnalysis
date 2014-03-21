@@ -1331,81 +1331,65 @@ and seeing if it matches with the experiments.
     #+ATTR_HTML: :width 800px
     [[file:fig/figure_7.svg]]
 
-**** Spiking network model
-A spiking network was built on top of our anatomical connectivity
-model using neuroConstruct (Gleeson2008) and simulated with NEURON
-(Carnevale2006). Granule cells were represented by the average cell
-model published in Schwartz2012, and a new model for the mossy fibre
-to granule cell synapse was fit with swarm intelligence techniques
-(Deb2010) to existing experimental data from paired recordings
-(Rothman2009; but data on the NMDA/AMPA conductance ratio and the NMDA
-block model were taken from Schwartz2012). Tonic GABAR-mediated
-inhibition was included, using the amplitude reported in Rothman2009
-and the reversal potential in Seja2012. AMPAR- and NMDAR-mediated
-conductance amplitudes were scaled by a factor of ~4/d~ to conserve
-the total amount of excitation as the number of granule cell dendrites
-was varied (see Supplemental Information for additional discussion).
+**** Spiking network simulations
+GCs were implemented in the spiking network with a conductance-based
+integrate-and-fire model whose parameters were set to previously
+published experimental averages (Rothman2009; Schwartz2012; see
+Supplemental Table 7). Excitatory synaptic conductances were fitted to
+paired recording data (Rothman2009; Sargent) with swarm intelligence
+techniques (Deb2010). A short term plasticity mechanism (Tsodyks et
+al 1998) was implemented for both AMPAr- and NMDAr-mediated
+conductances, and voltage-dependent Mg2+ block for the NMDAr-mediated
+conductance was modeled as in Schwartz2012. A tonic GABA conductance
+was included with experimentally measured amplitude (Rothman2009) and
+reversal potential (Seja2012). Simulations were generated with
+neuroConstruct (Gleeson2008) and run with NEURON (Carnevale2006) on
+UCL's Computer Science Cluster and Legion HPC facility. Cell and
+synaptic models are available in NeuroML2/LEMS format (Gleeson2010) on
+the Open Source Brain (www.opensourcebrain.org; Gleeson2012);
+simulation and data management code is available on GitHub
+(github.com/epiasini/network).
 
-All models we used are available in NeuroML/LEMS format (Gleeson2010)
-on the Open Source Brain.
-**** Simulation set-up for the spiking network
-To test the input/output transformations operated by the spiking
-network in a way that could be directly compared to the results for
-the uniform binary network we simulated the response of the system to
-a set of 1024 random rate-coded patterns. Mirroring the binary case,
-each pattern was determined by selecting a random subset of mossy
-fibre terminals and designating them to be 'active' (black lines in
-the black and white barcode in figure 7E; top two traces in figure
-7A). During the simulation, active mossy fibre terminals fired Poisson
-spike trains with mean rate 80Hz, while inactive ones fired with a
-background rate of 10Hz (red raster plot in figure 7). These rates
-were selected to be representative of typical rate-coded inputs to the
-cerebellum (Van Kan 1993); but see the Supplemental information for
-further discussion. The spiking activity of the network was recorded
-over a 30ms time window (*shall we add* /disregarding an initial
-transient to allow the system to start from an appropriately
-randomized state?/).
+**** Analysis of spiking network data
+To quantify the transformation performed by the network we measured
+input and output population sparseness according to the definition
+given in Vinje2000. This is a normalised version of the metric defined
+by Treves and Rolls 1991, and is defined as
+\[
+S = \left(C - \frac{\left(\sum_{i=1}^Cr_i\right)^2}{\sum_{i=1}^C{r_i^2}}\right)\left(C-1\right)^{-1}
+\]
 
-**** Analysis of spiking network simulations
-We consider the output of a simulation to be the vector of all granule
-cell spike counts (blue barcode in figure 7F). Because of the
-randomness in the generation of the input spike trains, any given
-input pattern gives rise to a distribution of possible outputs. In
-principle, calculating the mutual information between input and output
-requires the estimation of this distribution for each input pattern
-(together with a choice of prior distribution over input patterns,
-which we take to be uniform). In practice, this is unfeasible due to
-the very large number of simulations required (a form of /curse of
-dimensionality/ (Quian Quiroga 2009)). To simplify the task, we reduce
-the dimensionality of the output space by cascading the network with a
-/decoder/ which labels output spike count vectors as belonging to one
-out of a fixed number of classes M, such that the communication
-channel represented by the network plus the decoder maps N input
-patterns to M output classes, and for a resonable value of M this
-(toghether with an appropriate undersampling bias correction
-technique; see Treves1995, Ince2009) allows for direct estimation of
-the MI.
+where $C$ is the number of cells and $r_i$ is the spike count of cell
+$i$. Additionally, because of the abundance of ways in which the
+sparseness of a vector can be quantified (Hurley2009), we performed
+our analyses with two alternative definitions (the one defined in
+Hoyer2004 and 'activity sparseness' as defined in Willmore2001); we
+found that this did not affect our results (data not shown). The
+/sparsification/ operated by the network on an input stimulus was
+defined as the output sparseness divided by the input
+sparseness. Mutual information was calculated between the set of N
+input patterns and N output network activity classes obtained by
+performing a Voronoi (nearest-neighbor) tessellation of the output
+space. The N seed points for the tessellation were the centroids of
+the clusters obtained by running the k-means algorithm (Lloyd1982,
+Pedregosa2009) on a training dataset of 30 repetitions per pattern. To
+avoid being trapped in local minima, the algorithm was re-initialised
+10 times using ~k_means++~ (Arthur2007), and only the best clustering
+was considered in the computation of the centroids. Training data was
+not re-used for the computation of MI. Information was calculated with
+~pyentropy~ (Ince2009), applying a suitable undersampling bias
+correction (Strong1998). An initial 150ms transient was discarded from
+all simulations to allow the system to go from resting to steady state
+for the pattern being simulated. Independent recordings of the
+response to a pattern were extracted from a single simulation by
+slicing it in 30ms-long time frames and discarding every other frame,
+to allow the system state to decorrelate between the frames we kept
+for analysis.
 
-The decoder is a simple euclidean nearest neighbor classifier, or a
-Voronoi tassellation of the output space. The M points defining the
-tassellation are the centroids of the clusters obtained by running the
-k-means algorithm (Lloyd1982, Pedregosa2009) on a dataset generated by
-simulating each input pattern 30 times (see supplemental
-information). This dataset is then discarded and it is not used for
-calculation of the MI. For our analyses we set M=N, as this is the
-lowest number of patterns that allows full recovery of the
-information, and as the perfomance of the decoder generally doesn't
-improve by increasing M further - reflecting the fact that the
-tassellation of output space defined by the decoder matches well with
-the natural structure of the data clusters.
-
-To measure the sparseness of a population of spiking cells we use the
-/activity sparseness/ quantity introduced in Willmore2001. This
-corresponds to calculating the standard deviation of the number of
-spikes fired by the cells across the population and computing the
-fraction of cells firing fewer spikes than that. The /sparsification/
-operated by the network on an input stimulus is then defined as the
-output sparseness divided by the input sparseness.
+The perfomance of the decoder generally doesn't improve by increasing
+M further - reflecting the fact that the tassellation of output space
+defined by the decoder matches well with the natural structure of the
+data clusters.
 
 *** Results
       #+NAME:figure_8
