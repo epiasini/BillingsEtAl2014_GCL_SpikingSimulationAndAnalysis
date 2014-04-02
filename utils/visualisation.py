@@ -1,7 +1,6 @@
 import numpy as np
 import matplotlib
 matplotlib.rc('font', family='Helvetica', size=18)
-#matplotlib.rc('axes', labelsize='large')
 from matplotlib.figure import Figure
 from matplotlib.gridspec import GridSpec
 from matplotlib import pyplot as plt
@@ -216,11 +215,11 @@ class RectangularHeatmapPlotter(object):
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks([])
         elif not invert_axes:            
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower'        )
             x_param = self.space._param(1)
             y_param = self.space._param(0)
-            self.ax.set_xticks(np.arange(1, self.space.shape[1]+1, 4))
-            self.ax.set_yticks(np.arange(1, self.space.shape[0]+1, 4))
+            self.ax.set_xticks(np.arange(1, self.space.shape[1], 4))
+            self.ax.set_yticks([0] + range(4, self.space.shape[0], 5))
         else:
             plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower')
             x_param = self.space._param(0)
@@ -243,7 +242,7 @@ class RectangularHeatmapPlotter(object):
         else:
             self.ax.set_xlabel(x_param)
         if self.space.ndim > 1:
-            self.ax.set_yticklabels([str(y) for y in self.space.get_range(y_param)[1::4]])
+            self.ax.set_yticklabels([str(self.space.get_range(y_param)[0])] + [str(y) for y in self.space.get_range(y_param)[4::5]])
             if y_param=='n_grc_dend':
                 self.ax.set_ylabel('Synaptic connections')
             else:

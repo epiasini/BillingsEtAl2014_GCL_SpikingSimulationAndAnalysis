@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import matplotlib
+matplotlib.rc('font', family='Helvetica', size=18)
 from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
@@ -10,15 +11,20 @@ from utils.parameters import ParameterSpace, ParameterSpacePoint
 from utils.parameters import PSlice as psl
 from utils.visualisation import MIDetailPlotter, RectangularHeatmapPlotter, RasterPlot
 
+from scripts.input_sparseness_analysis import binomial_poisson_sparseness, simulated_binomial_poisson_activity
+
 #+++++debugging stuff+++++
 #import pdb
 #np.seterr(all='raise') # to convert warnings to exceptions (this allow to track the offending line)
 #np.seterr(divide='ignore') # to suppress 'divide by zero' warnings
 
-
+file_extension = 'eps'
+diverging_colormap = 'RdYlBu_r'
+linewidth = 1.5
 
 plot_mi_heatmap = True
 plot_sparseness = True
+plot_mean_count = True
 plot_mi_comparison_nsp = False
 plot_line_comparison = False
 plot_line_n_trials = False
@@ -42,10 +48,10 @@ plot_mi_vs_activity = False
 plot_mi_vs_dn_and_sparsity = False
 
 #+++++parameter ranges+++++++++++++
-n_grc_dend = psl(1,11,1)
+n_grc_dend = psl(1,21,1)
 connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
-active_mf_fraction = psl(.1,1.,.1)
+active_mf_fraction = psl(.05,1.,.05)
 gaba_scale = psl(1)
 dta = psl(0)
 inh_cond_scaling = psl(0.)
@@ -55,7 +61,7 @@ stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
-n_stim_patterns = psl(128)
+n_stim_patterns = psl(1024)
 n_trials = psl(60)
 sim_duration = psl(180)
 ana_duration = psl(30) # must be < min(sim_duration)
@@ -95,7 +101,7 @@ if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension='png')
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
         plt.close(rhm.fig)
         np.savetxt('data_mi.csv', data_mi, delimiter=',')
 
@@ -107,34 +113,44 @@ if plot_line_n_trials:
     mi_pt  =  subspace._get_attribute_array('point_mi_pt')
     mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
     mi_plugin  =  subspace._get_attribute_array('point_mi_plugin')
-    print testing_size, mi_qe
-    fig, ax = plt.subplots()
-    ax.plot(testing_size, mi_qe.flat, label='qe')
-    ax.plot(testing_size, mi_pt.flat, label='pt')
-    ax.plot(testing_size, mi_nsb.flat, label='nsb')
-    ax.plot(testing_size, mi_plugin.flat, label='plugin')
-    ax.set_xlabel('testing set size')
+    fig, ax = plt.subplots(figsize=(3,1.75))
+    ax.locator_params(tight=True, nbins=5)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    np.savetxt('data_testing_size.csv', testing_size, delimiter=',')
+    np.savetxt('data_testing_size_mi_plugin.csv', mi_plugin.flat, delimiter=',')
+    np.savetxt('data_testing_size_mi_qe.csv', mi_qe.flat, delimiter=',')
+    ax.plot(testing_size, mi_plugin.flat, linewidth=linewidth,  label='plugin', c='r')
+    ax.plot(testing_size, mi_pt.flat, linewidth=linewidth,  label='pt', c='b')
+    ax.plot(testing_size, mi_nsb.flat, linewidth=linewidth,  label='nsb', c='g')
+    ax.plot(testing_size, mi_qe.flat, linewidth=linewidth,  label='qe', c='k')
+    ax.set_xlabel('Testing set size')
     ax.set_ylabel('MI (bits)')
-    ax.legend(loc='best')
-    fig.savefig('n_trials.png')
+    #ax.legend(loc='best')
+    fig.savefig('n_trials.'+file_extension)
 
 if plot_line_training_size:
-    n_trials = 200
+    n_trials = 240
     training_size = space.get_range('training_size')
     subspace = space.get_nontrivial_subspace(('n_trials', n_trials))
     mi_plugin =  subspace._get_attribute_array('point_mi_plugin')
     mi_qe =  subspace._get_attribute_array('point_mi_qe')
     mi_pt  =  subspace._get_attribute_array('point_mi_pt')
     mi_nsb  =  subspace._get_attribute_array('point_mi_nsb')
-    fig, ax = plt.subplots()
-    ax.plot(training_size, mi_qe.flat, label='qe')
-    ax.plot(training_size, mi_pt.flat, label='pt')
-    ax.plot(training_size, mi_nsb.flat, label='nsb')
-    ax.plot(training_size, mi_plugin.flat, label='plugin')
-    ax.set_xlabel('training set size')
+    fig, ax = plt.subplots(figsize=(3,1.75))
+    ax.locator_params(tight=True, nbins=5)
+    ax.xaxis.set_ticks_position('bottom')
+    ax.yaxis.set_ticks_position('left')
+    #ax.plot(training_size, mi_pt.flat, linewidth=linewidth,  label='pt')
+    #ax.plot(training_size, mi_nsb.flat, linewidth=linewidth,  label='nsb')
+    #ax.plot(training_size, mi_plugin.flat, linewidth=linewidth,  label='plugin', c='r')
+    np.savetxt('data_training_size.csv', training_size, delimiter=',')
+    np.savetxt('data_training_size_mi.csv', mi_qe.flat, delimiter=',')
+    ax.plot(training_size, mi_qe.flat, linewidth=linewidth, label='qe', c='k')
+    ax.set_xlabel('Training set size')
     ax.set_ylabel('MI (bits)')
-    ax.legend(loc='best')
-    fig.savefig('training_size.png')
+    #ax.legend(loc='best')
+    fig.savefig('training_size.'+file_extension)
 
 if plot_line_sim_duration:
     ana_duration = 50
@@ -236,52 +252,83 @@ if plot_sparseness:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures')
+        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension='eps')
-        #print data_o
-        # rhm = RectangularHeatmapPlotter(subspace)
-        # fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
-        # rhm = RectangularHeatmapPlotter(subspace)
-        # fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures')
+        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_v_i = rhm.plot_and_save(heat_dim='i_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        rhm = RectangularHeatmapPlotter(subspace)
+        fig, ax, data_v_o = rhm.plot_and_save(heat_dim='o_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
 
-        # use data extracted for input and output Hoyer sparseness to
-        # visualise 'amplification', defined as
-        # out_sparsity/in_sparsity
-        fig, ax = plt.subplots()
-        data_amp = data_a_o/data_a_i
-        plot = ax.imshow(data_amp, interpolation='none', cmap='coolwarm', origin='lower')
-        cbar = fig.colorbar(plot)
-        cbar.set_label('amplification')
-        ax.set_xticks(ax_mi.get_xticks())
-        ax.set_yticks(ax_mi.get_yticks())
-        ax.set_xticklabels([l.get_text() for l in ax_mi.get_xticklabels()])
-        ax.set_yticklabels([l.get_text() for l in ax_mi.get_yticklabels()])
-        fig.savefig('amplification.png')
-        plt.close(rhm.fig)
-        np.savetxt('data_p_gc.csv', data_a_o, delimiter=',')
-        np.savetxt('data_amplification.csv', data_amp, delimiter=',')
-
-        # plot mi 'masked' to show only the region where the network
-        # sparsifies
-        fig, ax = plt.subplots(figsize=(5,5))
-        data = data_mi/np.log2(n_stim_patterns.start)
-        data[data_amp>1] = np.NaN
-        cmap = matplotlib.cm.get_cmap('coolwarm')
-        cmap.set_bad('k', 1.)
-        plot = ax.imshow(data,interpolation='none', cmap=cmap, origin='lower', vmin=0, vmax=1, aspect=1)
-        cbar = fig.colorbar(plot)
-        cbar.set_label('MI / H(input)')
+        # use data extracted for input and output activity sparseness
+        # to visualise sparsification
+        fig, ax = plt.subplots(figsize=(4,6))
+        data_sparsification = (1-data_v_o)/(1-data_v_i)
+        plot = ax.imshow(data_sparsification, interpolation='none', cmap=diverging_colormap, origin='lower', vmin=0.7, vmax=1.9)
+        cbar = fig.colorbar(plot, orientation='horizontal')
+        cbar.set_label('Sparsification')
+        cbar.set_ticks([data_sparsification.min(), 1, 
+                        data_sparsification.max()])
+        cbar.set_ticklabels([data_sparsification.min().round(3), 1, 
+                             data_sparsification.max().round(3)])
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
         ax.set_xlabel('p(MF)')
-        ax.set_ylabel('GrC dendrites')
+        ax.set_ylabel('Synaptic connections')
         ax.set_xticks(ax_mi.get_xticks())
         ax.set_yticks(ax_mi.get_yticks())
         ax.set_xticklabels([l.get_text() for l in ax_mi.get_xticklabels()])
         ax.set_yticklabels([l.get_text() for l in ax_mi.get_yticklabels()])
-        fig.savefig('mi_masked.png')
+        fig.savefig('sparsification.'+file_extension)
         plt.close(rhm.fig)
+
+        # # plot output activity sparseness vs input activity sparseness
+        # fig, ax = plt.subplots()
+        # p_mf_range = subspace.get_range('active_mf_fraction')
+        # dense_range = np.linspace(p_mf_range[0], p_mf_range[-1], 1000)
+        # ax.plot([0.1, 0.9], [0.1, 0.9], c='k')
+        # ax.plot(p_mf_range, data_a_i.mean(axis=0), c='r', linewidth=2, label='simulation')
+
+        # # plot input activitty sparseness vs p(MF)
+        # ax.plot(dense_range, [binomial_poisson_sparseness(p, tau=subspace.get_range('ana_duration')[0]/1000., rate_on=subspace.get_range('stim_rate_mu')[0], rate_off=subspace.get_range('noise_rate_mu')[0])[0] for p in dense_range], c='g', linewidth=2, label='theory')
+        # ax.plot(dense_range, [simulated_binomial_poisson_activity(p, tau=subspace.get_range('ana_duration')[0]/1000., rate_on=subspace.get_range('stim_rate_mu')[0], rate_off=subspace.get_range('noise_rate_mu')[0], n_cells=180, n_trials=128) for p in dense_range], c='c', linewidth=2, label='theory')
+        # ax.legend(loc='best')
+        # ax.set_xlabel('p(MF)')
+        # ax.set_ylabel('1-input sparseness')
+        # fig.savefig('spasity_measure.'+file_extension)
         
-    
+        # save some data files for manual figure making
+        np.savetxt('data_a_mf.csv', data_a_i, delimiter=',')
+        np.savetxt('data_a_gc.csv', data_a_o, delimiter=',')        
+        np.savetxt('data_h_mf.csv', data_a_i, delimiter=',')
+        np.savetxt('data_h_gc.csv', data_a_o, delimiter=',')        
+        np.savetxt('data_v_mf.csv', data_a_i, delimiter=',')
+        np.savetxt('data_v_gc.csv', data_a_o, delimiter=',')        
+
+if plot_mean_count:
+    # plot mean output spike count vs mean input spike count
+    cm = plt.get_cmap(diverging_colormap) 
+    c_norm  = colors.Normalize(vmin=0, vmax=space.get_range('n_grc_dend')[-1])
+    scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
+    fig, ax = plt.subplots()
+    ax.set_xlabel('Average spikes per MF')
+    ax.set_ylabel('Average spikes per GC')
+    for gd in space.get_range('n_grc_dend'):
+        c = scalar_map.to_rgba(gd)
+        subspace = space.get_nontrivial_subspace(('n_grc_dend', gd))
+        ax.plot(subspace._get_attribute_array('i_mean_count'),
+                subspace._get_attribute_array('o_mean_count'),
+                color=c,
+                linewidth=1.5)
+    fig.savefig('mean_count.{}'.format(file_extension))
+    # save some data files for manual figure making
+    np.save('data_i_mean_count.npy', np.squeeze(space._get_attribute_array('i_mean_count')))
+    np.save('data_o_mean_count.npy', np.squeeze(space._get_attribute_array('o_mean_count')))
+
 
 if plot_mi_detail:
     for p in space.flat:
@@ -415,7 +462,7 @@ for k,pp in enumerate(parameter_space):
         idx = (len(active_mf_fraction_range)-(n+1)) * len(bias_range) + m + 1
         print n,m,idx
         dist_ax = dist_fig.add_subplot(len(active_mf_fraction_range), len(bias_range), idx)
-        dist_ax.imshow(distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt), interpolation='none', cmap='coolwarm')
+        dist_ax.imshow(distance_matrix(grc_mf_ratio, n_grc_dend, network_scale, active_mf_fraction, bias, n_stim_patterns, n_trials, sim_duration, tau, dt), interpolation='none', cmap=diverging_colormap)
         dist_ax.set_xticks([])
         dist_ax.set_yticks([])
     if plot_mi_vs_activity:
@@ -439,7 +486,7 @@ if plot_synchrony:
 if plot_mutual_information:
     mi_fig = plt.figure()
     mi_ax = mi_fig.add_subplot(111)
-    i_at_npatt_plot = mi_ax.imshow(info_at_npatterns, interpolation='none', cmap='coolwarm', origin='lower')
+    i_at_npatt_plot = mi_ax.imshow(info_at_npatterns, interpolation='none', cmap=diverging_colormap, origin='lower')
     i_at_npatt_cbar = mi_fig.colorbar(i_at_npatt_plot, use_gridspec=True)
     i_at_npatt_cbar.set_label('MI at $|\mathcal{A}_{out}| = |\mathcal{A}_{in}|$ (bits)')
     mi_ax.set_xticks(np.arange(len(bias_range)))
@@ -453,7 +500,7 @@ if plot_mutual_information:
 if plot_kl_divergence:
     kl_fig = plt.figure()
     kl_ax = kl_fig.add_subplot(111)
-    kl_plot = kl_ax.imshow(kl_div_values, interpolation='none', cmap='coolwarm', origin='lower')
+    kl_plot = kl_ax.imshow(kl_div_values, interpolation='none', cmap=diverging_colormap, origin='lower')
     kl_cbar = kl_fig.colorbar(kl_plot, use_gridspec=True)
     kl_cbar.set_label('KL divergence (bits)')
     kl_ax.set_xticks(np.arange(len(bias_range)))
@@ -467,7 +514,7 @@ if plot_kl_divergence:
 if plot_out_entropy:
     oe_fig = plt.figure()
     oe_ax = oe_fig.add_subplot(111)
-    oe_plot = oe_ax.imshow(out_entropy_values, interpolation='none', cmap='coolwarm', origin='lower')
+    oe_plot = oe_ax.imshow(out_entropy_values, interpolation='none', cmap=diverging_colormap, origin='lower')
     oe_cbar = oe_fig.colorbar(oe_plot, use_gridspec=True)
     oe_cbar.set_label('Output entropy (bits)')
     oe_ax.set_xticks(np.arange(len(bias_range)))
@@ -482,7 +529,7 @@ if plot_noise_entropy:
     noise_entropy_values = (np.array(out_entropy_values) - np.array(info_at_npatterns))/np.array(out_entropy_values)
     ne_fig = plt.figure()
     ne_ax = ne_fig.add_subplot(111)
-    ne_plot = ne_ax.imshow(noise_entropy_values, interpolation='none', cmap='coolwarm', origin='lower')
+    ne_plot = ne_ax.imshow(noise_entropy_values, interpolation='none', cmap=diverging_colormap, origin='lower')
     ne_cbar = ne_fig.colorbar(ne_plot, use_gridspec=True)
     ne_cbar.set_label('Fraction of output entropy due to noise')
     ne_ax.set_xticks(np.arange(len(bias_range)))
@@ -511,7 +558,7 @@ if plot_dendrograms:
 if plot_mi_vs_activity:
     miva_fig = plt.figure()
     miva_ax = miva_fig.add_subplot(111)
-    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
+    miva_points = miva_ax.scatter(average_output_levels, average_output_saturation, c=mi_for_activ_plot, cmap=diverging_colormap)
     miva_ax.set_xlabel('average number of spikes')
     miva_ax.set_ylabel('spatial saturation')
     miva_cbar = miva_fig.colorbar(miva_points, use_gridspec=True)
@@ -519,7 +566,7 @@ if plot_mi_vs_activity:
     miva_fig.savefig('mi_vs_activity.png')
 
     mi_b_ns_fig, mi_b_ns_ax = plt.subplots()
-    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap='coolwarm')
+    mi_b_ns_points = mi_b_ns_ax.scatter(bias_for_activ_plot, average_output_levels, c=mi_for_activ_plot, cmap=diverging_colormap)
     mi_b_ns_ax.set_xlabel('Threshold current (pA)')
     mi_b_ns_ax.set_ylabel('average number of spikes')
     mi_b_ns_cbar = mi_b_ns_fig.colorbar(mi_b_ns_points, use_gridspec=True)
@@ -527,7 +574,7 @@ if plot_mi_vs_activity:
     mi_b_ns_fig.savefig('mi_vs_bias_and_nspikes.png')
 
     mi_b_sat_fig, mi_b_sat_ax = plt.subplots()
-    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap='coolwarm')
+    mi_b_sat_points = mi_b_sat_ax.scatter(bias_for_activ_plot, average_output_saturation, c=mi_for_activ_plot, cmap=diverging_colormap)
     mi_b_sat_ax.set_xlabel('Threshold current (pA)')
     mi_b_sat_ax.set_ylabel('output spatial saturation')
     mi_b_sat_cbar = mi_b_sat_fig.colorbar(mi_b_sat_points, use_gridspec=True)
