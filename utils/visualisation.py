@@ -195,33 +195,36 @@ class PointDetailColormap(MIDetailPlotter):
             print('Warning: missing values: {0}'.format(e))
 
 class RectangularHeatmapPlotter(object):
-    def __init__(self, space, alpha=0.):
+    def __init__(self, space, alpha=0., figsize=(4,6)):
         if len(space.shape) > 2:
             raise ValueError('Attempt to plot an heatmap for a space with more than 2 dimensions.')
         self.space = space
         self.gs = GridSpec(1,1)
-        self.fig = plt.figure(figsize=(4,6))
+        self.fig = plt.figure(figsize=figsize)
         self.fig.patch.set_alpha(alpha)
         self.ax = self.fig.add_subplot(self.gs[0])
         self.fig.canvas.mpl_connect('draw_event', on_draw)
-    def plot(self, heat_dim, invert_axes=False):
+    def plot(self, heat_dim, invert_axes=False, aspect=None):
         """Plot a bidimensional heatmap for the heat_dim quantity"""
         plot_data = self.space._get_attribute_array(heat_dim)
+        x_ticks_factor = 4
+        if aspect:
+            x_ticks_factor = int(round(x_ticks_factor * aspect))
         if self.space.ndim == 1:
             # matplotlib's imshow complains if the data is one-dimensional
             plot_data = plot_data.reshape(1, -1)
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower')
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect)
             x_param = self.space._param(0)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks([])
         elif not invert_axes:            
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower'        )
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect)
             x_param = self.space._param(1)
             y_param = self.space._param(0)
-            self.ax.set_xticks(np.arange(1, self.space.shape[1], 4))
+            self.ax.set_xticks(np.arange(1, self.space.shape[1], x_ticks_factor))
             self.ax.set_yticks([0] + range(4, self.space.shape[0], 5))
         else:
-            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower')
+            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect)
             x_param = self.space._param(0)
             y_param = self.space._param(1)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
@@ -234,7 +237,7 @@ class RectangularHeatmapPlotter(object):
         self.cbar.set_ticklabels(np.linspace(plot_data.min(),
                                              plot_data.max(),
                                              4).round(1))
-        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)[1::4]])
+        self.ax.set_xticklabels([str(x) for x in self.space.get_range(x_param)[1::x_ticks_factor]])
         self.ax.get_xaxis().tick_bottom()
         self.ax.get_yaxis().tick_left()
         if x_param=='active_mf_fraction':
@@ -253,8 +256,8 @@ class RectangularHeatmapPlotter(object):
         self.ax.set_title(fig_title)
         self.fig.canvas.draw()
         return self.fig, self.ax, plot_data
-    def plot_and_save(self, heat_dim, base_dir=None, file_name=None, file_extension=None):
-        fig, ax, data = self.plot(heat_dim)
+    def plot_and_save(self, heat_dim, base_dir=None, file_name=None, file_extension=None, aspect=None):
+        fig, ax, data = self.plot(heat_dim, aspect=aspect)
         if not file_extension:
             file_extension = "png"
         if not file_name:
