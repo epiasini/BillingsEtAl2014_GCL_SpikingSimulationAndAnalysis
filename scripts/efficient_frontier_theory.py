@@ -6,23 +6,26 @@ from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
-thinning = 10
-thinning_indexes = [0,10,20,40]
+sparsification_nadt = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encoded_activity_NADT.csv', delimiter=','))
+sparsification_fixed = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encoded_activity_fixed.csv', delimiter=','))
+sparsification_fixednadt = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encoded_activity_OFFNADT.csv', delimiter=','))
+encodable_range_nadt = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encodable_range_NADT.csv', delimiter=','))
+encodable_range_fixed = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encodable_range_fixed.csv', delimiter=','))
+encodable_range_fixednadt = np.atleast_2d(np.loadtxt('../../data/theory_efficient_frontier/encodable_range_OFFNADT.csv', delimiter=','))
 
-nadt_range = np.vstack((np.array([0]).reshape(1,1), np.loadtxt('../../data/theory_efficient_frontier/NADT.csv', delimiter=',').reshape(-1,1)))[thinning_indexes]
-# sparsification_nadt = np.loadtxt('../../data/theory_efficient_frontier/meanSpa.csv', delimiter=',')
-# sparsification_fixed = np.loadtxt('../../data/theory_efficient_frontier/meanFXDSpa.csv', delimiter=',')
-# encodable_range_nadt = np.loadtxt('../../data/theory_efficient_frontier/meanEnt.csv', delimiter=',')/30.
-# encodable_range_fixed = np.loadtxt('../../data/theory_efficient_frontier/meanFXDEnt.csv', delimiter=',')/30.
-sparsification_nadt = np.loadtxt('../../data/theory_efficient_frontier/encoded_sparsification_NADT.csv', delimiter=',')
-sparsification_fixed = np.loadtxt('../../data/theory_efficient_frontier/encoded_sparsification_fixed.csv', delimiter=',')
-encodable_range_nadt = np.loadtxt('../../data/theory_efficient_frontier/encodable_range_NADT.csv', delimiter=',')
-encodable_range_fixed = np.loadtxt('../../data/theory_efficient_frontier/encodable_range_fixed.csv', delimiter=',')
+fixed_indexes = [0]
+nadt_indexes = [19]
+fixednadt_indexes = [3]
+#thinning_indexes=[x for x in fixed_indexes] + [x+len(fixed_indexes) for x in fixednadt_indexes] + [x+len(fixed_indexes)+len(fixednadt_indexes) for x in nadt_indexes]
+#print thinning_indexes, sparsification_fixed.shape, sparsification_fixednadt.shape, sparsification_nadt.shape
 
-sparsification = np.vstack((sparsification_fixed, sparsification_nadt))[thinning_indexes]
-encodable_range = np.vstack((encodable_range_fixed, encodable_range_nadt))[thinning_indexes]
+
+sparsification = np.vstack((sparsification_fixed[fixed_indexes], sparsification_fixednadt[fixednadt_indexes], sparsification_nadt[nadt_indexes]))
+encodable_range = np.vstack((encodable_range_fixed[fixed_indexes], encodable_range_fixednadt[fixednadt_indexes], encodable_range_nadt[nadt_indexes]))
 n_gd_range = range(1, sparsification.shape[1]+1)
 
+print sparsification
+print encodable_range
 
 markersize=6
 markeredgewidth=0.45
@@ -35,18 +38,27 @@ cm = plt.get_cmap(diverging_colormap)
 c_norm  = colors.Normalize(vmin=0, vmax=n_gd_range[-1])
 scalar_map = cmx.ScalarMappable(norm=c_norm, cmap=cm)
 
-# create discretized colorbar to use as a legend for the number of dendrites
-bounds = np.linspace(0,20,21)
-c_norm_discrete = matplotlib.colors.BoundaryNorm(bounds, cm.N)
-cb_fig, cb_ax = plt.subplots(figsize=(5,0.25))
-cb = matplotlib.colorbar.ColorbarBase(cb_ax, cmap=cm, norm=c_norm_discrete, orientation='horizontal')
-cb.set_label('Synaptic connections')
-cb.set_ticks([])
+# # create discretized colorbar to use as a legend for the number of dendrites
+# bounds = np.linspace(0,20,21)
+# c_norm_discrete = matplotlib.colors.BoundaryNorm(bounds, cm.N)
+# cb_fig, cb_ax = plt.subplots(figsize=(5,0.25))
+# cb = matplotlib.colorbar.ColorbarBase(cb_ax, cmap=cm, norm=c_norm_discrete, orientation='horizontal')
+# cb.set_label('Synaptic connections')
+# cb.set_ticks([])
 
-for i, nadt in enumerate(nadt_range):
+for i in range(sparsification.shape[0]):
+    if i < len(fixed_indexes):
+        nadt = 0
+        label = "fxd"
+    elif i < len(fixed_indexes)+len(fixednadt_indexes):
+        nadt = 0.3 + 0.1 * (fixednadt_indexes[i-len(fixed_indexes)])
+        label = "fxd + NADT {}".format(nadt)
+    else:
+        nadt = 0.1 + 0.1 * (nadt_indexes[i-len(fixed_indexes)-len(fixednadt_indexes)])
+        label = "NADT {}".format(nadt)
     marker= 'o^sd*h<H<1+x8Dd^os1d*h<H+x8Dd^os1d*h<H+x8Dd'[i]
-    if marker=='s': print nadt, sparsification[i,3], encodable_range[i,3]
-    label = "{}".format(nadt)
+    print nadt, sparsification[i,3], encodable_range[i,3]
+
     for j, gd in enumerate(n_gd_range):
         color = scalar_map.to_rgba(gd)
         if gd == n_gd_range[0]:
@@ -63,14 +75,13 @@ for i, nadt in enumerate(nadt_range):
             #         ax.plot([sparsification[i,j-4], sparsification[i,j]], [encodable_range[i,j-4], encodable_range[i,j]], c=color, linewidth=2, zorder=5-i)
             # else:
             #     ax.plot(sparsification[i,j], encodable_range[i,j], c='#808080', alpha=0.4, marker=marker, markersize=markersize, markeredgewidth=0, zorder=6-i)
-#ax.legend(loc='lower left', title='NADT')
-#ax.legend(artists, labels, loc='lower left', title='MF rate (Hz)')
-ax.set_xlabel('Sparsification on s.e.r.')
+
+
+#ax.legend(loc='lower left', title='Thresholding')
+
+ax.set_xlabel('Avg[1-p(GC)] over sparse encodable range')
 ax.set_ylabel('Sparse encodable range')
 ax.xaxis.set_ticks_position('bottom')
 ax.yaxis.set_ticks_position('left')
-#ax.set_xticks([1,2,3,4])
-#ax.set_yticks([0.4,0.6,0.8,1.0])
-#ax.set_xlim(0.9,4.05)
-#ax.set_ylim(0.2,1.03)
+
 plt.show()

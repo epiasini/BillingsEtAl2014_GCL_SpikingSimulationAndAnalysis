@@ -14,8 +14,12 @@ for colormap_name in ['RdYlGn_r', 'RdYlBu_r']:
     scalar_map = cmx.ScalarMappable(cmap=cm, norm=c_norm)
     rgb_values = np.array([scalar_map.to_rgba(x)[:3] for x in np.linspace(0,1,128)])
     np.savetxt("{}.csv".format(colormap_name), rgb_values, delimiter=",")
+    fig,ax = plt.subplots()
+    ax.set_title(colormap_name)
+    for k,color in enumerate(['r', 'g', 'b']):
+        ax.plot(rgb_values[:,k], color=color)
 
-
+plt.show()
 # # create discretized colorbar to use as a legend for the number of dendrites
 # bounds = np.linspace(0,20,21)
 # c_norm_discrete = matplotlib.colors.BoundaryNorm(bounds, cm.N)

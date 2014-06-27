@@ -53,7 +53,7 @@ connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.05,1.,.05)
 gaba_scale = psl(1)
-dta = psl(0)
+dta = psl(0.)
 inh_cond_scaling = psl(0.)
 exc_cond_scaling = psl(1.)
 modulation_frequency = psl(0)
@@ -101,7 +101,7 @@ if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, aspect=2)
         plt.close(rhm.fig)
         np.savetxt('data_mi.csv', data_mi, delimiter=',')
 

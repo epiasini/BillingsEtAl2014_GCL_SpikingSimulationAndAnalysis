@@ -6,25 +6,25 @@ from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
-#iscs_range = [0,4]
+#iscs_range = [4,0]
 iscs = 0
-spn = 128
+spn = 1024
 ics = 0.0
 ecs = 1.0
-sm_range = [40, 80, 120]
-#sm = 80
-p_mf_range = np.arange(.1,1,.1)
+#sm_range = [40, 80, 120]
+sm = 80
+p_mf_range = np.arange(.1,1,.05)
 n_gd_range = np.arange(1,21,1)
-#dta_range = [0., 0.3, 1.0]
-dta = 0.
+dta_range = [0., 0.3, 1.0]
+#dta = 0.
 #adur_range = [15, 30, 45, 60]
 #adur=30
 
 max_mi = np.log2(spn)
 
 fig, ax = plt.subplots(figsize=(6,4.5))
-ax.locator_params(tight=False, nbins=4)
-fig_io, axs_io = plt.subplots(nrows=len(sm_range), ncols=1, figsize=(6,4), squeeze=False, sharex=True, sharey=True) # figize 6,4 for figure 8; 3,4.5 for figure S8
+ax.locator_params(tight=False, nbins=5)
+fig_io, axs_io = plt.subplots(nrows=len(dta_range), ncols=1, figsize=(3,4.5), squeeze=False, sharex=True, sharey=True) # figize 6,4 for figure 8; 3,4.5 for figure S8
 # proxy artists and labels for legend
 artists = []
 labels = []
@@ -42,17 +42,17 @@ cb = matplotlib.colorbar.ColorbarBase(cb_ax, cmap=cm, norm=c_norm_discrete, orie
 cb.set_label('Synaptic connections')
 cb.set_ticks([])
 
-for i, sm in enumerate(sm_range):
+for i, dta in enumerate(dta_range):
     mi_data = np.loadtxt('../../data/data_mi_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
     a_gc_data = np.loadtxt('../../data/data_v_gc_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
     a_mf_data = np.loadtxt('../../data/data_v_mf_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
     color = 'kgr'[i]
-    marker= '^os'[i]
+    marker= 'o^s'[i]
     markersize=[10,10,10][i]
     edge_color = ['#808080', '#004d00', '#4d0000'][i]
     #artists.append(matplotlib.patches.Rectangle((0, 0), 1, 1, fc=color))
-    #label = "{}".format({0:'Independent', 4:'Correlated'}[iscs])
-    label = "{}".format(sm)
+    label = "{}".format({0:'Independent', 4:'Correlated'}[iscs])
+    #label = "{}".format(sm)
     #label = "{}".format(dta)
     #labels.append("{}".format(adur))
     #sparsification = (1-a_gc_data)/(1-a_mf_data)
@@ -60,8 +60,8 @@ for i, sm in enumerate(sm_range):
     for j, gd in enumerate(n_gd_range):
         color = scalar_map.to_rgba(gd)
         mi = mi_data[j,:].mean()/max_mi
-        #sparsification = 1-a_gc_data[j,:].mean()
-        sparsification = ((1-a_gc_data[j,:])/(1-a_mf_data[j,:])).mean()
+        sparsification = 1-a_gc_data[j,:].mean()
+        #sparsification = ((1-a_gc_data[j,:])/(1-a_mf_data[j,:])).mean()
         if np.isnan(mi):
             print('Found NaN value for DTA={}, gd={}'.format(dta, gd))
         else:
@@ -85,9 +85,8 @@ for i, sm in enumerate(sm_range):
                    o_mean_count[j],
                    color=c,
                    linewidth=1.5)
-ax.legend(loc='lower left', title='MF rate (Hz)')
-#ax.legend(artists, labels, loc='lower left', title='MF rate (Hz)')
-ax.set_xlabel('Average sparsification')
+#ax.legend(loc='lower left')#, title='MF rate (Hz)')
+ax.set_xlabel('Average output sparseness')
 ax.set_ylabel('Average MI/H(input)')
 axs_io.flat[-1].set_xlabel('Average spikes per MF')
 axs_io.flat[-1].set_ylabel('Average spikes per GC')
