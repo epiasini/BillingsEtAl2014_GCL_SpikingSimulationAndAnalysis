@@ -218,7 +218,7 @@ class RectangularHeatmapPlotter(object):
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks([])
         elif not invert_axes:            
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect)
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect, vmax=10.)
             x_param = self.space._param(1)
             y_param = self.space._param(0)
             self.ax.set_xticks(np.arange(1, self.space.shape[1], x_ticks_factor))
