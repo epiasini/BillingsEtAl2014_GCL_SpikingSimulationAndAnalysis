@@ -152,33 +152,19 @@ def scale_excitatory_conductances(project_dir, scaling_factor):
                                attributes_to_scale=['directAmp1',
                                                     'directAmp2'])
 
-def export_to_neuroml(point, project, sim_config):
+def export_to_neuroml(project, sim_config, out_path):
     # export to NeuroML (debug feature)
-    from os.path import join, abspath, dirname
-    import shutil
     from java.io import File
     from ucl.physiol.neuroconstruct.neuroml import NeuroMLFileManager, NeuroMLConstants, LemsConstants
     from ucl.physiol.neuroconstruct.cell.compartmentalisation import CompartmentalisationManager
     from ucl.physiol.neuroconstruct.utils.units import UnitConverter
     
-    neuroml_path = '/tmp/generatedNeuroML2'
-    structure_file_path = '/tmp/if_gl/conn'
-    mf_pos_file_path = '/tmp/if_gl/mf_pos'
-    grc_pos_file_path = '/tmp/if_gl/grc_pos'
-    neuroml_version = NeuroMLConstants.NeuroMLVersion.NEUROML_VERSION_2_BETA
+    neuroml_version = NeuroMLConstants.NeuroMLVersion.getLatestVersion()
     lems_option = LemsConstants.LemsOption.NONE
     mc = CompartmentalisationManager.getOrigMorphCompartmentalisation()
     units = UnitConverter.getUnitSystemDescription(UnitConverter.GENESIS_PHYSIOLOGICAL_UNITS);
-    neuroml_dir = File(neuroml_path)
-    NeuroMLFileManager.saveNetworkStructureXML(project,
-                                               File("/tmp/GeneratedNeuroML2.xml"),
-                                               False,
-                                               False,
-                                               sim_config.getName(),
-                                               "Physiological Units",
-                                               NeuroMLConstants.NeuroMLVersion.NEUROML_VERSION_2_BETA,
-                                               None)
-    print('Exporting network in NeuroML2 format in ' + neuroml_path)
+
+    print('Exporting network in NeuroML2 format in ' + out_path)
     project.neuromlFileManager.reset()
-    project.neuromlFileManager.generateNeuroMLFiles(sim_config, neuroml_version, lems_option, mc, 1234, False, False, neuroml_dir, units, False)
+    project.neuromlFileManager.generateNeuroMLFiles(sim_config, neuroml_version, lems_option, mc, 1234, False, False, File(out_path), units, False)
         
