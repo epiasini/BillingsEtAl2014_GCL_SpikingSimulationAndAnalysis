@@ -3,4 +3,8 @@
 /notes.html
 /notes.pdf
 /notes.tex
-/auto/notes.el
+/auto
+data_*
+fig
+*.eps
+*.png
