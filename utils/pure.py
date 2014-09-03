@@ -93,7 +93,7 @@ class SimpleParameterSpacePoint(object):
         return "SimpleParameterSpacePoint(%d,%d,%f,%f,%f,%f,%f,%f,%d,%d,%d,%d,%d,%d,%d,%d)" % (self.n_grc_dend, self.connectivity_rule, self.input_spatial_correlation_scale, self.active_mf_fraction, self.gaba_scale, self.dta, self.inh_cond_scaling, self.exc_cond_scaling, self.modulation_frequency, self.stim_rate_mu, self.stim_rate_sigma, self.noise_rate_mu, self.noise_rate_sigma, self.n_stim_patterns, self.n_trials, self.sim_duration)
     def representation_without_commas(self):
         # sanitised version of the Point representation, with commas
-        # replaced by | signs. This is needed because of a known bug
+        # replaced by '+' signs. This is needed because of a known bug
         # in Legion's version of JSV which freaks out when script
         # arguments contain commas.
         return self.representation().replace(',', '+')
