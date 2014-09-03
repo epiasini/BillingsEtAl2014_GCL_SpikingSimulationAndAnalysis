@@ -14,7 +14,8 @@ from ucl.physiol.neuroconstruct.project import ProjectManager
 from ucl.physiol.neuroconstruct.nmodleditor.processes import ProcessManager
 
 sys.path.append('/home/ucbtepi/code/network/src')
-sys.path.append('/home/ucbtepi/code/networkx')
+sys.path.append('/home/eugenio/src/decorator-3.4.0/build/lib')
+sys.path.append('/home/eugenio/src/networkx-1.9')
 
 from utils.cluster_system import ClusterSystem
 from utils.pure import SimpleParameterSpacePoint
