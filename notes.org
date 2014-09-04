@@ -1,0 +1,18 @@
+* Heterogeneity
+How does heterogeneity affect the range of frequencies that the
+network can operate at? We could fix the (average) number of dendrites
+and see what happens to the information transmission-sparsification
+tradeoff *parametrised by the MF firing rate* as we vary the
+heterogeneity of the model. In other words, we can take figure S5C in
+the paper, discard all points for d!=4, "connect the dots" for d=4
+across different MF rates (perhaps increasing the number of data
+points), and see how the resulting plot varies as we vary
+heterogeneity.
+** Network connectivity
+Change the network connectivity statistics to compare the d=4 case
+with a more realistic distribution over d within the network.
+** Granule cell physiology
+Introduce heterogeneity in single cell properties. We can do this by
+using my population model built on top of Dan's data.
+** Synaptic properties
+Incorporate the synaptic amplitude distribution from Sargent 2005.
