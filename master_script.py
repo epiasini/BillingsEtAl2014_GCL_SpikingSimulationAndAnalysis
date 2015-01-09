@@ -16,27 +16,27 @@ analyse = False
 
 #+++++parameter ranges+++++++++++++
 n_grc_dend = psl(1,21,1)
-connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
+connectivity_rule = psl(1) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
-gaba_scale = psl(1)
-dta = psl(0.3)
-inh_cond_scaling = psl(0.)
-exc_cond_scaling = psl(1.)
+gaba_scale = psl(1) # global inhibition scale. Default: 1
+dta = psl(0.)
+inh_cond_scaling = psl(0.) # (boolean) scale inhibitory conductance to compensate for change in n_dend
+exc_cond_scaling = psl(1.) # (boolean) scale excitatory conductance to compensate for change in n_dend
 modulation_frequency = psl(0)
-stim_rate_mu = psl(80)
+stim_rate_mu = psl(80) # (Hz) default: 80
 stim_rate_sigma = psl(0)
-noise_rate_mu = psl(10)
+noise_rate_mu = psl(10) # (Hz) default: 10
 noise_rate_sigma = psl(0)
-n_stim_patterns = psl(128)
+n_stim_patterns = psl(1024)
 n_trials = psl(1) # typically, 1 when simulating and 60 when analysing
-sim_duration = psl(3750.) # typically, 3750 when simulating and 180 when analysing
-ana_duration = psl(30.0) # when analysing, must be < min(sim_duration)
-training_size = psl(30) # when analysing, must be < min(n_trials)
+sim_duration = psl(3750.) # (s) typically, 3750 when simulating and 180 when analysing
+ana_duration = psl(30.0) # (s) when analysing, must be < min(sim_duration). Default: 30
+training_size = psl(30) # when analysing, must be < min(n_trials). Default: 30
 multineuron_metric_mixing = psl(0.)
 linkage_method = psl(1) # 0: ward, 1: kmeans
-tau = psl(5)
-dt = psl(2)
+tau = psl(5) # time constant for MUVR metric convolution
+dt = psl(2) # integration time step for old implementation of MUVR metric. Not in use anymore.
 
 #----parameter consistency check
 if analyse and training_size.realstop > n_trials.start:
