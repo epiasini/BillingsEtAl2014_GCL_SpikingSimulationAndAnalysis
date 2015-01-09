@@ -16,7 +16,7 @@ analyse = False
 
 #+++++parameter ranges+++++++++++++
 n_grc_dend = psl(1,21,1)
-connectivity_rule = psl(1) # 0: tissue model, 1: random bipartite graph
+connectivity_rule = psl(0) # 0: tissue model, 1: random bipartite graph
 input_spatial_correlation_scale = psl(0) # 0: uncorrelated
 active_mf_fraction = psl(.1,1.,.1)
 gaba_scale = psl(1) # global inhibition scale. Default: 1
