@@ -6,17 +6,18 @@ from matplotlib import pyplot as plt
 import matplotlib.colors as colors
 import matplotlib.cm as cmx
 
+cr_range = [0,1]
 #iscs_range = [4,0]
 iscs = 0
-spn = 1024
+spn = 128
 ics = 0.0
 ecs = 1.0
 #sm_range = [40, 80, 120]
 sm = 80
-p_mf_range = np.arange(.1,1,.05)
+p_mf_range = np.arange(.1,1,.1)
 n_gd_range = np.arange(1,21,1)
-dta_range = [0., 0.3, 1.0]
-#dta = 0.
+#dta_range = [0., 0.3, 1.0]
+dta = 0.
 #adur_range = [15, 30, 45, 60]
 #adur=30
 
@@ -24,7 +25,7 @@ max_mi = np.log2(spn)
 
 fig, ax = plt.subplots(figsize=(6,4.5))
 ax.locator_params(tight=False, nbins=5)
-fig_io, axs_io = plt.subplots(nrows=len(dta_range), ncols=1, figsize=(3,4.5), squeeze=False, sharex=True, sharey=True) # figize 6,4 for figure 8; 3,4.5 for figure S8
+fig_io, axs_io = plt.subplots(nrows=len(cr_range), ncols=1, figsize=(3,4.5), squeeze=False, sharex=True, sharey=True) # figize 6,4 for figure 8; 3,4.5 for figure S8
 # proxy artists and labels for legend
 artists = []
 labels = []
@@ -42,16 +43,17 @@ cb = matplotlib.colorbar.ColorbarBase(cb_ax, cmap=cm, norm=c_norm_discrete, orie
 cb.set_label('Synaptic connections')
 cb.set_ticks([])
 
-for i, dta in enumerate(dta_range):
-    mi_data = np.loadtxt('../../data/data_mi_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
-    a_gc_data = np.loadtxt('../../data/data_v_gc_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
-    a_mf_data = np.loadtxt('../../data/data_v_mf_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(iscs, spn, dta, ics, ecs, sm), delimiter=',')
+for i, cr in enumerate(cr_range):
+    mi_data = np.loadtxt('../../data/data_mi_cr{}_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(cr, iscs, spn, dta, ics, ecs, sm), delimiter=',')
+    a_gc_data = np.loadtxt('../../data/data_v_gc_cr{}_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(cr, iscs, spn, dta, ics, ecs, sm), delimiter=',')
+    a_mf_data = np.loadtxt('../../data/data_v_mf_cr{}_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.csv'.format(cr, iscs, spn, dta, ics, ecs, sm), delimiter=',')
     color = 'kgr'[i]
     marker= 'o^s'[i]
     markersize=[10,10,10][i]
     edge_color = ['#808080', '#004d00', '#4d0000'][i]
     #artists.append(matplotlib.patches.Rectangle((0, 0), 1, 1, fc=color))
-    label = "{}".format({0:'Independent', 4:'Correlated'}[iscs])
+    label = "{}".format({0:'Tissue model', 1:'Randomised'}[cr])
+    #label = "{}".format({0:'Independent', 4:'Correlated'}[iscs])
     #label = "{}".format(sm)
     #label = "{}".format(dta)
     #labels.append("{}".format(adur))
@@ -74,8 +76,8 @@ for i, dta in enumerate(dta_range):
         prev_sparsification = sparsification
             #ax.plot(sparsification, mi, c=color, markeredgecolor=edge_color, marker=r"${}$".format(gd), markersize=20)
     # plot mean output spike count vs mean input spike count
-    i_mean_count = np.load('../../data/data_i_mean_count_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.npy'.format(iscs, spn, dta, ics, ecs, sm))
-    o_mean_count = np.load('../../data/data_o_mean_count_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.npy'.format(iscs, spn, dta, ics, ecs, sm))
+    i_mean_count = np.load('../../data/data_i_mean_count_cr{}_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.npy'.format(cr, iscs, spn, dta, ics, ecs, sm))
+    o_mean_count = np.load('../../data/data_o_mean_count_cr{}_iscs{}_spn{}_dta{:.01f}_ics{:.01f}_ecs{:.01f}_sm{}.npy'.format(cr, iscs, spn, dta, ics, ecs, sm))
     ax_io = axs_io.flat[i]
     ax_io.locator_params(axis='x', tight=True, nbins=5)
     ax_io.locator_params(axis='y', tight=True, nbins=4)
@@ -85,10 +87,14 @@ for i, dta in enumerate(dta_range):
                    o_mean_count[j],
                    color=c,
                    linewidth=1.5)
-#ax.legend(loc='lower left')#, title='MF rate (Hz)')
+ax.legend(loc='lower left')#, title='MF rate (Hz)')
 ax.set_xlabel('Average output sparseness')
 ax.set_ylabel('Average MI/H(input)')
 axs_io.flat[-1].set_xlabel('Average spikes per MF')
 axs_io.flat[-1].set_ylabel('Average spikes per GC')
+ax.set_xlim((0.65, 0.95))
+
+fig.savefig('tradeoff.pdf')
+fig_io.savefig('spike_counts.pdf')
 
 plt.show()
