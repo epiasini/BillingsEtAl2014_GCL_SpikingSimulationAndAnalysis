@@ -59,7 +59,7 @@ for n_grc_dend in n_grc_dend_range:
     r.remove_edges_from(g.edges())
     mf_nodes = list(mf_nodes)
     for n in grc_nodes:
-        r.add_edges_from([(random.choice(mf_nodes), n) for each in range(n_grc_dend)])
+        r.add_edges_from(zip(random.sample(mf_nodes, n_grc_dend), [n]*n_grc_dend))
     # project randomised graph onto GrCs and invert weights
     rh = bipartite.weighted_projected_graph(r, grc_nodes)
     for u, v, data in rh.edges(data=True):
