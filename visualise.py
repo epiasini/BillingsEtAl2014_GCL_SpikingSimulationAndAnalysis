@@ -61,7 +61,7 @@ stim_rate_mu = psl(80)
 stim_rate_sigma = psl(0)
 noise_rate_mu = psl(10)
 noise_rate_sigma = psl(0)
-n_stim_patterns = psl(1024)
+n_stim_patterns = psl(128)
 n_trials = psl(60)
 sim_duration = psl(180)
 ana_duration = psl(30) # must be < min(sim_duration)
@@ -101,7 +101,7 @@ if plot_mi_heatmap:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, aspect=2)
+        fig_mi, ax_mi, data_mi = rhm.plot_and_save(heat_dim='point_mi_qe', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, aspect=1, vmin=0, vmax=7)
         plt.close(rhm.fig)
         np.savetxt('data_mi.csv', data_mi, delimiter=',')
 
@@ -252,17 +252,17 @@ if plot_sparseness:
     for noise in space.get_range('noise_rate_mu'):
         subspace = space.get_nontrivial_subspace(('noise_rate_mu', noise))
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_a_i = rhm.plot_and_save(heat_dim='i_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_a_o = rhm.plot_and_save(heat_dim='o_sparseness_activity', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_h_i = rhm.plot_and_save(heat_dim='i_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_h_o = rhm.plot_and_save(heat_dim='o_sparseness_hoyer', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_v_i = rhm.plot_and_save(heat_dim='i_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_v_i = rhm.plot_and_save(heat_dim='i_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
         rhm = RectangularHeatmapPlotter(subspace)
-        fig, ax, data_v_o = rhm.plot_and_save(heat_dim='o_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension)
+        fig, ax, data_v_o = rhm.plot_and_save(heat_dim='o_sparseness_vinje', base_dir='/home/ucbtepi/code/network/figures', file_extension=file_extension, vmin=0, vmax=1)
 
         # use data extracted for input and output activity sparseness
         # to visualise sparsification

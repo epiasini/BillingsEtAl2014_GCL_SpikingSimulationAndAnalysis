@@ -204,7 +204,7 @@ class RectangularHeatmapPlotter(object):
         self.fig.patch.set_alpha(alpha)
         self.ax = self.fig.add_subplot(self.gs[0])
         self.fig.canvas.mpl_connect('draw_event', on_draw)
-    def plot(self, heat_dim, invert_axes=False, aspect=None):
+    def plot(self, heat_dim, invert_axes=False, aspect=None, vmin=None, vmax=None):
         """Plot a bidimensional heatmap for the heat_dim quantity"""
         plot_data = self.space._get_attribute_array(heat_dim)
         x_ticks_factor = 4
@@ -218,13 +218,13 @@ class RectangularHeatmapPlotter(object):
             self.ax.set_xticks(np.arange(self.space.shape[0]))
             self.ax.set_yticks([])
         elif not invert_axes:            
-            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect, vmax=10.)
+            plot = self.ax.imshow(plot_data, interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect, vmin=vmin, vmax=vmax)
             x_param = self.space._param(1)
             y_param = self.space._param(0)
             self.ax.set_xticks(np.arange(1, self.space.shape[1], x_ticks_factor))
             self.ax.set_yticks([0] + range(4, self.space.shape[0], 5))
         else:
-            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect)
+            plot = self.ax.imshow(plot_data.transpose(), interpolation='none', cmap=diverging_colormap, origin='lower', aspect=aspect, vmin=vmin, vmax=vmax)
             x_param = self.space._param(0)
             y_param = self.space._param(1)
             self.ax.set_xticks(np.arange(self.space.shape[0]))
@@ -256,8 +256,8 @@ class RectangularHeatmapPlotter(object):
         self.ax.set_title(fig_title)
         self.fig.canvas.draw()
         return self.fig, self.ax, plot_data
-    def plot_and_save(self, heat_dim, base_dir=None, file_name=None, file_extension=None, aspect=None):
-        fig, ax, data = self.plot(heat_dim, aspect=aspect)
+    def plot_and_save(self, heat_dim, base_dir=None, file_name=None, file_extension=None, aspect=None, vmin=None, vmax=None):
+        fig, ax, data = self.plot(heat_dim, aspect=aspect, vmin=vmin, vmax=vmax)
         if not file_extension:
             file_extension = "png"
         if not file_name:
