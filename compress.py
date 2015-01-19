@@ -101,7 +101,16 @@ with ClusterSystem() as system:
                     print ("Missing directory! retrying. Error was: {}".format(e))
                     time.sleep(10)
             if compression_attempts == max_compression_attempts:
+                # if tar archive seems corrupted, delete it so that it
+                # will automatically be recreated upon re-running the
+                # simulation associated with it.
+                print("Deleting corrupted tar archive {}".format(point.get_tar_simulation_archive_path(spn)))
+                try:
+                    os.remove(point.get_tar_simulation_archive_path(spn))
+                except OSError as e:
+                    print ("Error while deleting corrupted tar archive! Error was {}".format(e))
                 raise Exception("Giving up on compressing data for stim pattern number {}".format(spn))
+                
 
     archive.close()
     print("Compression successfully completed!")
